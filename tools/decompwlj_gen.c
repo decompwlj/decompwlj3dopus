@@ -31,6 +31,8 @@
  *                a(OEIS offset), except A002620 and A004207, which repeat their
  *                first value and so start one index later; n0 is always the
  *                true OEIS index of row 0, checked against the DATA lines.
+ *   26 Sep 2026  one hundred: fifty more (odious ... binpal), for the GitHub Pages
+ *                site.  The 24 of them also in wlj-atlas agree with it row for row.
  *
  * Build:  cc -O2 -o decompwlj_gen decompwlj_gen.c -lm
  * Run:    ./decompwlj_gen <outdir>            all sequences
@@ -635,6 +637,268 @@ static void gen_divsum(u64 *t, long cnt)       /* A006218, from a(0) = 0: sum of
 static void gen_sigmasum(u64 *t, long cnt)     /* A024916, from a(1) = 1: sum of sigma(k), k <= n */
 { u64 s = 0; for (long i = 0; i < cnt; i++) { need_spf((u64)(i + 1), "sigmasum"); s += sigma_small((u64)(i + 1)); t[i] = s; } }
 
+/* ---------------------------- the fifty added 26 Sep 2026 ----------- */
+/* The second fifty, for the 100-sequence GitHub Pages site.            */
+
+static int popcount_u64(u64 n) { int c = 0; while (n) { n &= n - 1; c++; } return c; }
+
+static void gen_odious(u64 *t, long cnt)       /* A000069, from a(0) = 1: odd binary weight */
+{ long k = 0; for (u64 n = 1; k < cnt; n++) if (popcount_u64(n) & 1) t[k++] = n; }
+
+static void gen_evil(u64 *t, long cnt)         /* A001969, from a(0) = 0: even binary weight */
+{ long k = 0; for (u64 n = 0; k < cnt; n++) if (!(popcount_u64(n) & 1)) t[k++] = n; }
+
+static void gen_heptagonal(u64 *t, long cnt)   /* A000566, from a(0) = 0 */
+{ for (long i = 0; i < cnt; i++) { u64 n = (u64)i; t[i] = n * (5 * n - 3) / 2; } }
+
+static void gen_octagonal(u64 *t, long cnt)    /* A000567, from a(0) = 0 */
+{ for (long i = 0; i < cnt; i++) { u64 n = (u64)i; t[i] = n * (3 * n - 2); } }
+
+static void gen_censquare(u64 *t, long cnt)    /* A001844, from a(0) = 1 */
+{ for (long i = 0; i < cnt; i++) { u64 n = (u64)i; t[i] = 2 * n * (n + 1) + 1; } }
+
+static void gen_cenhex(u64 *t, long cnt)       /* A003215, from a(0) = 1 */
+{ for (long i = 0; i < cnt; i++) { u64 n = (u64)i; t[i] = 3 * n * (n + 1) + 1; } }
+
+static void gen_centri(u64 *t, long cnt)       /* A005448, from a(1) = 1 */
+{ for (long i = 0; i < cnt; i++) { u64 n = (u64)(i + 1); t[i] = 3 * n * (n - 1) / 2 + 1; } }
+
+static void gen_lazycaterer(u64 *t, long cnt)  /* A000124, from a(0) = 1 */
+{ for (long i = 0; i < cnt; i++) { u64 n = (u64)i; t[i] = n * (n + 1) / 2 + 1; } }
+
+static void gen_sqplus1(u64 *t, long cnt)      /* A002522, from a(0) = 1 */
+{ for (long i = 0; i < cnt; i++) { u64 n = (u64)i; t[i] = n * n + 1; } }
+
+static void gen_genpent(u64 *t, long cnt)      /* A001318, from a(0) = 0: m(3m-1)/2, m = 0, 1, -1, 2, -2, ... */
+{
+    for (long i = 0; i < cnt; i++) {
+        u64 j = (u64)(i + 1) / 2;
+        t[i] = (i & 1) ? j * (3 * j - 1) / 2 : j * (3 * j + 1) / 2;
+    }
+}
+
+static void gen_upperwythoff(u64 *t, long cnt) /* A001950: floor(n phi^2) = floor(n phi) + n */
+{ for (long i = 0; i < cnt; i++) { u64 n = (u64)(i + 1); t[i] = (n + isqrt_u64(5 * n * n)) / 2 + n; } }
+
+static void gen_beattysqrt2(u64 *t, long cnt)  /* A001951, from a(0) = 0: floor(n sqrt 2) */
+{ for (long i = 0; i < cnt; i++) { u64 n = (u64)i; t[i] = isqrt_u64(2 * n * n); } }
+
+static void gen_beattysqrt3(u64 *t, long cnt)  /* A022838: floor(n sqrt 3) */
+{ for (long i = 0; i < cnt; i++) { u64 n = (u64)(i + 1); t[i] = isqrt_u64(3 * n * n); } }
+
+/* primes p (in order) with pred(p, c), c the composite flags up to lim; the limit
+   doubles until cnt terms are found.  pred may look at c[] up to 2 lim + 1.      */
+static void gen_prime_filter(u64 *t, long cnt, u64 lim, int (*pred)(u64, const u8 *))
+{
+    for (; ; lim *= 2) {
+        u8 *c = composite_flags(2 * lim + 8); long k = 0;
+        for (u64 p = 2; p <= lim && k < cnt; p++) if (!c[p] && pred(p, c)) t[k++] = p;
+        free(c); if (k == cnt) return;
+    }
+}
+
+static int pr(u64 n, const u8 *c) { return n >= 2 && !c[n]; }
+static int p_1mod4(u64 p, const u8 *c)  { (void)c; return p % 4 == 1; }
+static int p_1mod6(u64 p, const u8 *c)  { (void)c; return p % 6 == 1; }
+static int p_5mod6(u64 p, const u8 *c)  { (void)c; return p % 6 == 5; }
+static int p_sophie(u64 p, const u8 *c) { return pr(2 * p + 1, c); }
+static int p_safe(u64 p, const u8 *c)   { return p > 2 && pr((p - 1) / 2, c); }
+static int p_isolated(u64 p, const u8 *c) { return !(p >= 2 && pr(p - 2, c)) && !pr(p + 2, c); }
+static int p_twin(u64 p, const u8 *c)   { return (p >= 2 && pr(p - 2, c)) || pr(p + 2, c); }
+static int p_cousin(u64 p, const u8 *c) { return pr(p + 4, c); }
+static int p_sexy(u64 p, const u8 *c)   { return pr(p + 6, c); }
+
+static void gen_primes1mod4(u64 *t, long cnt) { gen_prime_filter(t, cnt, 1ULL << 22, p_1mod4); }  /* A002144 */
+static void gen_primes1mod6(u64 *t, long cnt) { gen_prime_filter(t, cnt, 1ULL << 22, p_1mod6); }  /* A002476 */
+static void gen_primes5mod6(u64 *t, long cnt) { gen_prime_filter(t, cnt, 1ULL << 22, p_5mod6); }  /* A007528 */
+static void gen_sophie(u64 *t, long cnt)      { gen_prime_filter(t, cnt, 1ULL << 24, p_sophie); } /* A005384 */
+static void gen_safe(u64 *t, long cnt)        { gen_prime_filter(t, cnt, 1ULL << 25, p_safe); }   /* A005385 */
+static void gen_isolated(u64 *t, long cnt)    { gen_prime_filter(t, cnt, 1ULL << 21, p_isolated); } /* A007510 */
+static void gen_twins(u64 *t, long cnt)       { gen_prime_filter(t, cnt, 1ULL << 23, p_twin); }   /* A001097 */
+static void gen_cousin(u64 *t, long cnt)      { gen_prime_filter(t, cnt, 1ULL << 24, p_cousin); } /* A023200 */
+static void gen_sexy(u64 *t, long cnt)        { gen_prime_filter(t, cnt, 1ULL << 23, p_sexy); }   /* A023201 */
+
+static void gen_primeidx(u64 *t, long cnt)     /* A006450: prime(prime(n)) */
+{
+    u64 *p = malloc(sizeof(u64) * 1500000);
+    gen_primes(p, 1500000);
+    for (long i = 0; i < cnt; i++) {
+        if (p[i] > 1500000) { fprintf(stderr, "primeidx: prime table too short\n"); exit(1); }
+        t[i] = p[p[i] - 1];
+    }
+    free(p);
+}
+
+static u64 reverse10(u64 n) { u64 r = 0; while (n) { r = r * 10 + n % 10; n /= 10; } return r; }
+
+static void gen_emirps(u64 *t, long cnt)       /* A006567: primes whose reversal is a different prime */
+{
+    /* the reversal has no more digits than p, so a sieve to a power of ten suffices */
+    for (u64 lim = 10000000ULL; ; lim *= 10) {
+        u8 *c = composite_flags(lim); long k = 0;
+        for (u64 p = 2; p < lim && k < cnt; p++) {
+            if (c[p]) continue;
+            u64 r = reverse10(p);
+            if (r != p && r >= 2 && !c[r]) t[k++] = p;
+        }
+        free(c); if (k == cnt) return;
+    }
+}
+
+static void gen_primesminus1(u64 *t, long cnt) /* A006093 */
+{ gen_primes(t, cnt); for (long i = 0; i < cnt; i++) t[i] -= 1; }
+
+static void gen_almost3(u64 *t, long cnt)      /* A014612: Omega(n) = 3 */
+{ long k = 0; for (u64 n = 8; k < cnt; n++) { need_spf(n, "almost3"); if (omega_big(n) == 3) t[k++] = n; } }
+
+static void gen_almost4(u64 *t, long cnt)      /* A014613: Omega(n) = 4 */
+{ long k = 0; for (u64 n = 16; k < cnt; n++) { need_spf(n, "almost4"); if (omega_big(n) == 4) t[k++] = n; } }
+
+static void gen_sphenic(u64 *t, long cnt)      /* A007304: pqr, p < q < r */
+{ long k = 0; for (u64 n = 30; k < cnt; n++) { need_spf(n, "sphenic"); if (omega_big(n) == 3 && squarefree_small(n)) t[k++] = n; } }
+
+static void gen_nonsqfree(u64 *t, long cnt)    /* A013929 */
+{ long k = 0; for (u64 n = 4; k < cnt; n++) { need_spf(n, "nonsqfree"); if (!squarefree_small(n)) t[k++] = n; } }
+
+static void gen_deficient(u64 *t, long cnt)    /* A005100: sigma(n) < 2n */
+{ long k = 0; for (u64 n = 1; k < cnt; n++) { need_spf(n, "deficient"); if (sigma_small(n) < 2 * n) t[k++] = n; } }
+
+static int happy(u64 n)
+{
+    while (n != 1 && n != 4) { u64 s = 0; while (n) { u64 q = n % 10; s += q * q; n /= 10; } n = s; }
+    return n == 1;
+}
+
+static void gen_happy(u64 *t, long cnt)        /* A007770 */
+{ long k = 0; for (u64 n = 1; k < cnt; n++) if (happy(n)) t[k++] = n; }
+
+static void gen_haszero(u64 *t, long cnt)      /* A011540, from a(1) = 0: a digit 0 */
+{
+    long k = 0; t[k++] = 0;
+    for (u64 n = 1; k < cnt; n++) { u64 v = n; while (v) { if (v % 10 == 0) { t[k++] = n; break; } v /= 10; } }
+}
+
+static void gen_odddigits(u64 *t, long cnt)    /* A014261: every digit odd */
+{
+    /* i + 1 in bijective base 5, digits 1..5 written as 1, 3, 5, 7, 9: this keeps the order */
+    for (long i = 0; i < cnt; i++) {
+        u64 m = (u64)(i + 1), v = 0, p = 1;
+        while (m) { u64 r = (m - 1) % 5; v += (2 * r + 1) * p; p *= 10; m = (m - 1) / 5; }
+        t[i] = v;
+    }
+}
+
+/* n > 0 is kept iff every prime p with bad(p) divides n to an even power */
+static void gen_evenpower(u64 *t, long cnt, int from0, int (*bad)(u64))
+{
+    long k = 0;
+    if (from0) t[k++] = 0;
+    for (u64 n = 1; k < cnt; n++) {
+        need_spf(n, "evenpower");
+        u64 m = n; int ok = 1;
+        while (m > 1) {
+            u64 p = spf[m]; int e = 0;
+            while (m % p == 0) { m /= p; e++; }
+            if (bad(p) && (e & 1)) { ok = 0; break; }
+        }
+        if (ok) t[k++] = n;
+    }
+}
+static int bad_loesch(u64 p) { return p % 3 == 2; }
+static int bad_x2p2y2(u64 p) { return p % 8 == 5 || p % 8 == 7; }
+
+static void gen_loeschian(u64 *t, long cnt) { gen_evenpower(t, cnt, 1, bad_loesch); }   /* A003136 = x^2 + xy + y^2 */
+static void gen_x2p2y2(u64 *t, long cnt)    { gen_evenpower(t, cnt, 1, bad_x2p2y2); }   /* A002479 = x^2 + 2 y^2 */
+
+static void gen_twopossq(u64 *t, long cnt)     /* A000404: x^2 + y^2, x, y >= 1 */
+{
+    for (u64 lim = 1ULL << 18; ; lim *= 2) {
+        u8 *h = calloc(lim + 1, 1); long k = 0;
+        for (u64 x = 1; 2 * x * x <= lim; x++)
+            for (u64 y = x; x * x + y * y <= lim; y++) h[x * x + y * y] = 1;
+        for (u64 n = 1; n <= lim && k < cnt; n++) if (h[n]) t[k++] = n;
+        free(h); if (k == cnt) return;
+    }
+}
+
+static int is_4a8b7(u64 n)                     /* n = 4^a (8b + 7) */
+{ if (!n) return 0; while (n % 4 == 0) n /= 4; return n % 8 == 7; }
+
+static void gen_threesq(u64 *t, long cnt)      /* A000378, from a(1) = 0: sums of three squares */
+{ long k = 0; for (u64 n = 0; k < cnt; n++) if (!is_4a8b7(n)) t[k++] = n; }
+
+static void gen_notthreesq(u64 *t, long cnt)   /* A004215: 4^a (8b + 7) */
+{ long k = 0; for (u64 n = 1; k < cnt; n++) if (is_4a8b7(n)) t[k++] = n; }
+
+static void gen_coprime30(u64 *t, long cnt)    /* A007775: gcd(n, 30) = 1 */
+{ long k = 0; for (u64 n = 1; k < cnt; n++) if (n % 2 && n % 3 && n % 5) t[k++] = n; }
+
+static void gen_coprime6(u64 *t, long cnt)     /* A007310: n = 1 or 5 (mod 6) */
+{ long k = 0; for (u64 n = 1; k < cnt; n++) if (n % 2 && n % 3) t[k++] = n; }
+
+static void gen_mult3(u64 *t, long cnt)        /* A008585, from a(0) = 0 */
+{ for (long i = 0; i < cnt; i++) t[i] = 3 * (u64)i; }
+
+static void gen_oddnonprimes(u64 *t, long cnt) /* A014076 */
+{ long k = 0; for (u64 n = 1; k < cnt; n += 2) { need_spf(n, "oddnonprimes"); if (n == 1 || spf[n] != n) t[k++] = n; } }
+
+static void gen_cantor(u64 *t, long cnt)       /* A005836, from a(1) = 0: no digit 2 in base 3 */
+{
+    for (long i = 0; i < cnt; i++) {
+        u64 n = (u64)i, v = 0, p = 1;
+        while (n) { v += (n & 1) * p; p *= 3; n >>= 1; }
+        t[i] = v;
+    }
+}
+
+static void gen_moser(u64 *t, long cnt)        /* A000695, from a(0) = 0: sums of distinct powers of 4 */
+{
+    for (long i = 0; i < cnt; i++) {
+        u64 n = (u64)i, v = 0, p = 1;
+        while (n) { v += (n & 1) * p; p *= 4; n >>= 1; }
+        t[i] = v;
+    }
+}
+
+static void gen_evenzeros(u64 *t, long cnt)    /* A003159: even number of trailing 0 bits */
+{
+    long k = 0;
+    for (u64 n = 1; k < cnt; n++) { int z = 0; u64 v = n; while (!(v & 1)) { v >>= 1; z++; } if (!(z & 1)) t[k++] = n; }
+}
+
+static void gen_binpal(u64 *t, long cnt)       /* A006995, from a(1) = 0: binary palindromes */
+{
+    long k = 0; t[k++] = 0;
+    for (u64 n = 1; k < cnt; n += 2) {         /* palindromes > 0 are odd */
+        u64 r = 0, v = n; while (v) { r = (r << 1) | (v & 1); v >>= 1; }
+        if (r == n) t[k++] = n;
+    }
+}
+
+static void gen_ternary(u64 *t, long cnt)      /* A007089, from a(0) = 0: n in base 3, read in base 10 */
+{
+    for (long i = 0; i < cnt; i++) {
+        u64 n = (u64)i, v = 0, p = 1;
+        while (n) { v += (n % 3) * p; p *= 10; n /= 3; }
+        t[i] = v;
+    }
+}
+
+static void gen_pentpyr(u64 *t, long cnt)      /* A002411, from a(0) = 0: n^2 (n+1)/2 */
+{ for (long i = 0; i < cnt; i++) { u64 n = (u64)i; t[i] = n * n * (n + 1) / 2; } }
+
+static void gen_octahedral(u64 *t, long cnt)   /* A005900, from a(0) = 0: n (2 n^2 + 1)/3 */
+{ for (long i = 0; i < cnt; i++) { u64 n = (u64)i; t[i] = n * (2 * n * n + 1) / 3; } }
+
+static int powerful_small(u64 n)
+{
+    while (n > 1) { u64 p = spf[n]; int e = 0; while (n % p == 0) { n /= p; e++; } if (e == 1) return 0; }
+    return 1;
+}
+
+static void gen_weak(u64 *t, long cnt)         /* A052485: not powerful */
+{ long k = 0; for (u64 n = 2; k < cnt; n++) { need_spf(n, "weak"); if (!powerful_small(n)) t[k++] = n; } }
+
 /* ------------------------------------------------------------------ */
 /* catalogue                                                           */
 /* ------------------------------------------------------------------ */
@@ -796,6 +1060,156 @@ static SeqDef defs[] = {
 { "zeroless", "A052382", "Zeroless numbers", "digit rule",
   "No digit 0. Gap 1 almost everywhere, with jumps 2, 12, 112, ... across the zeros; the plane is the naturals' (10.54 % level).",
   100000, 1, gen_zeroless },
+{ "odious", "A000069", "Odious numbers", "binary rule",
+  "Numbers with an odd number of 1 bits. Gaps are 1, 2 and 3, each on a third of the terms. The level share is 11.01 %, next to the evil numbers' 11.39 %, with 86 ties each. 84 % of the level class sits on L = 1 and the rest on L = 3.",
+  100000, 0, gen_odious },
+{ "evil", "A001969", "Evil numbers", "binary rule",
+  "Numbers with an even number of 1 bits, the complement of the odious numbers. Gaps are 1, 2 and 3, each on a third of the terms. The level share is 11.39 % against 11.01 % for the odious numbers. The level class sits on L = 1 (76 %) and L = 3.",
+  100000, 0, gen_evil },
+{ "heptagonal", "A000566", "Heptagonal numbers", "polynomial",
+  "n(5n - 3)/2. For a ~ c n^2, l/d^2 -> 1/(4c); here c = 5/2, so l <= d^2 and every decomposable term is forced level (100 %), as for the squares and pentagonal numbers.",
+  100000, 0, gen_heptagonal },
+{ "octagonal", "A000567", "Octagonal numbers", "polynomial",
+  "n(3n - 2), a ~ 3 n^2 and d = 6n + 1: l < d^2, so every decomposable term is forced level (100 %). The lines L = 1 and L = 2 are about equally full (6.1 % and 6.0 % of the level class).",
+  100000, 0, gen_octagonal },
+{ "censquare", "A001844", "Centered square numbers", "polynomial",
+  "2n(n + 1) + 1 = n^2 + (n + 1)^2. d = 4(n + 1) and a ~ 2 n^2 < d^2: forced level at every decomposable term (100 %). Every l is odd and the fullest line is L = 3 (10.9 %), ahead of L = 1 (8.4 %).",
+  100000, 0, gen_censquare },
+{ "cenhex", "A003215", "Centered hexagonal numbers", "polynomial",
+  "3n(n + 1) + 1, the hex numbers. d = 6(n + 1) and a ~ 3 n^2 < d^2: forced level at every decomposable term (100 %). L = 1 holds 13.8 % of the class, then L = 5 (6.9 %).",
+  100000, 0, gen_cenhex },
+{ "centri", "A005448", "Centered triangular numbers", "polynomial",
+  "3n(n - 1)/2 + 1. d = 3n and a ~ 1.5 n^2 < d^2: forced level at every decomposable term (100 %).",
+  100000, 1, gen_centri },
+{ "lazycaterer", "A000124", "Lazy caterer's sequence", "polynomial",
+  "n(n + 1)/2 + 1, the triangular numbers moved up by one. With c = 1/2 > 1/4 the terms are all forced level (100 %), like the triangular numbers, but the line L = 1 is much thinner: 1,342 terms against 2,642.",
+  100000, 0, gen_lazycaterer },
+{ "sqplus1", "A002522", "Squares plus one", "polynomial",
+  "n^2 + 1. d = 2n + 1 and l = n^2 - 2n < d^2: every decomposable term is forced level (100 %). The line L = 1 (l prime) is thin: 1,225 terms.",
+  100000, 0, gen_sqplus1 },
+{ "genpent", "A001318", "Generalized pentagonal numbers", "polynomial",
+  "m(3m - 1)/2 for m = 0, 1, -1, 2, -2, ... Two quadratics interleaved: the gaps alternate j and 2j + 1. With a ~ 1.5 j^2 the gap j leaves l > d^2 while the gap 2j + 1 forces level, so exactly half the terms (49,999) are forced level. The other half is split, and the level share ends at 77.61 %.",
+  100000, 0, gen_genpent },
+{ "pentpyr", "A002411", "Pentagonal pyramidal numbers", "polynomial",
+  "n^2 (n + 1)/2, the pentagonal pyramidal numbers. d grows like n^2 while l grows like n^3, so l/d^2 -> 0: every decomposable term is forced level (100 %).",
+  100000, 0, gen_pentpyr },
+{ "octahedral", "A005900", "Octahedral numbers", "polynomial",
+  "n(2n^2 + 1)/3. A cubic sequence: l/d^2 -> 0 and every decomposable term is forced level (100 %). L = 1 holds 9.4 % of the terms and L = 2 half as many.",
+  100000, 0, gen_octahedral },
+{ "upperwythoff", "A001950", "Upper Wythoff sequence", "Beatty",
+  "floor(n phi^2) = floor(n phi) + n, the complement of the lower Wythoff sequence. The gaps are 2 and 3 only (38 % and 62 %). The level share, 15.38 %, is above the lower sequence's 12.20 %; the level class lies on the lines L = 1, 2 and 3.",
+  100000, 1, gen_upperwythoff },
+{ "beattysqrt2", "A001951", "Beatty sequence floor(n sqrt 2)", "Beatty",
+  "floor(n sqrt 2), a Beatty sequence with gaps 1 and 2 only. The level share is 11.37 %, on the lines L = 1 (82 %) and L = 2.",
+  100000, 0, gen_beattysqrt2 },
+{ "beattysqrt3", "A022838", "Beatty sequence floor(n sqrt 3)", "Beatty",
+  "floor(n sqrt 3), a Beatty sequence with gaps 1 and 2 only (27 % and 73 %). The level share is 12.69 %, on the lines L = 1 (72 %) and L = 2.",
+  100000, 1, gen_beattysqrt3 },
+{ "primes1mod4", "A002144", "Primes congruent to 1 mod 4", "primes",
+  "Every term is 1 mod 4 and every gap 0 mod 4, so l = 1 (mod 4) and ties are possible (23 here), where the primes 3 mod 4 have none. The level share, 27.95 %, is close to theirs (28.16 %). The fullest level line is L = 3.",
+  100000, 1, gen_primes1mod4 },
+{ "primes1mod6", "A002476", "Primes congruent to 1 mod 6", "primes",
+  "Every term is 1 mod 6 and every gap 0 mod 6, so l = 1 (mod 6). The level share, 35.24 %, is almost the primes 5 mod 6's 35.16 %, but they have no ties and these have 48.",
+  100000, 1, gen_primes1mod6 },
+{ "primes5mod6", "A007528", "Primes congruent to 5 mod 6", "primes",
+  "Every term is 5 mod 6 and every gap 0 mod 6, so l = 5 (mod 6). No square is 5 mod 6: zero ties, by proof. The level share is 35.16 %, and half the level class sits on L = 1.",
+  100000, 1, gen_primes5mod6 },
+{ "sophie", "A005384", "Sophie Germain primes", "primes",
+  "p with 2p + 1 prime. Past 3 every term is 5 mod 6, so l = 5 (mod 6) and no tie can occur, as for the lesser twin primes. The level share, 47.25 %, is close to theirs (47.77 %).",
+  100000, 1, gen_sophie },
+{ "safe", "A005385", "Safe primes", "primes",
+  "p with (p - 1)/2 prime. Past 7 every term is 11 mod 12 and every gap 0 mod 12, so l = 3 (mod 4): no square, no tie. The level share, 51.96 %, is the highest among the prime subsequences here.",
+  100000, 1, gen_safe },
+{ "primeidx", "A006450", "Prime-indexed primes", "primes",
+  "prime(prime(n)). The gaps are larger and more varied than the primes' (662 distinct values here), and the level share rises to 43.29 %, against 23.00 % for the primes.",
+  100000, 1, gen_primeidx },
+{ "isolated", "A007510", "Isolated (single) primes", "primes",
+  "Primes p with neither p - 2 nor p + 2 prime. Level share 26.11 %, a little above the primes' 23.00 %; L = 1 and L = 3 carry 60 % of the level class.",
+  100000, 1, gen_isolated },
+{ "twins", "A001097", "Twin primes", "primes",
+  "Primes in a twin pair, both members. Past 5 every l is 3 mod 6: after a lesser twin d = 2 and l = p - 2; after a greater twin d = 4 (mod 6). So 3 | l, and the line L = 1 holds only 6 terms. All but 68 level terms sit on odd multiples of 3 (L = 3, 9, 15, ...). The level share is 19.67 %.",
+  100000, 1, gen_twins },
+{ "cousin", "A023200", "Lesser of cousin primes", "primes",
+  "p with p + 4 prime. Past 3 every term is 1 mod 6, so l = 1 (mod 6) and ties can occur (31 here). The level share, 46.77 %, is close to the lesser twins' 47.77 %.",
+  100000, 1, gen_cousin },
+{ "sexy", "A023201", "Lesser of sexy primes", "primes",
+  "p with p + 6 prime. The terms mix 1 and 5 mod 6, and the level share, 34.58 %, lies between the primes' and the twin primes'.",
+  100000, 1, gen_sexy },
+{ "emirps", "A006567", "Emirps", "primes",
+  "Primes whose decimal reversal is a different prime. No emirp begins with 2, 4, 5, 6 or 8 (its reversal would be even or a multiple of 5), so whole blocks are skipped. The largest gap is 3,000,162, and 12 terms fail to decompose. The level share is 31.54 %.",
+  100000, 1, gen_emirps },
+{ "pminus1", "A006093", "Primes minus one", "primes",
+  "p - 1. Past 2 every term and every gap is even, so 2 | l. The primes' level line L = 1 moves to L = 2, which holds 45 % of the level class (compare p + 1). There are no ties, and the line L = 1 holds a single term.",
+  100000, 1, gen_primesminus1 },
+{ "almost3", "A014612", "3-almost primes", "multiplicative",
+  "Omega(n) = 3. The gaps stay between 1 and 34 here. The level share is 15.79 %, beside the semiprimes' 15.71 %, and L = 1 carries 64 % of the level class.",
+  100000, 1, gen_almost3 },
+{ "almost4", "A014613", "4-almost primes", "multiplicative",
+  "Omega(n) = 4. The level share is 16.89 %. The lines L = 1 and L = 2 are nearly equal (36 % and 33 % of the level class); 65 % of the terms are even.",
+  100000, 1, gen_almost4 },
+{ "sphenic", "A007304", "Sphenic numbers", "multiplicative",
+  "Products of three distinct primes. The level share is 17.04 %, against 15.72 % for the squarefree semiprimes.",
+  100000, 1, gen_sphenic },
+{ "nonsqfree", "A013929", "Non-squarefree numbers", "multiplicative",
+  "Numbers divisible by a square > 1. Only four gaps occur here, 1 to 4. The level share is 13.03 %, spread over L = 1, 2, 4 and 3.",
+  100000, 1, gen_nonsqfree },
+{ "weak", "A052485", "Weak numbers (not powerful)", "multiplicative",
+  "Numbers that are not powerful (some prime divides them exactly once). Gap 1 on 99.4 % of the terms. The plane is the naturals' almost unchanged: 9.62 % level against 9.59 %.",
+  100000, 1, gen_weak },
+{ "deficient", "A005100", "Deficient numbers", "divisor sum",
+  "sigma(n) < 2n. Gaps 1 and 2, with 38 gaps of 3. Every level-classified term lies on L = 1, and the level share, 7.79 %, is the lowest here after the numbers not divisible by 3.",
+  100000, 1, gen_deficient },
+{ "loeschian", "A003136", "Loeschian numbers", "quadratic form",
+  "x^2 + xy + y^2: every prime 2 mod 3 divides n to an even power. Starts at a(1) = 0. The level share, 24.23 %, is well above the sums of two squares' 15.95 %.",
+  100000, 1, gen_loeschian },
+{ "x2p2y2", "A002479", "Numbers x^2 + 2y^2", "quadratic form",
+  "x^2 + 2y^2: every prime 5 or 7 mod 8 divides n to an even power. Starts at a(1) = 0. Level share 14.91 %, with half the level class on L = 1.",
+  100000, 1, gen_x2p2y2 },
+{ "twopossq", "A000404", "Sums of two nonzero squares", "quadratic form",
+  "x^2 + y^2 with x, y >= 1. The plane is almost exactly that of all sums of two squares (15.97 % level against 15.95 %).",
+  100000, 1, gen_twopossq },
+{ "threesq", "A000378", "Sums of three squares", "quadratic form",
+  "Sums of three squares, the numbers not of the form 4^a(8b + 7) (Legendre). Density 5/6 and gaps of 1 to 3. The level share is 8.54 %, 99 % of it on L = 1.",
+  100000, 1, gen_threesq },
+{ "notthreesq", "A004215", "Not sums of three squares", "quadratic form",
+  "4^a(8b + 7), the complement of the sums of three squares. Half the gaps are 8. The level share is 23.71 %, with L = 1 holding half the level class.",
+  100000, 1, gen_notthreesq },
+{ "coprime30", "A007775", "Numbers coprime to 30", "forced divisor",
+  "Numbers prime to 2, 3 and 5. The gaps are 2, 4 and 6, repeating with period 8. The level class lies on only three lines: L = 3 (43 %), L = 1 and L = 5.",
+  100000, 1, gen_coprime30 },
+{ "coprime6", "A007310", "Numbers coprime to 6", "forced divisor",
+  "6m + 1 and 6m + 5, with gaps 4 and 2. Then 3 | l at every term, so after a gap of 2 the weight is 3. After a gap of 4, a term is level essentially when l/3 is prime. The level class is the naturals' level line moved to L = 3 (9.59 % level).",
+  100000, 1, gen_coprime6 },
+{ "mult3", "A008585", "Multiples of 3", "forced divisor",
+  "3n: d = 3 and l = 3(n - 1). The level class is essentially {3n : n - 1 prime}, all on the line L = 3, like the even numbers' line L = 2. The level share is 9.60 %.",
+  100000, 0, gen_mult3 },
+{ "oddnonprimes", "A014076", "Odd nonprimes", "complement",
+  "1 and the odd composites. Gaps 2, 4, 6 and 8. The level share, 21.01 %, is above the odd numbers' 17.98 %; 97 % of the level class is on L = 1.",
+  100000, 1, gen_oddnonprimes },
+{ "happy", "A007770", "Happy numbers", "digit rule",
+  "The digit-square-sum iteration reaches 1. The gaps are irregular (58 distinct values up to 73) and the level share is 19.71 %.",
+  100000, 1, gen_happy },
+{ "haszero", "A011540", "Numbers with a digit 0", "digit rule",
+  "Numbers with at least one digit 0; starts at a(1) = 0. Only the gaps 1 and 10 occur here, and the level class lies on the two lines L = 1 and L = 10. The level share is 8.76 %.",
+  100000, 1, gen_haszero },
+{ "odddigits", "A014261", "Numbers with only odd digits", "digit rule",
+  "Every decimal digit odd. The gaps are 2, 12, 112, 1112, ... (80 % are 2). The level share is 17.40 %.",
+  100000, 1, gen_odddigits },
+{ "ternary", "A007089", "Ternary expansion read in decimal", "digit rule",
+  "n in base 3, read in decimal. The gaps are 1, 8, 78, 778, ..., one per count of trailing 2 digits, so the plane splits into clean lines. 21 terms fail to decompose, and the level share is 10.70 %.",
+  100000, 0, gen_ternary },
+{ "cantor", "A005836", "No digit 2 in base 3", "digit rule",
+  "No digit 2 in base 3: the integers of the Cantor set, and the greedy sequence with no three terms in arithmetic progression. The gaps are (3^j + 1)/2 = 1, 2, 5, 14, ... Level share 14.75 %, and no ties.",
+  100000, 1, gen_cantor },
+{ "moser", "A000695", "Moser-de Bruijn sequence", "binary rule",
+  "Sums of distinct powers of 4: binary n read in base 4. The gaps are (2*4^j + 1)/3 = 1, 3, 11, 43, ... The level share is 13.96 %; L = 1 and L = 2 hold 73 % of the level class. No ties.",
+  100000, 0, gen_moser },
+{ "evenzeros", "A003159", "Even number of trailing 0 bits", "binary rule",
+  "n with an even number of trailing 0 bits (the 2-adic valuation is even). Gaps 1 and 2. Every level term lies on L = 1, there are no ties, and the level share is 13.88 %.",
+  100000, 1, gen_evenzeros },
+{ "binpal", "A006995", "Binary palindromes", "binary rule",
+  "Binary palindromes; starts at a(1) = 0. There are about sqrt(x) of them up to x, so the sequence thins out like a quadratic. The gap outgrows sqrt(l) on 35 % of terms (forced level), and 88.40 % are level-classified.",
+  100000, 1, gen_binpal },
 };
 static const int NDEF = (int)(sizeof defs / sizeof defs[0]);
 
