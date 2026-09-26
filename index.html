@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%230b0e14'/%3E%3Ccircle cx='10' cy='21' r='3' fill='%234c8dff'/%3E%3Ccircle cx='19' cy='13' r='3' fill='%23ff8c42'/%3E%3Ccircle cx='25' cy='7' r='2' fill='%23ffe45c'/%3E%3C/svg%3E">
 <title>decompwlj 3D</title>
-<meta name="description" content="Gallery and interactive 3-D atlas of the decomposition into weight × level + jump for one hundred integer sequences, 10⁵ terms each. three.js / WebGL.">
+<meta name="description" content="Gallery and interactive 3-D atlas of the decomposition into weight × level + jump for two hundred integer sequences, 10⁵ terms each. three.js / WebGL.">
 <style>
 /* the base rules the claude.ai wrapper used to supply */
 [hidden] { display: none !important; }
@@ -296,6 +296,20 @@ select:focus { border-color: var(--accent); }
 .chip:hover { color: var(--fg); border-color: var(--line-2); }
 .chip.on { background: color-mix(in oklab, var(--accent) 22%, var(--bg-3)); color: var(--fg); border-color: var(--accent); }
 .chip.wide { flex: 1; }
+.seg { display: flex; margin: 2px 0 4px; }
+.seg .chip { flex: 1; border-radius: 0; margin-left: -1px; padding-left: 0; padding-right: 0; text-align: center; }
+.seg .chip:first-child { border-radius: 6px 0 0 6px; margin-left: 0; }
+.seg .chip:last-child { border-radius: 0 6px 6px 0; }
+.seg .chip.on { position: relative; z-index: 1; }
+.chip.tog { cursor: pointer; user-select: none; }
+.chip.tog input { position: absolute; opacity: 0; pointer-events: none; }
+.chip.tog:focus-within { outline: 2px solid var(--accent); outline-offset: 1px; }
+details.grp > summary { cursor: pointer; list-style: none; font-size: 10.5px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--fg-3); }
+details.grp > summary::-webkit-details-marker { display: none; }
+details.grp > summary::before { content: '▸ '; }
+details.grp[open] > summary::before { content: '▾ '; }
+details.grp[open] > summary { margin-bottom: 8px; }
+.panel-foot { padding: 12px 0 4px; }
 
 .check { display: flex; align-items: center; gap: 8px; padding: 4px 0; font-size: 12px; color: var(--fg-2); cursor: pointer; }
 .check input { accent-color: var(--accent); }
@@ -306,7 +320,8 @@ select:focus { border-color: var(--accent); }
 input[type=range] { width: 100%; accent-color: var(--accent); height: 18px; }
 
 .range2 { margin: 8px 0 2px; }
-.range2 > label { font-size: 11.5px; color: var(--fg-3); }
+.range2 .r2h { display: flex; justify-content: space-between; align-items: baseline; }
+.range2 label { font-size: 11.5px; color: var(--fg-3); }
 .range2 .dual { display: grid; gap: 2px; margin: 2px 0; }
 .range2 output { font: 11px var(--mono); color: var(--fg-2); }
 
@@ -475,7 +490,7 @@ input[type=range] { width: 100%; accent-color: var(--accent); height: 18px; }
     <header class="home-head">
       <div class="home-title">
         <a class="brand" href="#home"><span class="brand-mark" aria-hidden="true"></span><span class="brand-text">decompwlj<span class="brand-dim"> 3D</span></span></a>
-        <h1>Weight × level + jump, one hundred sequences</h1>
+        <h1>Weight × level + jump, two hundred sequences</h1>
         <p>Every term of a strictly increasing sequence is written <i>a</i>(n) = <i>k</i>(n)·<i>L</i>(n) + <i>d</i>(n):
           the jump <i>d</i> = a(n+1) − a(n), the weight <i>k</i> the least divisor of a − d above d, the level <i>L</i> = (a − d)/k.
           10⁵ terms per sequence. Open a plate to explore it in three dimensions.</p>
@@ -515,7 +530,7 @@ input[type=range] { width: 100%; accent-color: var(--accent); height: 18px; }
       <button id="catToggle" class="icon-btn" title="Hide catalogue (C)" aria-label="Hide catalogue">&#9776;</button>
     </header>
     <div class="cat-search">
-      <input id="search" type="search" placeholder="Search 100 sequences…" autocomplete="off" spellcheck="false" aria-label="Search sequences">
+      <input id="search" type="search" placeholder="Search 200 sequences…" autocomplete="off" spellcheck="false" aria-label="Search sequences">
       <span id="searchCount" class="search-count"></span>
     </div>
     <div id="catList" class="cat-list" aria-label="Sequences">
@@ -569,24 +584,19 @@ input[type=range] { width: 100%; accent-color: var(--accent); height: 18px; }
   <aside id="panel" aria-label="Controls">
 
     <section class="grp">
-      <h2>Axes <small>1 unit = 1 decade, equal aspect</small></h2>
-      <div class="axis-row"><label class="ax x" for="axX">X</label><select id="axX"></select></div>
-      <div class="axis-row"><label class="ax y" for="axY">Y</label><select id="axY"></select></div>
-      <div class="axis-row"><label class="ax z" for="axZ">Z</label><select id="axZ"></select></div>
-      <div class="btn-row">
-        <button id="vIso" data-view="iso" class="chip on">iso</button>
-        <button id="vXY" data-view="xy" class="chip">X–Y</button>
-        <button id="vXZ" data-view="xz" class="chip">X–Z</button>
-        <button id="vYZ" data-view="yz" class="chip">Y–Z</button>
-        <button id="vEdge" data-view="edge" class="chip" title="k = L plane seen edge-on">edge</button>
+      <h2>View</h2>
+      <div class="seg" role="group" aria-label="Camera">
+        <button id="vIso" data-view="iso" class="chip on" title="3-D view (key 1)">3D</button>
+        <button id="vXY" data-view="xy" class="chip" title="weight–level plane, from above (key 2)">k–L</button>
+        <button id="vXZ" data-view="xz" class="chip" title="weight–jump plane (key 3)">k–d</button>
+        <button id="vYZ" data-view="yz" class="chip" title="level–jump plane (key 4)">L–d</button>
+        <button id="vEdge" data-view="edge" class="chip" title="the k = L plane seen edge-on (key 5)">edge</button>
       </div>
       <div class="btn-row">
-        <button id="pPersp" data-proj="persp" class="chip on wide">perspective</button>
-        <button id="pOrtho" data-proj="ortho" class="chip wide" title="no foreshortening — the flat views are then true plates">orthographic</button>
+        <label class="chip tog on" title="the k = L plane"><input type="checkbox" id="showPlane" checked>k = L</label>
+        <label class="chip tog on" title="the decade box and its ticks"><input type="checkbox" id="showBox" checked>box</label>
+        <label class="chip tog" title="slow rotation"><input type="checkbox" id="spin">rotate</label>
       </div>
-      <label class="check"><input type="checkbox" id="showPlane" checked> <span>k = L plane</span></label>
-      <label class="check"><input type="checkbox" id="showBox" checked> <span>decade box &amp; ticks</span></label>
-      <label class="check"><input type="checkbox" id="spin"> <span>slow rotation</span></label>
     </section>
 
     <section class="grp">
@@ -594,23 +604,22 @@ input[type=range] { width: 100%; accent-color: var(--accent); height: 18px; }
       <div class="slider-row"><label for="ptSize">size</label><input type="range" id="ptSize" min="0.4" max="12" step="0.1" value="2.4"><output id="ptSizeOut">2.4</output></div>
       <div class="slider-row"><label for="ptOpacity">opacity</label><input type="range" id="ptOpacity" min="0.05" max="1" step="0.01" value="0.85"><output id="ptOpacityOut">0.85</output></div>
       <div class="btn-row">
-        <button id="mSolid" data-mode="solid" class="chip on">solid</button>
-        <button id="mDensity" data-mode="density" class="chip" title="additive blending — bright where the cloud is dense">density</button>
+        <button id="mDensity" class="chip" aria-pressed="false" title="additive blending — bright where the cloud is dense">density</button>
+        <label class="chip tog" title="highlight the terms with L = 1"><input type="checkbox" id="hiOne">L = 1</label>
       </div>
-      <label class="check"><input type="checkbox" id="attenuate" checked> <span>size attenuation</span></label>
-      <label class="check"><input type="checkbox" id="hiOne"> <span>highlight the line L = 1</span></label>
     </section>
 
     <section class="grp">
       <h2>Filters</h2>
       <div class="slider-row"><label for="fReveal">terms n</label><input type="range" id="fReveal" min="0" max="1" step="0.0005" value="1"><output id="fRevealOut">all</output></div>
-      <div class="btn-row"><button id="play" class="chip wide">▶ sweep along the sequence</button></div>
       <div class="range2">
-        <label for="fDLo">jump d</label>
+        <div class="r2h"><label for="fDLo">jump d</label><output id="fDOut">all</output></div>
         <div class="dual"><input type="range" id="fDLo" min="0" max="1" step="0.001" value="0" aria-label="smallest jump"><input type="range" id="fDHi" min="0" max="1" step="0.001" value="1" aria-label="largest jump"></div>
-        <output id="fDOut">all</output>
       </div>
-      <div class="btn-row"><button id="resetFilters" class="chip wide">reset filters</button></div>
+      <div class="btn-row">
+        <button id="play" class="chip" title="sweep along the sequence (Space)">▶ play</button>
+        <button id="resetFilters" class="chip">reset</button>
+      </div>
     </section>
 
     <section class="grp">
@@ -618,16 +627,14 @@ input[type=range] { width: 100%; accent-color: var(--accent); height: 18px; }
       <dl id="stats" class="stats"></dl>
       <p id="note" class="note"></p>
       <div class="btn-row">
-        <a id="oeisLink" class="chip wide" target="_blank" rel="noopener">OEIS entry</a>
-      </div>
-      <div class="btn-row">
-        <button id="snap" class="chip wide">snapshot</button>
-        <button id="share" class="chip wide" title="Copies a tag such as #primes.kLd.iso.solid. Add it to the end of this page's link to open the same view.">copy view tag</button>
+        <a id="oeisLink" class="chip" target="_blank" rel="noopener">OEIS</a>
+        <button id="snap" class="chip">snapshot</button>
+        <button id="share" class="chip" title="Copies a tag such as #primes.kLd.iso.solid. Add it to the end of this page's link to open the same view.">copy view tag</button>
       </div>
     </section>
 
-    <section class="grp">
-      <h2>Definition</h2>
+    <details class="grp">
+      <summary>Definition</summary>
       <p class="def">
         For a strictly increasing sequence <i>a</i>(1) &lt; <i>a</i>(2) &lt; …
         <br><b>jump</b> <i>d</i>(n) = <i>a</i>(n+1) − <i>a</i>(n)
@@ -636,12 +643,14 @@ input[type=range] { width: 100%; accent-color: var(--accent); height: 18px; }
         <br><b>level</b> <i>L</i>(n) = <i>ℓ</i>(n) / <i>k</i>(n)
         <br><b><i>a</i>(n) = <i>k</i>(n) · <i>L</i>(n) + <i>d</i>(n)</b>
       </p>
-      <p class="def dim">Every decomposable term lies on the hyperbola <i>k·L</i> = <i>ℓ</i>. The term is
+      <p class="def dim">Axes: log₁₀ <i>k</i> (weight), log₁₀ <i>L</i> (level), log₁₀ <i>d</i> (jump), one unit per decade.
+        Every decomposable term lies on the hyperbola <i>k·L</i> = <i>ℓ</i>. The term is
         <em class="c-level">level-classified</em> when <i>k</i> &gt; <i>L</i>,
         <em class="c-weight">weight-classified</em> otherwise — readable here as which side of the
         <i>k</i> = <i>L</i> plane it falls on. Non-decomposable terms carry no point.</p>
-      <div class="btn-row"><button id="themeBtn" class="chip wide">light theme</button></div>
-    </section>
+    </details>
+
+    <div class="panel-foot"><button id="themeBtn" class="chip">light theme</button></div>
   </aside>
 </div>
 
@@ -659,7 +668,7 @@ input[type=range] { width: 100%; accent-color: var(--accent); height: 18px; }
 <div id="boot" class="boot"><div class="boot-in"><div class="boot-dot"></div><p id="bootMsg">loading…</p><p><a id="bootHome" class="chip" href="#home" hidden>back to all sequences</a></p></div></div>
 
 <script type="module">
-/* decompwlj 3D — static build for your own server.  One hundred sequences, 10^5 terms each.
+/* decompwlj 3D — static build for your own server.  Two hundred sequences, 10^5 terms each.
    three.js r169 (MIT) is vendored under vendor/ and imported on the first visit to the
    3-D viewer; the data and the gallery plates sit beside this file.  Serve the folder
    over HTTP(S): ES modules and fetch() do not work from file://.  */
@@ -1615,7 +1624,7 @@ class Viz {
 /* app.js — wiring: catalogue → gallery (home) → dataset → scene → controls.
  *
  * Two views in one page.  The home view is a gallery of pre-rendered
- * weight–level plates, all one hundred on one page, with search; it needs only
+ * weight–level plates, all two hundred on one page, with search; it needs only
  * the catalogue.  The viewer's sidebar lists the sequences ten per page.  The viewer is the 3-D atlas; three.js is imported the first
  * time a sequence is opened, so the gallery works even before (or without)
  * the 3-D engine.
@@ -1792,14 +1801,6 @@ function ensureViewer() {
       location.hash = id;
       if (matchMedia('(max-width: 720px)').matches) $('#app').classList.remove('show-cat');
     });
-    for (const sel of ['#axX', '#axY', '#axZ']) {
-      const el = $(sel);
-      for (const [key, f] of Object.entries(FIELDS)) {
-        const o = document.createElement('option');
-        o.value = key; o.textContent = f.label;
-        el.appendChild(o);
-      }
-    }
     list.setItems(view);
     $('#searchCount').textContent = fmt.format(all.length);
     $('#search').placeholder = `Search ${fmt.format(all.length)} sequences…`;
@@ -1816,7 +1817,6 @@ async function showViewer(t) {
   const first = !viz;
   if (first) {
     /* a deep link may carry the whole view */
-    if (t.axes) { state.x = t.axes[0]; state.y = t.axes[1]; state.z = t.axes[2]; }
     if (t.view) state.view = t.view;
     if (t.mode) state.mode = t.mode;
     if (t.one) state.hiOne = true;
@@ -1836,15 +1836,11 @@ async function showViewer(t) {
   await select(t.id);
 }
 
-/* a token arriving while the viewer is already set up: follow its axes, view and mode */
+/* a token arriving while the viewer is already set up: follow its view and mode.
+   The axes are fixed at k, L, d; the axes part of a token is kept only for old links. */
 function applyToken(t) {
-  if (t.axes && t.axes !== state.x + state.y + state.z) {
-    [state.x, state.y, state.z] = t.axes;
-    $('#axX').value = state.x; $('#axY').value = state.y; $('#axZ').value = state.z;
-    if (ds) { rebuildFrame(); upload(); applyFilters(); }
-  }
   if (t.view && t.view !== state.view) document.querySelector(`[data-view="${t.view}"]`).click();
-  if (t.mode && t.mode !== state.mode) document.querySelector(`[data-mode="${t.mode}"]`).click();
+  if (t.mode && t.mode !== state.mode) $('#mDensity').click();
 }
 
 /* ── selecting and loading a sequence ──────────────────────── */
@@ -2092,16 +2088,6 @@ function bindUI() {
     $('#searchCount').textContent = fmt.format(view.length);
   });
 
-  for (const [sel, key] of [['#axX', 'x'], ['#axY', 'y'], ['#axZ', 'z']]) {
-    const el = $(sel);
-    el.value = state[key];
-    el.addEventListener('change', () => {
-      state[key] = el.value;
-      if (ds) { rebuildFrame(); upload(); applyFilters(); }
-      writeHash();
-    });
-  }
-
   document.querySelectorAll('[data-view]').forEach(b => b.addEventListener('click', () => {
     document.querySelectorAll('[data-view]').forEach(o => o.classList.toggle('on', o === b));
     state.view = b.dataset.view;
@@ -2111,19 +2097,17 @@ function bindUI() {
     writeHash();
   }));
 
-  document.querySelectorAll('[data-proj]').forEach(b => b.addEventListener('click', () => {
-    setProjection(b.dataset.proj);
-    viz.view(state.view);
-  }));
+  $('#mDensity').addEventListener('click', () => {
+    setMode(state.mode === 'density' ? 'solid' : 'density');
+    writeHash();
+  });
 
-  document.querySelectorAll('[data-mode]').forEach(b => b.addEventListener('click', () => {
-    document.querySelectorAll('[data-mode]').forEach(o => o.classList.toggle('on', o === b));
-    setMode(b.dataset.mode);
-  }));
+  /* toggle chips: a checkbox inside a label, shown lit while checked */
+  document.querySelectorAll('.chip.tog input').forEach(i => i.addEventListener('change', () => syncTog(i)));
 
   document.querySelectorAll('.lg').forEach(b => b.addEventListener('click', () => {
     const c = b.dataset.class;
-    if (c === 'one') { state.hiOne = !state.hiOne; $('#hiOne').checked = state.hiOne; }
+    if (c === 'one') { state.hiOne = !state.hiOne; $('#hiOne').checked = state.hiOne; syncTog($('#hiOne')); }
     else state.show[c] = !state.show[c];
     b.classList.toggle('off', c === 'one' ? !state.hiOne : !state.show[c]);
     applyFilters(); writeHash();
@@ -2165,7 +2149,6 @@ function bindUI() {
 
   $('#showPlane').addEventListener('change', rebuildAndUpload);
   $('#showBox').addEventListener('change', rebuildAndUpload);
-  $('#attenuate').addEventListener('change', (e) => { viz.uniforms.uAtten.value = e.target.checked ? 1 : 0; viz.dirty = true; });
   $('#hiOne').addEventListener('change', (e) => {
     state.hiOne = e.target.checked;
     document.querySelector('.lg[data-class="one"]').classList.toggle('off', !state.hiOne);
@@ -2176,7 +2159,7 @@ function bindUI() {
   let playing = 0;
   $('#play').addEventListener('click', () => {
     if (!ds) return;
-    if (playing) { cancelAnimationFrame(playing); playing = 0; $('#play').textContent = '▶ sweep along the sequence'; return; }
+    if (playing) { cancelAnimationFrame(playing); playing = 0; $('#play').textContent = '▶ play'; return; }
     $('#play').textContent = '❚❚ pause';
     let t = state.reveal >= 1 ? 0 : state.reveal, last = performance.now();
     const step = (now) => {
@@ -2186,7 +2169,7 @@ function bindUI() {
       $('#fReveal').value = t;
       $('#fRevealOut').textContent = t >= 1 ? 'all' : fmt.format(Math.round(t * ds.count));
       applyFilters();
-      if (t >= 1) { playing = 0; $('#play').textContent = '▶ sweep along the sequence'; return; }
+      if (t >= 1) { playing = 0; $('#play').textContent = '▶ play'; return; }
       playing = requestAnimationFrame(step);
     };
     playing = requestAnimationFrame(step);
@@ -2218,12 +2201,14 @@ function bindUI() {
 
   setMode(state.mode);
   document.querySelectorAll('[data-view]').forEach(o => o.classList.toggle('on', o.dataset.view === state.view));
-  document.querySelectorAll('[data-mode]').forEach(o => o.classList.toggle('on', o.dataset.mode === state.mode));
   if (state.view !== 'iso') setProjection('ortho');
   $('#hiOne').checked = state.hiOne;
+  document.querySelectorAll('.chip.tog input').forEach(syncTog);
   document.querySelector('.lg[data-class="one"]').classList.toggle('off', !state.hiOne);
   syncTheme();
 }
+
+function syncTog(input) { input.closest('.chip').classList.toggle('on', input.checked); }
 
 function rebuildAndUpload() { if (ds) { rebuildFrame(); upload(); applyFilters(); } }
 
@@ -2244,6 +2229,8 @@ function setMode(mode) {
     viz.uniforms.uOpacity.value = parseFloat($('#ptOpacity').value);
   }
   $('#ptOpacityOut').textContent = viz.uniforms.uOpacity.value.toFixed(2);
+  $('#mDensity').classList.toggle('on', mode === 'density');
+  $('#mDensity').setAttribute('aria-pressed', mode === 'density');
   m.needsUpdate = true;
   viz.dirty = true;
   writeHash();
