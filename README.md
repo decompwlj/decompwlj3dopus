@@ -173,8 +173,9 @@ needs it.
 - The full fragment `#primes.kLd.iso.solid.one` also sets the view (`iso`, `xy`, `xz`, `yz`,
   `edge`), the point mode (`solid`, `density`) and the L = 1 highlight. **Copy link** in the viewer
   copies it.
-- **Gallery keys:** `/` focuses the search; `R` opens a random sequence (within the selected
-  family and search); `T` switches the theme.
+- **Gallery keys:** `/` focuses the search; `Home` (or the **Top** button that appears while
+  scrolling) returns to the top; `R` opens a random sequence (within the selected family and
+  search); `T` switches the theme.
 - **Viewer keys:** `G` or `Esc` returns to the gallery; `↑`/`↓` moves to the neighbouring
   sequence; `R` opens a random one; `1`–`5` switch views; `C` and `P` toggle the side panels; `T`
   switches the theme; `Space` sweeps along n.
