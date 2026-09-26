@@ -1,7 +1,7 @@
 # decompwlj 3D — static site
 
 The gallery and the interactive 3-D atlas of the decomposition into weight × level + jump:
-four hundred integer sequences, 10⁵ terms each (A007088: 65,535, the most that fit below 2⁵³).
+eight hundred integer sequences, 10⁵ terms each (A007088: 65,535, the most that fit below 2⁵³).
 It is plain files, with no server code, no database and no build step.
 
 ## Put it online with GitHub Pages
@@ -38,16 +38,16 @@ Every path in the page is relative, so any folder name or prefix works.
 |---|---|
 | `index.html` | the whole page: gallery, 3-D viewer, all CSS and JavaScript (100 kB) |
 | `data/catalog.csv` | one row per sequence: counts, ranges, the note shown under the stats |
-| `data/seq/<id>/chunk-000.csv`, `chunk-001.csv` | the sequence, 50,000 terms per chunk |
+| `data/seq/<id>/chunk-000.csv.gz`, `chunk-001.csv.gz` | the sequence, 50,000 terms per chunk, gzip-compressed |
 | `thumbs/<id>.png` | the gallery plates |
 | `vendor/` | three.js r169 and OrbitControls, unmodified (MIT, licence included) |
 | `deploy/` | Apache and nginx configuration |
 | `tools/` | the generator and the scripts that rebuild `data/` and `thumbs/` |
 | `.nojekyll` | tells GitHub Pages to serve the files as they are |
 
-Size on disk is 345 MB. With gzip on, a visitor downloads about 0.2 MB for the primes and 1.1 MB
-for the stella octangula numbers, the largest sequence; the 400 gallery plates total 6.4 MB and load as you scroll. Nothing is loaded from
-another site.
+Size on disk is 263 MB: the data chunks are stored gzip-compressed (about a third of their plain
+size). A visitor downloads about 0.2 MB for the primes and 1.1 MB for the largest sequences; the
+800 gallery plates total 14 MB and load as you scroll. Nothing is loaded from another site.
 
 ## Links
 
@@ -57,8 +57,10 @@ another site.
   (always kLd now; other letters in older links are ignored), the view (iso, xy, xz, yz, edge),
   the point mode (solid, density) and the L = 1 highlight. The viewer's **copy link** button copies exactly that.
 
-Keys in the viewer: G or Esc back to the gallery, ↑/↓ the next sequence, 1–5 the views,
-C and P the side panels, T the theme, Space the sweep along n. In the gallery, / focuses the search.
+The gallery's **Random sequence** button opens a random sequence (a random match when a search
+is typed). Keys in the viewer: G or Esc back to the gallery, ↑/↓ the next sequence, R a random
+one, 1–5 the views, C and P the side panels, T the theme, Space the sweep along n. In the gallery,
+/ focuses the search and R opens a random sequence.
 
 ## Browser support
 
@@ -66,7 +68,9 @@ Any current browser with WebGL and import maps: Chrome and Edge 111+, Firefox 11
 
 ## Data format
 
-`chunk-NNN.csv` starts with `#a0=<first term>` and `d,k`, then one `d,k` row per term. Every
+`chunk-NNN.csv.gz` is gzip-compressed text: `#a0=<first term>` and `d,k`, then one `d,k` row per term.
+The page inflates it in the browser (DecompressionStream), or uses it as is if the server has
+already decoded it. Every
 term is written, decomposable or not (non-decomposable as k = 0), so row i is index n = n0 + i
 (n0 is in the catalogue; it follows the OEIS offset). The page rebuilds a(n) as a running sum
 of the gaps and L = (a − d)/k, and refuses a chunk if a division is not exact, if k ≤ d, or if
@@ -78,12 +82,12 @@ chunks, sniffed on the first byte.
 ```
 cd tools
 cc -O2 -o decompwlj_gen decompwlj_gen.c -lm
-./decompwlj_gen raw                 # all four hundred, raw a,d,k,L chunks + catalog.csv  (about 5 min)
+./decompwlj_gen raw                 # all eight hundred, raw a,d,k,L chunks + catalog.csv  (about 9 min)
 ./decompwlj_gen raw primes 200000   # or one sequence, at any size below 2^53
 python3 fetch_oeis.py --catalog raw # OEIS names, offsets and first terms -> oeis.json (already there)
 python3 names.py raw                # the OEIS names into the catalogue
 python3 audit.py raw                # independent check of every row, and of the OEIS terms
-python3 compact.py raw ../data      # the chunks the page loads
+python3 compact.py raw ../data      # the gzip chunks the page loads
 python3 thumbs.py  raw ../thumbs    # the gallery plates (numpy, Pillow)
 ```
 
@@ -112,10 +116,20 @@ three wrong offsets among the earlier sequences, now corrected: A000069, A001969
 start at n = 1, not n = 0. Their terms were right. `audit.py` passes on all 39,965,535 rows
 (160,000 weights re-derived by exhaustive search).
 
-## The four hundred sequences
+The last four hundred were found by family in the OEIS data itself (a local copy of the records
+A000001–A129999 from the same repository): primes in residue classes, primes p with a·p + b
+prime, numbers n with a·n + b or n² + c prime, binary quadratic forms, residue classes,
+polynomials read from the OEIS formula, Beatty sequences for constants (e, π, φ, logarithms,
+ζ(2), Γ(1/3), …), and 24 written out one by one. Each was kept only if its generator reproduces
+the OEIS terms, and none repeats, or differs by one or two terms from, another sequence here.
+For the Beatty sequences, n·α stays at least 5·10⁻⁷ from an integer for every n used, far above
+the long double rounding error. `audit.py` passes on all 79,965,535 rows (320,000 weights
+re-derived).
+
+## The eight hundred sequences
 
 The page shows each sequence under its OEIS name, and its A-number links to the OEIS entry.
-`data/catalog.csv` lists all four hundred.
+`data/catalog.csv` lists all eight hundred.
 
 The first fifty: A000027, A000037, A000040, A000201, A000217, A000290, A000292, A000326,
 A000330, A000384, A000578, A000959, A000960, A000961, A001248, A001358, A001359, A001481,
@@ -175,6 +189,21 @@ The last two hundred:
 | self-referential | A030124, A002859, A002977, A094222, A005236 |
 | summatory | A000788, A037123, A013939, A022559, A005187, A006046, A064608 |
 | residue class | A047203, A047209, A047220, A047229, A047238, A047246, A047255, A047261, A047266, A047273, A045572, A160545, A014601, A042963, A047211, A007494, A032766, A047212 |
+
+The last four hundred:
+
+| family | sequences |
+|---|---|
+| primes (82) | A045372, A045429, A045378, A045435, A045321, A045371, A045428, A045327, A045392, A045437, A045471, A045458, A045473, A045465, A045391, A045436, A045343, A045469, A045387, A045432, A045456, A045368, A045416, A045452, A045472, A045389, A045434, A045467, A045455, A045342, A045386, A023203, A046133, A049488, A049481, A049489, A062284, A049482, A063909, A063910, A063911, A063912, A063913, A023209, A023210, A023211, A062737, A023213, A023214, A023215, A023216, A023217, A023218, A023220, A007693, A023221, A023222, A023223, A023224, A023225, A023226, A023227, A023229, A023231, A023232, A023233, A023234, A023235, A023236, A023237, A023238, A023239, A023240, A089443, A113169, A113115, A027697, A027699, A003625, A051645, A105961, A112391 |
+| prime values (98) | A067076, A098090, A089253, A089192, A102733, A024892, A087370, A024893, A034936, A089953, A005098, A095278, A111215, A111199, A024894, A024896, A111223, A024895, A087505, A024897, A081759, A107304, A111224, A111225, A111226, A111230, A024899, A059325, A024905, A024901, A105772, A089033, A024902, A024903, A024904, A111367, A024900, A111249, A111250, A033868, A089079, A108601, A108935, A005122, A005123, A005124, A005125, A105133, A024906, A024910, A024909, A024908, A024907, A024912, A105042, A024914, A005574, A028870, A067201, A028873, A049422, A007591, A028876, A078402, A028879, A114269, A028882, A114270, A028885, A114271, A114272, A114273, A114274, A114275, A113536, A121250, A121982, A122062, A024913, A037030, A073085, A075745, A075746, A075747, A075748, A076354, A076355, A076356, A088958, A090614, A092022, A101084, A101503, A101557, A102148, A102338, A102342, A102656 |
+| quadratic form (69) | A020668, A020674, A020677, A020670, A020678, A020671, A020675, A020682, A020672, A020679, A020673, A020676, A020680, A020683, A020685, A020686, A020681, A020684, A020687, A020689, A020688, A020690, A020691, A020692, A020693, A020694, A035121, A084865, A106857, A106861, A106866, A033199, A106862, A106871, A106877, A106889, A106869, A106875, A106885, A106894, A106870, A106882, A106892, A106897, A106917, A106918, A106923, A106963, A102271, A106874, A106883, A106910, A106914, A106942, A106956, A033201, A020893, A014752, A033202, A033204, A033206, A033208, A033209, A033210, A033211, A033213, A033214, A033215, A033216 |
+| residue class (39) | A047215, A047216, A047217, A047225, A047240, A047241, A047274, A047352, A047353, A008590, A047393, A047467, A090570, A087444, A054966, A090773, A078309, A090772, A008593, A008594, A083031, A083030, A008595, A092476, A008596, A113806, A113805, A008597, A087446, A008598, A106839, A008599, A008600, A008601, A008602, A008603, A008604, A008605, A008606 |
+| polynomial (62) | A033430, A033431, A084377, A084378, A084380, A084381, A084382, A117642, A084379, A033562, A100214, A118465, A003777, A005491, A011379, A027444, A098547, A105374, A114364, A119536, A122562, A006002, A006527, A015237, A053698, A084367, A089207, A099721, A100109, A100705, A028347, A028872, A028881, A033428, A033429, A033581, A033582, A059100, A087475, A114949, A117619, A117950, A117951, A033583, A033584, A064761, A064762, A064763, A114948, A114962, A114963, A114964, A114965, A016766, A016802, A016850, A016910, A016982, A017066, A017162, A027688, A027689 |
+| Beatty (30) | A004919, A004920, A004921, A004922, A004976, A037085, A037086, A037087, A038130, A038152, A038153, A054386, A054965, A059531, A059532, A059535, A059536, A059537, A059538, A059539, A059540, A059541, A059542, A059543, A059544, A059545, A059546, A059547, A059548, A059549 |
+| multiplicative (3) | A007675, A039955, A036785 |
+| digit rule (13) | A001633, A001637, A034709, A038770, A064150, A023709, A023713, A023721, A023725, A023729, A023733, A043493, A023692 |
+| divisor count (2) | A030634, A030638 |
+| smooth (2) | A080682, A080683 |
 
 ## Credits
 
