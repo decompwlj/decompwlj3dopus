@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%230b0e14'/%3E%3Ccircle cx='10' cy='21' r='3' fill='%234c8dff'/%3E%3Ccircle cx='19' cy='13' r='3' fill='%23ff8c42'/%3E%3Ccircle cx='25' cy='7' r='2' fill='%23ffe45c'/%3E%3C/svg%3E">
 <title>decompwlj 3D</title>
-<meta name="description" content="Gallery and interactive 3-D atlas of the decomposition into weight × level + jump for two hundred integer sequences, 10⁵ terms each. three.js / WebGL.">
+<meta name="description" content="Gallery and interactive 3-D atlas of the decomposition into weight × level + jump for four hundred integer sequences, 10⁵ terms each. three.js / WebGL.">
 <style>
 /* the base rules the claude.ai wrapper used to supply */
 [hidden] { display: none !important; }
@@ -172,6 +172,7 @@ html, body {
 .row .pct { font: 11px var(--mono); color: var(--fg-2); flex: none; font-variant-numeric: tabular-nums; }
 
 .cat-pager { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 4px; padding: 10px var(--gut); border-top: 1px solid var(--line); }
+.cat-pager .gap { align-self: center; color: var(--fg-3); font: 11px var(--mono); padding: 0 2px; }
 .cat-pager button {
   min-width: 28px; height: 28px; padding: 0 6px; font: 11px var(--mono); color: var(--fg-2);
   background: var(--bg-3); border: 1px solid var(--line); border-radius: 6px; cursor: pointer;
@@ -211,6 +212,9 @@ html, body {
 .title-block { min-width: 0; }
 #seqName { margin: 0; font-size: 16px; font-weight: 600; letter-spacing: -.01em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .sub { font: 11px var(--mono); color: var(--fg-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sub a.oeis { color: var(--accent); text-decoration: none; }
+.sub a.oeis:hover { text-decoration: underline; }
+.fullname { margin: 0 0 10px; font-size: 12px; line-height: 1.5; color: var(--fg); }
 .spacer { flex: 1; }
 .load-state { font: 11px var(--mono); color: var(--fg-3); font-variant-numeric: tabular-nums; }
 
@@ -421,6 +425,9 @@ input[type=range] { width: 100%; accent-color: var(--accent); height: 18px; }
   color: var(--fg); text-decoration: none; transition: border-color .15s;
 }
 .card:hover { border-color: var(--accent); }
+.card .open { display: flex; flex-direction: column; gap: 9px; color: inherit; text-decoration: none; min-width: 0; }
+.card a.an { color: var(--fg-3); text-decoration: none; border-bottom: 1px dotted var(--line-2); }
+.card a.an:hover { color: var(--accent); border-bottom-color: var(--accent); }
 .plate { position: relative; aspect-ratio: 1; max-width: 100%; border-radius: 6px; background: var(--bg); overflow: hidden; }
 .plate svg, .plate img { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
 .plate svg line, .plate svg rect { fill: none; stroke: var(--line-2); stroke-width: 1; vector-effect: non-scaling-stroke; }
@@ -490,10 +497,10 @@ input[type=range] { width: 100%; accent-color: var(--accent); height: 18px; }
     <header class="home-head">
       <div class="home-title">
         <a class="brand" href="#home"><span class="brand-mark" aria-hidden="true"></span><span class="brand-text">decompwlj<span class="brand-dim"> 3D</span></span></a>
-        <h1>Weight × level + jump, two hundred sequences</h1>
+        <h1>Weight × level + jump, four hundred sequences</h1>
         <p>Every term of a strictly increasing sequence is written <i>a</i>(n) = <i>k</i>(n)·<i>L</i>(n) + <i>d</i>(n):
           the jump <i>d</i> = a(n+1) − a(n), the weight <i>k</i> the least divisor of a − d above d, the level <i>L</i> = (a − d)/k.
-          10⁵ terms per sequence. Open a plate to explore it in three dimensions.</p>
+          10⁵ terms per sequence. Open a plate to explore it in three dimensions; the A-number under it opens the sequence on the OEIS.</p>
       </div>
       <nav class="home-links" aria-label="References">
         <a href="https://decompwlj.com" target="_blank" rel="noopener">decompwlj.com</a>
@@ -530,7 +537,7 @@ input[type=range] { width: 100%; accent-color: var(--accent); height: 18px; }
       <button id="catToggle" class="icon-btn" title="Hide catalogue (C)" aria-label="Hide catalogue">&#9776;</button>
     </header>
     <div class="cat-search">
-      <input id="search" type="search" placeholder="Search 200 sequences…" autocomplete="off" spellcheck="false" aria-label="Search sequences">
+      <input id="search" type="search" placeholder="Search 400 sequences…" autocomplete="off" spellcheck="false" aria-label="Search sequences">
       <span id="searchCount" class="search-count"></span>
     </div>
     <div id="catList" class="cat-list" aria-label="Sequences">
@@ -554,7 +561,7 @@ input[type=range] { width: 100%; accent-color: var(--accent); height: 18px; }
       <button id="catShow" class="icon-btn ghost" title="Show catalogue (C)" aria-label="Show catalogue">&#9776;</button>
       <div class="title-block">
         <h1 id="seqName">—</h1>
-        <div id="seqSub" class="sub"></div>
+        <div id="seqSub" class="sub"><a class="oeis" target="_blank" rel="noopener" title="Open this sequence on the OEIS"></a><span id="seqSubRest"></span></div>
       </div>
       <div class="spacer"></div>
       <div id="loadState" class="load-state"></div>
@@ -624,6 +631,7 @@ input[type=range] { width: 100%; accent-color: var(--accent); height: 18px; }
 
     <section class="grp">
       <h2>Sequence</h2>
+      <p id="fullName" class="fullname"></p>
       <dl id="stats" class="stats"></dl>
       <p id="note" class="note"></p>
       <div class="btn-row">
@@ -668,7 +676,7 @@ input[type=range] { width: 100%; accent-color: var(--accent); height: 18px; }
 <div id="boot" class="boot"><div class="boot-in"><div class="boot-dot"></div><p id="bootMsg">loading…</p><p><a id="bootHome" class="chip" href="#home" hidden>back to all sequences</a></p></div></div>
 
 <script type="module">
-/* decompwlj 3D — static build for your own server.  Two hundred sequences, 10^5 terms each.
+/* decompwlj 3D — static build for your own server.  Four hundred sequences, 10^5 terms each.
    three.js r169 (MIT) is vendored under vendor/ and imported on the first visit to the
    3-D viewer; the data and the gallery plates sit beside this file.  Serve the folder
    over HTTP(S): ES modules and fetch() do not work from file://.  */
@@ -838,7 +846,7 @@ async function loadCatalog(url, onBatch, signal) {
       r[key] = NUM.has(key) ? Number(v) : v;
     }
     if (!r.id) return;
-    r._key = `${r.id} ${r.anumber} ${r.name} ${r.family}`.toLowerCase();
+    r._key = `${r.id} ${r.anumber} ${r.name} ${r.alias || ''} ${r.family}`.toLowerCase();
     r.levelShare = r.decomposable ? r.level / r.decomposable : 0;
     all.push(r);
     batch.push(r);
@@ -921,7 +929,14 @@ class PagedList {
       `<button type="button" data-page="${page}"${o.cur ? ' aria-current="page"' : ''}${o.dis ? ' disabled' : ''}` +
       ` aria-label="${o.aria || 'Page ' + page}">${label}</button>`;
     let h = btn('‹', this.page - 1, { dis: this.page === 1, aria: 'Previous page' });
-    for (let p = 1; p <= pages; p++) h += btn(String(p), p, { cur: p === this.page });
+    /* first, last, and two either side of the current page; gaps shown as … */
+    let last = 0;
+    for (let p = 1; p <= pages; p++) {
+      if (p !== 1 && p !== pages && Math.abs(p - this.page) > 2) continue;
+      if (p - last > 1) h += '<span class="gap" aria-hidden="true">…</span>';
+      h += btn(String(p), p, { cur: p === this.page });
+      last = p;
+    }
     h += btn('›', this.page + 1, { dis: this.page === pages, aria: 'Next page' });
     h += `<span class="range">${fmtC.format(from + 1)}–${fmtC.format(from + shown.length)} of ${fmtC.format(n)}</span>`;
     this.pager.innerHTML = h;
@@ -1624,7 +1639,7 @@ class Viz {
 /* app.js — wiring: catalogue → gallery (home) → dataset → scene → controls.
  *
  * Two views in one page.  The home view is a gallery of pre-rendered
- * weight–level plates, all two hundred on one page, with search; it needs only
+ * weight–level plates, all four hundred on one page, with search; it needs only
  * the catalogue.  The viewer's sidebar lists the sequences ten per page.  The viewer is the 3-D atlas; three.js is imported the first
  * time a sequence is opened, so the gallery works even before (or without)
  * the 3-D engine.
@@ -1704,6 +1719,10 @@ async function route() {
   let tok = '';
   try { tok = decodeURIComponent(location.hash.slice(1)); } catch {}
   if (!tok || tok === 'home' || tok.startsWith('home.')) return showHome();
+  if (/^a\d{6}(\.|$)/i.test(tok)) {                  /* #A000040 opens the sequence with that A-number */
+    const r = all.find(s => s.anumber.toLowerCase() === tok.slice(0, 7).toLowerCase());
+    if (r) { replaceHash(r.id + tok.slice(7)); tok = r.id + tok.slice(7); }
+  }
   const t = parseToken(tok);
   if (!all.some(r => r.id === t.id)) return showHome();
   return showViewer(t);
@@ -1766,26 +1785,28 @@ function renderHome() {
 }
 
 function card(r) {
-  const a = document.createElement('a');
+  const a = document.createElement('div');
   a.className = 'card';
-  a.href = '#' + r.id;
   a.setAttribute('role', 'listitem');
   a.innerHTML =
-    `<div class="plate">${PLATE_SVG}<img alt="" loading="lazy" decoding="async" width="480" height="480">` +
+    `<a class="open" href="#${r.id}"><div class="plate">${PLATE_SVG}<img alt="" loading="lazy" decoding="async" width="480" height="480">` +
     `<span class="axl k" aria-hidden="true">k</span><span class="axl L" aria-hidden="true">L</span></div>` +
-    `<div class="nm"></div><div class="sub2"><span class="an"></span><span class="fam"></span></div>` +
+    `<div class="nm"></div></a><div class="sub2"><a class="an" target="_blank" rel="noopener"></a><span class="fam"></span></div>` +
     `<div class="r2"><span class="lvl-bar"><i></i></span><span class="pct"></span></div>`;
   const img = a.querySelector('img');
   img.src = `${THUMBS}/${r.id}.png`;
   img.alt = `Weight–level plate of ${r.name}`;
   a.querySelector('.nm').textContent = r.name;
-  a.querySelector('.an').textContent = r.anumber;
+  const an = a.querySelector('.an');
+  an.textContent = r.anumber; an.href = oeisUrl(r); an.title = `${r.anumber} on the OEIS`;
   a.querySelector('.fam').textContent = r.family;
   a.querySelector('.lvl-bar > i').style.width = (r.levelShare * 100).toFixed(2) + '%';
   a.querySelector('.pct').textContent = (r.levelShare * 100).toFixed(1) + '% lvl';
-  a.title = `${r.name} (${r.anumber}) — ${fmt.format(r.terms)} terms, ${(r.levelShare * 100).toFixed(2)} % level-classified. Open in 3-D.`;
+  a.querySelector('.open').title = `${r.name} (${r.anumber}) — ${fmt.format(r.terms)} terms, ${(r.levelShare * 100).toFixed(2)} % level-classified. Open in 3-D.`;
   return a;
 }
+
+function oeisUrl(r) { return `https://oeis.org/${r.anumber}`; }
 
 /* ── viewer ────────────────────────────────────────────────── */
 
@@ -1857,9 +1878,13 @@ async function select(id) {
   writeHash();
 
   $('#seqName').textContent = r.name;
-  $('#seqSub').textContent = `${r.anumber} · ${r.family} · n = ${fmt.format(r.n0)} … ${fmt.format(r.n0 + r.terms - 1)}`;
+  $('#seqName').title = r.name;
+  const an = $('#seqSub').querySelector('a');
+  an.href = oeisUrl(r); an.textContent = r.anumber;
+  $('#seqSubRest').textContent = ` · ${r.family} · n = ${fmt.format(r.n0)} … ${fmt.format(r.n0 + r.terms - 1)}`;
+  $('#fullName').textContent = r.name;
   $('#note').textContent = r.note || '';
-  $('#oeisLink').href = `https://oeis.org/${r.anumber}`;
+  $('#oeisLink').href = oeisUrl(r);
   $('#oeisLink').textContent = `OEIS ${r.anumber}`;
   $('#loadState').textContent = 'loading…';
   $('#progressBar').style.opacity = '1';
