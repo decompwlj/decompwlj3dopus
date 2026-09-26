@@ -1,7 +1,7 @@
 # decompwlj 3D — static site
 
 The gallery and the interactive 3-D atlas of the decomposition into weight × level + jump:
-one hundred integer sequences, 10⁵ terms each (A007088: 65,535, the most that fit below 2⁵³).
+two hundred integer sequences, 10⁵ terms each (A007088: 65,535, the most that fit below 2⁵³).
 It is plain files, with no server code, no database and no build step.
 
 ## Put it online with GitHub Pages
@@ -45,16 +45,16 @@ Every path in the page is relative, so any folder name or prefix works.
 | `tools/` | the generator and the scripts that rebuild `data/` and `thumbs/` |
 | `.nojekyll` | tells GitHub Pages to serve the files as they are |
 
-Size on disk is 86 MB. With gzip on, a visitor downloads about 0.2 MB for the primes and 1.1 MB
-for the cubes, the largest sequence; the gallery alone is under 1 MB. Nothing is loaded from
+Size on disk is 170 MB. With gzip on, a visitor downloads about 0.2 MB for the primes and 1.1 MB
+for the stella octangula numbers, the largest sequence; the 200 gallery plates total 3.2 MB and load as you scroll. Nothing is loaded from
 another site.
 
 ## Links
 
 - `…/3D/` or `…/3D/#home` opens the gallery.
 - `…/3D/#primes` opens a sequence. The full form, `#primes.kLd.iso.solid.one`, also sets the axes
-  (X, Y, Z from k L d a l n), the view (iso, xy, xz, yz, edge), the point mode (solid, density)
-  and the L = 1 highlight. The viewer's **copy link** button copies exactly that.
+  (always kLd now; other letters in older links are ignored), the view (iso, xy, xz, yz, edge),
+  the point mode (solid, density) and the L = 1 highlight. The viewer's **copy link** button copies exactly that.
 
 Keys in the viewer: G or Esc back to the gallery, ↑/↓ the next sequence, 1–5 the views,
 C and P the side panels, T the theme, Space the sweep along n. In the gallery, / focuses the search.
@@ -77,7 +77,7 @@ chunks, sniffed on the first byte.
 ```
 cd tools
 cc -O2 -o decompwlj_gen decompwlj_gen.c -lm
-./decompwlj_gen raw                 # all one hundred, raw a,d,k,L chunks + catalog.csv  (about 90 s)
+./decompwlj_gen raw                 # all two hundred, raw a,d,k,L chunks + catalog.csv  (about 3 min)
 ./decompwlj_gen raw primes 200000   # or one sequence, at any size below 2^53
 python3 audit.py raw                # independent check of every row
 python3 compact.py raw ../data      # the chunks the page loads
@@ -97,7 +97,11 @@ plates byte for byte. `audit.py` compares the new fifty's first terms with value
 from each definition and OEIS offset, because oeis.org could not be reached from the build
 machine.
 
-## The one hundred sequences
+The last hundred (also 26 Sep 2026) was checked the same way: `audit.py` passes on all
+19,965,535 rows of the 200 sequences (80,000 weights re-derived), the 12 new sequences also in
+WLJ Atlas agree with it row for row, and the first hundred and their plates rebuild byte for byte.
+
+## The two hundred sequences
 
 The first fifty: A000027, A000037, A000040, A000201, A000217, A000290, A000292, A000326,
 A000330, A000384, A000578, A000959, A000960, A000961, A001248, A001358, A001359, A001481,
@@ -120,6 +124,21 @@ The second fifty:
 | forced divisor | coprime to 30 A007775, coprime to 6 A007310, multiples of 3 A008585 |
 | complement | odd nonprimes A014076 |
 | digit rule | happy A007770, with a digit 0 A011540, only odd digits A014261, base 3 read in decimal A007089, no digit 2 in base 3 A005836 |
+
+The last hundred:
+
+| family | sequences |
+|---|---|
+| polynomial | n(n+3)/2 A000096, n(n+2) A005563, 2n² A001105, odd squares A016754, generalized octagonal A001082, centered pentagonal A005891, centered octahedral A001845, centered cube A005898, stella octangula A007588, sums of odd squares A000447, hexagonal pyramidal A002412, cake A000125, magic constants A006003, second hexagonal A014105, second pentagonal A005449, triangular matchstick A045943, ⌊n²/3⌋ A000212, ⌊n²/2⌋ A007590, ⌊n^(3/2)⌋ A000093 |
+| primes | 1, 3, 5, 7 mod 8 A007519–A007522, ending in 1, 3, 7, 9 A030430–A030433, balanced A006562, strong A051634, weak A051635, 2p − 1 prime A005382, (p + 1)/2 prime A005383, p + 8 prime A023202, gap of 6 A031924, triplets A022004 and A022005, p(n)p(n+1) A006094, n·p(n) A033286, p(n) + n A014688, p(n) + p(n+1) A001043, 2p A100484, 3p A001748 |
+| multiplicative | pq² A054753, four distinct primes A046386, 5-almost primes A014614, cubefree A004709, non-cubefree A046099, ω = 2, 3, 4 A007774 A033992 A033993, μ = 1 A030229, μ = −1 A030059, Ω even A028260 |
+| divisor sum, totient | arithmetic numbers A003601, totients A002202, nontotients A007617 |
+| digit rule | bases 4, 5, 6 read in decimal A007090–A007092, no 0 in base 4 A023705, no 0 in base 3 A032924, with a 1 A011531, with a 9 A011539, no 1 A052383, no 2 A052404, only even digits A014263, nondecreasing digits A009994, nonincreasing digits A009996, prime digit sum A028834, even digit sum A054683, unhappy A031177, non-Harshad A065877, non-palindromes A029742 |
+| binary rule | balanced binary A031443, odd trailing zeros A036554 |
+| Beatty | ⌊n(1+√2)⌋ A003151, ⌊n(1+1/√2)⌋ A003152, ⌊n(2+√2)⌋ A001952, ⌊n√5⌋ ⌊n√6⌋ ⌊n√7⌋ ⌊n√8⌋ A022839–A022842 |
+| quadratic form | two distinct nonzero squares A004431, three nonzero squares A000408, not two squares A022544 |
+| complement, powers | non-triangular A014132, non-cubes A007412, non-Fibonacci A001690, perfect powers A001597, non-perfect powers A007916 |
+| other | figure-figure A005228, not divisible by 5 A047201, 4n 5n 6n 7n A008586–A008589, 3n+1 A016777, 3n+2 A016789, 4n+1 A016813, 4n+3 A004767 |
 
 ## Credits
 
