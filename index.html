@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%230b0e14'/%3E%3Ccircle cx='10' cy='21' r='3' fill='%234c8dff'/%3E%3Ccircle cx='19' cy='13' r='3' fill='%23ff8c42'/%3E%3Ccircle cx='25' cy='7' r='2' fill='%23ffe45c'/%3E%3C/svg%3E">
 <title>decompwlj 3D</title>
-<meta name="description" content="Gallery and interactive 3-D atlas of the decomposition into weight × level + jump for four hundred integer sequences, 10⁵ terms each. three.js / WebGL.">
+<meta name="description" content="Gallery and interactive 3-D atlas of the decomposition into weight × level + jump for eight hundred integer sequences, 10⁵ terms each. three.js / WebGL.">
 <style>
 /* the base rules the claude.ai wrapper used to supply */
 [hidden] { display: none !important; }
@@ -406,6 +406,12 @@ input[type=range] { width: 100%; accent-color: var(--accent); height: 18px; }
 
 .home-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 18px; }
 .home-search { flex: 1 1 300px; max-width: 520px; }
+.rand-btn {
+  display: inline-flex; align-items: center; gap: 8px; padding: 9px 14px; font: 600 13px var(--sans);
+  color: var(--fg); background: var(--bg-2); border: 1px solid var(--line); border-radius: 8px; cursor: pointer;
+}
+.rand-btn:hover { border-color: var(--accent); color: var(--accent); }
+.rand-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 #homeSearch {
   width: 100%; padding: 10px 12px; font: 14px var(--sans); color: var(--fg);
   background: var(--bg-2); border: 1px solid var(--line); border-radius: 8px; outline: none;
@@ -497,7 +503,7 @@ input[type=range] { width: 100%; accent-color: var(--accent); height: 18px; }
     <header class="home-head">
       <div class="home-title">
         <a class="brand" href="#home"><span class="brand-mark" aria-hidden="true"></span><span class="brand-text">decompwlj<span class="brand-dim"> 3D</span></span></a>
-        <h1>Weight × level + jump, four hundred sequences</h1>
+        <h1>Weight × level + jump, eight hundred sequences</h1>
         <p>Every term of a strictly increasing sequence is written <i>a</i>(n) = <i>k</i>(n)·<i>L</i>(n) + <i>d</i>(n):
           the jump <i>d</i> = a(n+1) − a(n), the weight <i>k</i> the least divisor of a − d above d, the level <i>L</i> = (a − d)/k.
           10⁵ terms per sequence. Open a plate to explore it in three dimensions; the A-number under it opens the sequence on the OEIS.</p>
@@ -509,6 +515,7 @@ input[type=range] { width: 100%; accent-color: var(--accent); height: 18px; }
     </header>
     <div class="home-tools">
       <div class="home-search"><input id="homeSearch" type="search" placeholder="Search by name, A-number or family" autocomplete="off" spellcheck="false" aria-label="Search sequences"></div>
+      <button id="randomSeq" type="button" class="rand-btn" title="Open a random sequence (R); with a search, a random match"><svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true"><rect x="1.5" y="1.5" width="13" height="13" rx="3" fill="none" stroke="currentColor" stroke-width="1.4"/><circle cx="5" cy="5" r="1.3" fill="currentColor"/><circle cx="11" cy="5" r="1.3" fill="currentColor"/><circle cx="8" cy="8" r="1.3" fill="currentColor"/><circle cx="5" cy="11" r="1.3" fill="currentColor"/><circle cx="11" cy="11" r="1.3" fill="currentColor"/></svg>Random sequence</button>
       <span id="homeCount" class="home-count"></span>
       <div class="home-key" aria-hidden="true">
         <span><i style="--c:var(--t-weight)"></i>weight k ≤ L</span>
@@ -537,7 +544,7 @@ input[type=range] { width: 100%; accent-color: var(--accent); height: 18px; }
       <button id="catToggle" class="icon-btn" title="Hide catalogue (C)" aria-label="Hide catalogue">&#9776;</button>
     </header>
     <div class="cat-search">
-      <input id="search" type="search" placeholder="Search 400 sequences…" autocomplete="off" spellcheck="false" aria-label="Search sequences">
+      <input id="search" type="search" placeholder="Search 800 sequences…" autocomplete="off" spellcheck="false" aria-label="Search sequences">
       <span id="searchCount" class="search-count"></span>
     </div>
     <div id="catList" class="cat-list" aria-label="Sequences">
@@ -676,7 +683,7 @@ input[type=range] { width: 100%; accent-color: var(--accent); height: 18px; }
 <div id="boot" class="boot"><div class="boot-in"><div class="boot-dot"></div><p id="bootMsg">loading…</p><p><a id="bootHome" class="chip" href="#home" hidden>back to all sequences</a></p></div></div>
 
 <script type="module">
-/* decompwlj 3D — static build for your own server.  Four hundred sequences, 10^5 terms each.
+/* decompwlj 3D — static build for your own server.  Eight hundred sequences, 10^5 terms each.
    three.js r169 (MIT) is vendored under vendor/ and imported on the first visit to the
    3-D viewer; the data and the gallery plates sit beside this file.  Serve the folder
    over HTTP(S): ES modules and fetch() do not work from file://.  */
@@ -964,7 +971,7 @@ class PagedList {
 /* ═══════════════ data.js ═══════════════ */
 /* data.js — loading one sequence.
  *
- * A sequence lives in data/seq/<id>/chunk-NNN.csv, each chunk `chunk_rows`
+ * A sequence lives in data/seq/<id>/chunk-NNN.csv.gz (gzip), each chunk `chunk_rows`
  * rows, every term present whether it decomposes or not, so row i of the
  * concatenation is always sequence index n = n0 + i.  Two chunk formats:
  *
@@ -983,7 +990,7 @@ class PagedList {
 
 const LOG10 = Math.LN10;
 const CONCURRENCY = 4;
-const CHUNK_EXT = '.csv';
+const CHUNK_EXT = '.csv.gz';               /* gzip files; fetchBytes() inflates them */
 
 const FIELDS = {
   k: { label: 'log₁₀ k  (weight)', short: 'k' },
@@ -1639,7 +1646,7 @@ class Viz {
 /* app.js — wiring: catalogue → gallery (home) → dataset → scene → controls.
  *
  * Two views in one page.  The home view is a gallery of pre-rendered
- * weight–level plates, all four hundred on one page, with search; it needs only
+ * weight–level plates, all eight hundred on one page, with search; it needs only
  * the catalogue.  The viewer's sidebar lists the sequences ten per page.  The viewer is the 3-D atlas; three.js is imported the first
  * time a sequence is opened, so the gallery works even before (or without)
  * the 3-D engine.
@@ -1758,6 +1765,14 @@ function bindHome() {
     renderHome();
   });
   $('#toHome').addEventListener('click', () => { location.hash = homeToken(); });
+  $('#randomSeq').addEventListener('click', () => openRandom(home.hits && home.hits.length ? home.hits : all));
+}
+
+/* a random sequence from the given list, never the one already open */
+function openRandom(list) {
+  const pool = list.length > 1 ? list.filter(r => r.id !== state.id) : list;
+  if (!pool.length) return;
+  location.hash = pool[Math.floor(Math.random() * pool.length)].id;
 }
 
 function homeToken() { return 'home'; }
@@ -2086,6 +2101,7 @@ function onKey(e) {
     if (inField) { if (e.key === 'Escape') e.target.blur(); return; }
     if (e.key === '/') { e.preventDefault(); $('#homeSearch').focus(); }
     else if (k === 't') toggleTheme();
+    else if (k === 'r') $('#randomSeq').click();
     return;
   }
   if (!viz || inField) return;                                /* viewer */
@@ -2093,6 +2109,7 @@ function onKey(e) {
   else if (k === 'c') toggle('cat');
   else if (k === 'p') toggle('panel');
   else if (k === 't') toggleTheme();
+  else if (k === 'r') openRandom(view.length ? view : all);
   else if (k === ' ') { e.preventDefault(); $('#play').click(); }
   else if ('12345'.includes(k) && k.length === 1) document.querySelectorAll('[data-view]')[+k - 1].click();
   else if (k === 'arrowdown' || k === 'arrowup') {
