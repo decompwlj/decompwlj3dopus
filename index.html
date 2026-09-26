@@ -428,6 +428,16 @@ input[type=range] { width: 100%; accent-color: var(--accent); height: 18px; }
 .fam-chip[aria-pressed="true"] { color: var(--fg); border-color: var(--accent); background: color-mix(in oklab, var(--accent) 16%, var(--bg-2)); }
 .fam-chip[aria-pressed="true"] small { color: var(--fg-2); }
 .fam-chip:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.to-top {
+  position: fixed; right: 22px; bottom: 22px; z-index: 20;
+  display: inline-flex; align-items: center; gap: 6px; padding: 9px 14px; font: 600 13px var(--sans);
+  color: var(--fg); background: var(--bg-2); border: 1px solid var(--line); border-radius: 999px; cursor: pointer;
+  box-shadow: 0 4px 14px rgb(0 0 0 / .12);
+}
+.to-top:hover { border-color: var(--accent); color: var(--accent); }
+.to-top:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.to-top[hidden] { display: none; }
+@media (max-width: 560px) { .to-top span { display: none; } .to-top { padding: 10px; } }
 .grid-more { margin: 18px 0 4px; text-align: center; font: 11.5px var(--mono); color: var(--fg-3); }
 .home-key { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 11.5px; color: var(--fg-3); margin-left: auto; }
 .home-key span { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
@@ -538,6 +548,7 @@ input[type=range] { width: 100%; accent-color: var(--accent); height: 18px; }
     <div id="famBar" class="fam-bar" role="group" aria-label="Filter by family"></div>
     <div id="grid" class="grid" role="list"></div>
     <p id="gridMore" class="grid-more" hidden></p>
+    <button id="toTop" type="button" class="to-top" title="Back to the top (Home)" aria-label="Back to the top" hidden><svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M8 3.5 3 8.5M8 3.5l5 5M8 3.5V13" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Top</span></button>
     <p id="empty" class="empty" hidden></p>
     <p class="home-foot">Each plate is the weight–level plane on a square with equal aspect: log k / log A across, log L / log A up, A the largest term shown.
       Every sequence then shares one frame. Points lie below the dotted edge kL = A, and level-classified terms (k &gt; L) fall below the dashed diagonal k = L.
@@ -1774,6 +1785,10 @@ const PLATE_SVG =
 
 function bindHome() {
   buildFamBar();
+  /* back to the top: the button shows once the gallery has scrolled a screen or so */
+  const scroller = $('#home'), top = $('#toTop');
+  scroller.addEventListener('scroll', () => { top.hidden = scroller.scrollTop < 900; }, { passive: true });
+  top.addEventListener('click', toHomeTop);
   const box = $('#homeSearch');
   box.addEventListener('input', () => {
     home.q = box.value;
@@ -1791,6 +1806,12 @@ function openRandom(list) {
 }
 
 function homeToken() { return 'home'; }
+
+function toHomeTop() {
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  $('#home').scrollTo({ top: 0, behavior: reduce ? 'auto' : 'smooth' });
+  $('#homeSearch').focus({ preventScroll: true });
+}
 
 function showHome() {
   clearFail();
@@ -2178,6 +2199,7 @@ function onKey(e) {
   if (!$('#home').hidden) {                                   /* gallery */
     if (inField) { if (e.key === 'Escape') e.target.blur(); return; }
     if (e.key === '/') { e.preventDefault(); $('#homeSearch').focus(); }
+    else if (e.key === 'Home') { e.preventDefault(); toHomeTop(); }
     else if (k === 't') toggleTheme();
     else if (k === 'r') $('#randomSeq').click();
     return;
