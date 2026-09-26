@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%230b0e14'/%3E%3Ccircle cx='10' cy='21' r='3' fill='%234c8dff'/%3E%3Ccircle cx='19' cy='13' r='3' fill='%23ff8c42'/%3E%3Ccircle cx='25' cy='7' r='2' fill='%23ffe45c'/%3E%3C/svg%3E">
 <title>decompwlj 3D</title>
-<meta name="description" content="Gallery and interactive 3-D atlas of the decomposition into weight × level + jump for twelve hundred integer sequences, 10⁵ terms each. three.js / WebGL.">
+<meta name="description" content="Gallery and interactive 3-D atlas of the decomposition into weight × level + jump for 1200 integer sequences, 10⁵ terms each. three.js / WebGL.">
 <style>
 /* the base rules the claude.ai wrapper used to supply */
 [hidden] { display: none !important; }
@@ -418,6 +418,16 @@ input[type=range] { width: 100%; accent-color: var(--accent); height: 18px; }
 }
 #homeSearch:focus { border-color: var(--accent); }
 .home-count { font: 12px var(--mono); color: var(--fg-3); font-variant-numeric: tabular-nums; }
+.fam-bar { display: flex; flex-wrap: wrap; gap: 6px; margin: 14px 0 16px; }
+.fam-chip {
+  display: inline-flex; align-items: baseline; gap: 6px; padding: 5px 11px; font: 12.5px var(--sans);
+  color: var(--fg-2); background: var(--bg-2); border: 1px solid var(--line); border-radius: 999px; cursor: pointer;
+}
+.fam-chip small { font: 10.5px var(--mono); color: var(--fg-3); }
+.fam-chip:hover { border-color: var(--line-2); color: var(--fg); }
+.fam-chip[aria-pressed="true"] { color: var(--fg); border-color: var(--accent); background: color-mix(in oklab, var(--accent) 16%, var(--bg-2)); }
+.fam-chip[aria-pressed="true"] small { color: var(--fg-2); }
+.fam-chip:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .grid-more { margin: 18px 0 4px; text-align: center; font: 11.5px var(--mono); color: var(--fg-3); }
 .home-key { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 11.5px; color: var(--fg-3); margin-left: auto; }
 .home-key span { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
@@ -504,7 +514,7 @@ input[type=range] { width: 100%; accent-color: var(--accent); height: 18px; }
     <header class="home-head">
       <div class="home-title">
         <a class="brand" href="#home"><span class="brand-mark" aria-hidden="true"></span><span class="brand-text">decompwlj<span class="brand-dim"> 3D</span></span></a>
-        <h1>Weight × level + jump, twelve hundred sequences</h1>
+        <h1>Weight × level + jump, <span id="homeTotal">1200</span> sequences</h1>
         <p>Every term of a strictly increasing sequence is written <i>a</i>(n) = <i>k</i>(n)·<i>L</i>(n) + <i>d</i>(n):
           the jump <i>d</i> = a(n+1) − a(n), the weight <i>k</i> the least divisor of a − d above d, the level <i>L</i> = (a − d)/k.
           10⁵ terms per sequence. Open a plate to explore it in three dimensions; the A-number under it opens the sequence on the OEIS.</p>
@@ -525,6 +535,7 @@ input[type=range] { width: 100%; accent-color: var(--accent); height: 18px; }
         <span><b class="edge"></b>kL = A</span>
       </div>
     </div>
+    <div id="famBar" class="fam-bar" role="group" aria-label="Filter by family"></div>
     <div id="grid" class="grid" role="list"></div>
     <p id="gridMore" class="grid-more" hidden></p>
     <p id="empty" class="empty" hidden></p>
@@ -546,7 +557,7 @@ input[type=range] { width: 100%; accent-color: var(--accent); height: 18px; }
       <button id="catToggle" class="icon-btn" title="Hide catalogue (C)" aria-label="Hide catalogue">&#9776;</button>
     </header>
     <div class="cat-search">
-      <input id="search" type="search" placeholder="Search 1,200 sequences…" autocomplete="off" spellcheck="false" aria-label="Search sequences">
+      <input id="search" type="search" placeholder="Search 1200 sequences…" autocomplete="off" spellcheck="false" aria-label="Search sequences">
       <span id="searchCount" class="search-count"></span>
     </div>
     <div id="catList" class="cat-list" aria-label="Sequences">
@@ -685,7 +696,7 @@ input[type=range] { width: 100%; accent-color: var(--accent); height: 18px; }
 <div id="boot" class="boot"><div class="boot-in"><div class="boot-dot"></div><p id="bootMsg">loading…</p><p><a id="bootHome" class="chip" href="#home" hidden>back to all sequences</a></p></div></div>
 
 <script type="module">
-/* decompwlj 3D — static build for your own server.  Twelve hundred sequences, 10^5 terms each.
+/* decompwlj 3D — static build for your own server.  1200 sequences, 10^5 terms each.
    three.js r169 (MIT) is vendored under vendor/ and imported on the first visit to the
    3-D viewer; the data and the gallery plates sit beside this file.  Serve the folder
    over HTTP(S): ES modules and fetch() do not work from file://.  */
@@ -1675,7 +1686,7 @@ const state = {
   show: { weight: true, level: true, tie: true }, hiOne: false,
   reveal: 1, dLo: 0, dHi: 1,
 };
-const home = { q: '', hits: [] };
+const home = { q: '', fam: '', hits: [] };
 
 let all = [], view = [], rec = null, ds = null, viz = null, list = null, abort = null;
 let viewerReady = null;               // Promise, set on the first visit to the viewer
@@ -1715,6 +1726,7 @@ async function boot() {
       : `Could not read the sequence catalogue (${e.message}).`);
   }
   if (!all.length) return fail('The catalogue is empty.');
+  all.sort((a, b) => a.anumber.localeCompare(b.anumber));   /* by A-number, everywhere */
   view = all;
 
   bindHome();
@@ -1761,6 +1773,7 @@ const PLATE_SVG =
   `<line class="dg" x1="${PM}" y1="${PX}" x2="0.5" y2="0.5"/></svg>`;
 
 function bindHome() {
+  buildFamBar();
   const box = $('#homeSearch');
   box.addEventListener('input', () => {
     home.q = box.value;
@@ -1796,25 +1809,51 @@ const HOME_BATCH = 30;
 let homeObserver = null;
 
 function renderHome(force) {
-  /* back from the viewer with the same search: keep the cards already built, and the scroll */
-  if (!force && home.renderedQ === home.q && $('#grid').childElementCount) return;
-  home.renderedQ = home.q;
-  home.hits = filterCatalog(all, home.q);
+  /* back from the viewer with the same search and family: keep the cards already built, and the scroll */
+  const key = home.fam + '\u0000' + home.q;
+  if (!force && home.renderedKey === key && $('#grid').childElementCount) return;
+  home.renderedKey = key;
+  home.hits = filterCatalog(all, home.q).filter(r => !home.fam || r.family === home.fam);
   home.shown = 0;
-  const n = home.hits.length;
-  $('#homeCount').textContent = home.q.trim()
-    ? `${fmt.format(n)} of ${fmt.format(all.length)} sequences`
-    : `${fmt.format(all.length)} sequences`;
+  const n = home.hits.length, filtered = home.q.trim() || home.fam;
+  $('#homeTotal').textContent = String(all.length);
+  $('#homeCount').textContent = filtered ? `${n} of ${all.length} sequences` : `${all.length} sequences`;
   $('#grid').replaceChildren();
   const empty = $('#empty');
   empty.hidden = n > 0;
-  if (!n) empty.textContent = `No sequence matches “${home.q.trim()}”. Search by name (primes, squares), A-number (A000040) or family (sieve, digit rule).`;
+  if (!n) empty.textContent = home.fam
+    ? `No ${home.fam} sequence matches “${home.q.trim()}”. Try another family, or All.`
+    : `No sequence matches “${home.q.trim()}”. Search by name (primes, squares), A-number (A000040) or family (sieve, digit rule).`;
   if (!homeObserver && 'IntersectionObserver' in window) {
     homeObserver = new IntersectionObserver((es) => { if (es.some(e => e.isIntersecting)) moreCards(); },
                                             { rootMargin: '0px 0px 900px 0px' });
     homeObserver.observe($('#gridMore'));
   }
   moreCards();
+}
+
+/* one chip per family, largest first, with "All" in front; a click filters the gallery */
+function buildFamBar() {
+  const counts = new Map();
+  for (const r of all) counts.set(r.family, (counts.get(r.family) || 0) + 1);
+  const fams = [...counts.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
+  const bar = $('#famBar');
+  const chip = (label, value, n) => {
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'fam-chip'; b.dataset.fam = value;
+    b.setAttribute('aria-pressed', String(home.fam === value));
+    b.innerHTML = '<span></span><small></small>';
+    b.firstChild.textContent = label; b.lastChild.textContent = String(n);
+    return b;
+  };
+  bar.replaceChildren(chip('All', '', all.length), ...fams.map(([f, n]) => chip(f, f, n)));
+  bar.addEventListener('click', (e) => {
+    const b = e.target.closest('.fam-chip');
+    if (!b) return;
+    home.fam = b.dataset.fam;
+    bar.querySelectorAll('.fam-chip').forEach(c => c.setAttribute('aria-pressed', String(c === b)));
+    renderHome();
+  });
 }
 
 function moreCards() {
@@ -1829,8 +1868,8 @@ function moreCards() {
   const left = home.hits.length - home.shown;
   more.hidden = home.hits.length === 0;
   more.textContent = left > 0
-    ? `${fmt.format(home.shown)} of ${fmt.format(home.hits.length)} shown — scroll for more`
-    : `all ${fmt.format(home.hits.length)} shown`;
+    ? `${home.shown} of ${home.hits.length} shown — scroll for more`
+    : `all ${home.hits.length} shown`;
   /* a tall screen may still show the sentinel: keep filling, one batch per frame */
   if (left > 0) requestAnimationFrame(() => {
     if ($('#home').hidden) return;
@@ -1877,8 +1916,8 @@ function ensureViewer() {
       if (matchMedia('(max-width: 720px)').matches) $('#app').classList.remove('show-cat');
     });
     list.setItems(view);
-    $('#searchCount').textContent = fmt.format(all.length);
-    $('#search').placeholder = `Search ${fmt.format(all.length)} sequences…`;
+    $('#searchCount').textContent = String(all.length);
+    $('#search').placeholder = `Search ${all.length} sequences…`;
     bindUI();
   })();
   viewerReady.catch(() => { viewerReady = null; });
@@ -2166,7 +2205,7 @@ function bindUI() {
     view = filterCatalog(all, e.target.value);
     list.setItems(view);
     if (view.some(r => r.id === state.id)) list.select(state.id);
-    $('#searchCount').textContent = fmt.format(view.length);
+    $('#searchCount').textContent = String(view.length);
   });
 
   document.querySelectorAll('[data-view]').forEach(b => b.addEventListener('click', () => {
