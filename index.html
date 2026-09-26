@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%230b0e14'/%3E%3Ccircle cx='10' cy='21' r='3' fill='%234c8dff'/%3E%3Ccircle cx='19' cy='13' r='3' fill='%23ff8c42'/%3E%3Ccircle cx='25' cy='7' r='2' fill='%23ffe45c'/%3E%3C/svg%3E">
 <title>decompwlj 3D</title>
-<meta name="description" content="Gallery and interactive 3-D atlas of the decomposition into weight × level + jump for eight hundred integer sequences, 10⁵ terms each. three.js / WebGL.">
+<meta name="description" content="Gallery and interactive 3-D atlas of the decomposition into weight × level + jump for one thousand integer sequences, 10⁵ terms each. three.js / WebGL.">
 <style>
 /* the base rules the claude.ai wrapper used to supply */
 [hidden] { display: none !important; }
@@ -418,6 +418,7 @@ input[type=range] { width: 100%; accent-color: var(--accent); height: 18px; }
 }
 #homeSearch:focus { border-color: var(--accent); }
 .home-count { font: 12px var(--mono); color: var(--fg-3); font-variant-numeric: tabular-nums; }
+.grid-more { margin: 18px 0 4px; text-align: center; font: 11.5px var(--mono); color: var(--fg-3); }
 .home-key { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 11.5px; color: var(--fg-3); margin-left: auto; }
 .home-key span { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
 .home-key i { width: 8px; height: 8px; border-radius: 50%; background: var(--c); }
@@ -503,7 +504,7 @@ input[type=range] { width: 100%; accent-color: var(--accent); height: 18px; }
     <header class="home-head">
       <div class="home-title">
         <a class="brand" href="#home"><span class="brand-mark" aria-hidden="true"></span><span class="brand-text">decompwlj<span class="brand-dim"> 3D</span></span></a>
-        <h1>Weight × level + jump, eight hundred sequences</h1>
+        <h1>Weight × level + jump, one thousand sequences</h1>
         <p>Every term of a strictly increasing sequence is written <i>a</i>(n) = <i>k</i>(n)·<i>L</i>(n) + <i>d</i>(n):
           the jump <i>d</i> = a(n+1) − a(n), the weight <i>k</i> the least divisor of a − d above d, the level <i>L</i> = (a − d)/k.
           10⁵ terms per sequence. Open a plate to explore it in three dimensions; the A-number under it opens the sequence on the OEIS.</p>
@@ -525,6 +526,7 @@ input[type=range] { width: 100%; accent-color: var(--accent); height: 18px; }
       </div>
     </div>
     <div id="grid" class="grid" role="list"></div>
+    <p id="gridMore" class="grid-more" hidden></p>
     <p id="empty" class="empty" hidden></p>
     <p class="home-foot">Each plate is the weight–level plane on a square with equal aspect: log k / log A across, log L / log A up, A the largest term shown.
       Every sequence then shares one frame. Points lie below the dotted edge kL = A, and level-classified terms (k &gt; L) fall below the dashed diagonal k = L.
@@ -544,7 +546,7 @@ input[type=range] { width: 100%; accent-color: var(--accent); height: 18px; }
       <button id="catToggle" class="icon-btn" title="Hide catalogue (C)" aria-label="Hide catalogue">&#9776;</button>
     </header>
     <div class="cat-search">
-      <input id="search" type="search" placeholder="Search 800 sequences…" autocomplete="off" spellcheck="false" aria-label="Search sequences">
+      <input id="search" type="search" placeholder="Search 1,000 sequences…" autocomplete="off" spellcheck="false" aria-label="Search sequences">
       <span id="searchCount" class="search-count"></span>
     </div>
     <div id="catList" class="cat-list" aria-label="Sequences">
@@ -683,7 +685,7 @@ input[type=range] { width: 100%; accent-color: var(--accent); height: 18px; }
 <div id="boot" class="boot"><div class="boot-in"><div class="boot-dot"></div><p id="bootMsg">loading…</p><p><a id="bootHome" class="chip" href="#home" hidden>back to all sequences</a></p></div></div>
 
 <script type="module">
-/* decompwlj 3D — static build for your own server.  Eight hundred sequences, 10^5 terms each.
+/* decompwlj 3D — static build for your own server.  One thousand sequences, 10^5 terms each.
    three.js r169 (MIT) is vendored under vendor/ and imported on the first visit to the
    3-D viewer; the data and the gallery plates sit beside this file.  Serve the folder
    over HTTP(S): ES modules and fetch() do not work from file://.  */
@@ -1646,7 +1648,7 @@ class Viz {
 /* app.js — wiring: catalogue → gallery (home) → dataset → scene → controls.
  *
  * Two views in one page.  The home view is a gallery of pre-rendered
- * weight–level plates, all eight hundred on one page, with search; it needs only
+ * weight–level plates, one page that grows as you scroll, with search; it needs only
  * the catalogue.  The viewer's sidebar lists the sequences ten per page.  The viewer is the 3-D atlas; three.js is imported the first
  * time a sequence is opened, so the gallery works even before (or without)
  * the 3-D engine.
@@ -1787,16 +1789,53 @@ function showHome() {
   renderHome();
 }
 
-function renderHome() {
+/* The gallery grows as you scroll: cards are built HOME_BATCH at a time when the
+   sentinel under the grid comes within reach, and each plate image is fetched only
+   when its card nears the screen (loading="lazy"), so the network load is spread out. */
+const HOME_BATCH = 30;
+let homeObserver = null;
+
+function renderHome(force) {
+  /* back from the viewer with the same search: keep the cards already built, and the scroll */
+  if (!force && home.renderedQ === home.q && $('#grid').childElementCount) return;
+  home.renderedQ = home.q;
   home.hits = filterCatalog(all, home.q);
+  home.shown = 0;
   const n = home.hits.length;
   $('#homeCount').textContent = home.q.trim()
     ? `${fmt.format(n)} of ${fmt.format(all.length)} sequences`
     : `${fmt.format(all.length)} sequences`;
-  $('#grid').replaceChildren(...home.hits.map(card));
+  $('#grid').replaceChildren();
   const empty = $('#empty');
   empty.hidden = n > 0;
   if (!n) empty.textContent = `No sequence matches “${home.q.trim()}”. Search by name (primes, squares), A-number (A000040) or family (sieve, digit rule).`;
+  if (!homeObserver && 'IntersectionObserver' in window) {
+    homeObserver = new IntersectionObserver((es) => { if (es.some(e => e.isIntersecting)) moreCards(); },
+                                            { rootMargin: '0px 0px 900px 0px' });
+    homeObserver.observe($('#gridMore'));
+  }
+  moreCards();
+}
+
+function moreCards() {
+  const next = home.hits.slice(home.shown, home.shown + HOME_BATCH);
+  const more = $('#gridMore');
+  if (next.length) {
+    const frag = document.createDocumentFragment();
+    for (const r of next) frag.appendChild(card(r));
+    $('#grid').appendChild(frag);
+    home.shown += next.length;
+  }
+  const left = home.hits.length - home.shown;
+  more.hidden = home.hits.length === 0;
+  more.textContent = left > 0
+    ? `${fmt.format(home.shown)} of ${fmt.format(home.hits.length)} shown — scroll for more`
+    : `all ${fmt.format(home.hits.length)} shown`;
+  /* a tall screen may still show the sentinel: keep filling, one batch per frame */
+  if (left > 0) requestAnimationFrame(() => {
+    if ($('#home').hidden) return;
+    if (more.getBoundingClientRect().top < innerHeight + 900) moreCards();
+  });
 }
 
 function card(r) {

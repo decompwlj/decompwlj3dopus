@@ -1,7 +1,7 @@
 # decompwlj 3D — static site
 
 The gallery and the interactive 3-D atlas of the decomposition into weight × level + jump:
-eight hundred integer sequences, 10⁵ terms each (A007088: 65,535, the most that fit below 2⁵³).
+one thousand integer sequences, 10⁵ terms each (A007088: 65,535, the most that fit below 2⁵³).
 It is plain files, with no server code, no database and no build step.
 
 ## Put it online with GitHub Pages
@@ -45,9 +45,11 @@ Every path in the page is relative, so any folder name or prefix works.
 | `tools/` | the generator and the scripts that rebuild `data/` and `thumbs/` |
 | `.nojekyll` | tells GitHub Pages to serve the files as they are |
 
-Size on disk is 263 MB: the data chunks are stored gzip-compressed (about a third of their plain
-size). A visitor downloads about 0.2 MB for the primes and 1.1 MB for the largest sequences; the
-800 gallery plates total 14 MB and load as you scroll. Nothing is loaded from another site.
+Size on disk is 345 MB: the data chunks are stored gzip-compressed (about a third of their plain
+size). A visitor downloads about 0.2 MB for the primes and 1.1 MB for the largest sequences.
+The gallery grows as you scroll: cards are added thirty at a time, and each plate image is
+fetched only when its card comes near the screen, so the 1,000 plates (17 MB in all) are never
+requested at once. Nothing is loaded from another site.
 
 ## Links
 
@@ -82,7 +84,7 @@ chunks, sniffed on the first byte.
 ```
 cd tools
 cc -O2 -o decompwlj_gen decompwlj_gen.c -lm
-./decompwlj_gen raw                 # all eight hundred, raw a,d,k,L chunks + catalog.csv  (about 9 min)
+./decompwlj_gen raw                 # all one thousand, raw a,d,k,L chunks + catalog.csv  (about 11 min)
 ./decompwlj_gen raw primes 200000   # or one sequence, at any size below 2^53
 python3 fetch_oeis.py --catalog raw # OEIS names, offsets and first terms -> oeis.json (already there)
 python3 names.py raw                # the OEIS names into the catalogue
@@ -126,10 +128,17 @@ For the Beatty sequences, n·α stays at least 5·10⁻⁷ from an integer for e
 the long double rounding error. `audit.py` passes on all 79,965,535 rows (320,000 weights
 re-derived).
 
-## The eight hundred sequences
+The last two hundred (sequences 801–1000) add primes of the form k² + c, numbers n with
+n² + n + c prime, numbers with exactly 4–9 ones in binary, divisor-function pairs (τ, ω, Ω of n
+and n + 1 or n + 2), squarefree and almost-prime pairs, sums of 6–12 consecutive primes, the
+binary and ternary sieves, nonprime lucky numbers, more Beatty constants, and more from the same
+verified pools. All match their OEIS terms; `audit.py` passes on all 99,965,535 rows (400,000
+weights re-derived).
+
+## The one thousand sequences
 
 The page shows each sequence under its OEIS name, and its A-number links to the OEIS entry.
-`data/catalog.csv` lists all eight hundred.
+`data/catalog.csv` lists all one thousand.
 
 The first fifty: A000027, A000037, A000040, A000201, A000217, A000290, A000292, A000326,
 A000330, A000384, A000578, A000959, A000960, A000961, A001248, A001358, A001359, A001481,
@@ -204,6 +213,21 @@ The last four hundred:
 | digit rule (13) | A001633, A001637, A034709, A038770, A064150, A023709, A023713, A023721, A023725, A023729, A023733, A043493, A023692 |
 | divisor count (2) | A030634, A030638 |
 | smooth (2) | A080682, A080683 |
+
+The last two hundred:
+
+| family | sequences |
+|---|---|
+| primes (39) | A002496, A005473, A028871, A028874, A028877, A028880, A028883, A028886, A049423, A056899, A056905, A056909, A079138, A091272, A062324, A062326, A063637, A063638, A127333, A127334, A127336, A127337, A127338, A127339, A003628, A033212, A039949, A042987, A042988, A042989, A042990, A042992, A042994, A042995, A042997, A042998, A045320, A045322, A045323 |
+| prime values (47) | A027752, A027754, A027756, A027757, A028823, A045546, A048097, A102700, A102703, A102711, A102721, A102731, A102768, A103118, A103871, A105043, A105044, A105134, A105135, A105136, A105137, A105138, A105139, A105583, A105679, A105773, A105775, A106690, A106692, A106695, A106697, A107305, A107366, A107369, A107371, A107372, A107400, A107405, A107406, A107407, A107960, A107992, A107994, A108027, A108028, A108029, A108030 |
+| binary rule (6) | A014312, A014313, A023688, A023689, A023690, A023691 |
+| divisor count (1) | A005237 |
+| multiplicative (8) | A006049, A045920, A063464, A069977, A121495, A124940, A124941, A070552 |
+| sieve (3) | A031879, A007950, A007951 |
+| Beatty (20) | A059550, A059551, A059552, A059553, A059554, A059556, A059557, A059559, A059560, A059562, A059563, A059564, A059566, A059567, A059568, A066343, A066344, A098005, A108598, A121283 |
+| quadratic form (36) | A033217, A033218, A033219, A033220, A033221, A033222, A033223, A033224, A033225, A033226, A033227, A033228, A033229, A033230, A033231, A033232, A033233, A033234, A033235, A033236, A033237, A033238, A033239, A033240, A033241, A033242, A033243, A033244, A033245, A033246, A033247, A033248, A033249, A033250, A033251, A033252 |
+| polynomial (30) | A127989, A004126, A004188, A004466, A006597, A061804, A063521, A063522, A063523, A067389, A117560, A004467, A060163, A062025, A005586, A006503, A027480, A027903, A055112, A059722, A071233, A077414, A077415, A084990, A085786, A090197, A094421, A110451, A111396, A125200 |
+| residue class (10) | A008607, A008854, A029739, A032769, A032775, A032793, A032796, A044102, A047202, A047204 |
 
 ## Credits
 
