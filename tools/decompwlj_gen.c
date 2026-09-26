@@ -46,6 +46,10 @@
  *                primes, power sieves, Beatty constants, and from the same pools).
  *   26 Sep 2026  twelve hundred: one hundred base-dependent sequences (OEIS keyword
  *                "base") and one hundred classic ones (keywords "core", "nice").
+ *   26 Sep 2026  sixteen hundred: four hundred more, mostly polynomial prime
+ *                conditions read from the OEIS names (n with f(n) prime, primes of
+ *                the form f(k), primes p with f(p) prime) and semiprime and
+ *                squarefree variants, plus more from the verified pools.
  *
  * Build:  cc -O2 -o decompwlj_gen decompwlj_gen.c -lm
  * Run:    ./decompwlj_gen <outdir>            all sequences
@@ -3002,6 +3006,441 @@ static void gen_a033298(u64 *t, long cnt) { u64 a = 1; for (long i = 0; i < cnt;
 static void gen_a007612(u64 *t, long cnt) { u64 a = 1; for (long i = 0; i < cnt; i++) { t[i] = a; a += 1 + (a - 1) % 9; } }
 static void gen_a019551(u64 *t, long cnt) { gen_concat_k(t, cnt, 3, 0, 1); }
 static void gen_a019552(u64 *t, long cnt) { gen_concat_k(t, cnt, 4, 0, 1); }
+
+/* ---------------------------- the four hundred added 26 Sep 2026 (1201-1600) */
+/* Polynomial prime conditions read from the OEIS names (numbers n with f(n) prime,
+   primes of the form f(k), primes p with f(p) prime), semiprime and squarefree
+   variants, and more from the verified pools; each checked against its OEIS terms. */
+
+static int big_omega64(u64 v) { if (v < 2) return 0; factor(v); int c = 0; for (int i = 0; i < g_npf; i++) c += g_pe[i]; return c; }
+static int squarefree64(u64 v) { if (v < 1) return 0; if (v == 1) return 1; factor(v); for (int i = 0; i < g_npf; i++) if (g_pe[i] > 1) return 0; return 1; }
+static int fits64(i128 v) { return v >= 0 && v < ((i128)1 << 64); }
+#define NF_PRIME(name, expr) \
+static void name(u64 *t, long cnt) { long k = 0; for (u64 n = 0; k < cnt; n++) { i128 N = (i128)n; i128 v = (expr); if (fits64(v) && isprime_s(v)) t[k++] = n; } }
+#define PP_PRIME(name, expr) \
+static void name(u64 *t, long cnt) \
+{ for (u64 lim = 1ULL << 22; ; lim *= 2) { u8 *c = composite_flags(lim); long k = 0; \
+    for (u64 p = 2; p <= lim && k < cnt; p++) { if (c[p]) continue; i128 N = (i128)p; i128 v = (expr); if (fits64(v) && isprime_s(v)) t[k++] = p; } \
+    free(c); if (k == cnt) return; } }
+/* primes f(k), k >= 0, in increasing order: all prime values up to a bound, sorted */
+#define PF_PRIME(name, expr) \
+static void name(u64 *t, long cnt) \
+{ for (i128 bound = (i128)1 << 30; ; bound *= 4) { size_t cap = 1 << 16, m = 0; u64 *v = malloc(cap * sizeof(u64)); \
+    for (u64 n = 0; ; n++) { i128 N = (i128)n; i128 x = (expr); if (x > bound && n > 64) break; \
+      if (x >= 2 && x <= bound && isprime_s(x)) { if (m == cap) { cap *= 2; v = realloc(v, cap * sizeof(u64)); } v[m++] = (u64)x; } } \
+    qsort(v, m, sizeof(u64), cmp_u64); size_t u = 0; for (size_t i = 0; i < m; i++) if (!u || v[i] != v[u - 1]) v[u++] = v[i]; \
+    if ((long)u >= cnt) { memcpy(t, v, (size_t)cnt * sizeof(u64)); free(v); return; } free(v); } }
+#define NF_SEMI(name, expr) \
+static void name(u64 *t, long cnt) { long k = 0; for (u64 n = 0; k < cnt; n++) { i128 N = (i128)n; i128 v = (expr); if (fits64(v) && big_omega64((u64)v) == 2) t[k++] = n; } }
+#define PP_TEST(name, expr, test) \
+static void name(u64 *t, long cnt) \
+{ for (u64 lim = 1ULL << 22; ; lim *= 2) { u8 *c = composite_flags(lim); long k = 0; \
+    for (u64 p = 2; p <= lim && k < cnt; p++) { if (c[p]) continue; i128 N = (i128)p; i128 v = (expr); if (fits64(v) && test((u64)v)) t[k++] = p; } \
+    free(c); if (k == cnt) return; } }
+static int is_semi64(u64 v) { return big_omega64(v) == 2; }
+#define SEMI_FORM(name, expr) \
+static void name(u64 *t, long cnt) { long k = 0; for (u64 n = 0; k < cnt; n++) { i128 N = (i128)n; i128 v = (expr); if (fits64(v) && v > 3 && big_omega64((u64)v) == 2) t[k++] = (u64)v; } }
+
+PF_PRIME(gen_a002327, (((N*N) - N) - (i128)1))   /* n^2-n-1 */
+NF_PRIME(gen_a002328, (((N*N) - N) - (i128)1))   /* n^2-n-1 */
+PF_PRIME(gen_a002383, (((N*N) + N) + (i128)1))   /* n^2+n+1 */
+NF_PRIME(gen_a002384, (((N*N) + N) + (i128)1))   /* n^2+n+1 */
+NF_PRIME(gen_a002970, (((i128)4 * (N*N)) + (i128)9))   /* 4*n^2+9 */
+NF_PRIME(gen_a002971, (((i128)4 * (N*N)) + (i128)25))   /* 4*n^2+25 */
+PF_PRIME(gen_a005846, (((N*N) + N) + (i128)41))   /* n^2+n+41 */
+PF_PRIME(gen_a007635, (((N*N) + N) + (i128)17))   /* n^2+n+17 */
+PF_PRIME(gen_a007637, ((((i128)3 * (N*N)) - ((i128)3 * N)) + (i128)23))   /* 3*n^2-3*n+23 */
+PF_PRIME(gen_a007639, ((((i128)2 * (N*N)) - ((i128)2 * N)) + (i128)19))   /* 2*n^2-2*n+19 */
+PF_PRIME(gen_a007641, (((i128)2 * (N*N)) + (i128)29))   /* 2*n^2+29 */
+PP_PRIME(gen_a023219, (((i128)5 * N) + (i128)6))   /* 5*n+6 */
+PF_PRIME(gen_a027753, (((N*N) + N) + (i128)3))   /* n^2+n+3 */
+PF_PRIME(gen_a027755, (((N*N) + N) + (i128)5))   /* n^2+n+5 */
+PF_PRIME(gen_a027758, (((N*N) + N) + (i128)9))   /* n^2+n+9 */
+NF_PRIME(gen_a027861, ((N*N) + ((N + (i128)1)*(N + (i128)1))))   /* n^2+(n+1)^2 */
+NF_PRIME(gen_a027863, (((N*N) + ((N + (i128)1)*(N + (i128)1))) + ((N + (i128)2)*(N + (i128)2))))   /* n^2+(n+1)^2+(n+2)^2 */
+NF_PRIME(gen_a027866, ((((((N*N) + ((N + (i128)1)*(N + (i128)1))) + ((N + (i128)2)*(N + (i128)2))) + ((N + (i128)3)*(N + (i128)3))) + ((N + (i128)4)*(N + (i128)4))) + ((N + (i128)5)*(N + (i128)5))))   /* n^2+(n+1)^2+(n+2)^2+(n+3)^2+(n+4)^2+(n+5)^2 */
+PF_PRIME(gen_a027867, ((((((N*N) + ((N + (i128)1)*(N + (i128)1))) + ((N + (i128)2)*(N + (i128)2))) + ((N + (i128)3)*(N + (i128)3))) + ((N + (i128)4)*(N + (i128)4))) + ((N + (i128)5)*(N + (i128)5))))   /* n^2+(n+1)^2+(n+2)^2+(n+3)^2+(n+4)^2+(n+5)^2 */
+PF_PRIME(gen_a037029, (((i128)666 * N) + (i128)1))   /* 666*n+1 */
+PF_PRIME(gen_a048059, (((N*N) + N) + (i128)11))   /* n^2+n+11 */
+PF_PRIME(gen_a048988, ((((i128)4 * (N*N)) + ((i128)4 * N)) + (i128)59))   /* 4*n^2+4*n+59 */
+PF_PRIME(gen_a050265, (((i128)2 * (N*N)) + (i128)11))   /* 2*n^2+11 */
+PP_PRIME(gen_a051647, (((i128)210 * N) + (i128)1))   /* 210*n+1 */
+PP_PRIME(gen_a051653, (((i128)2310 * N) + (i128)1))   /* 2310*n+1 */
+PP_PRIME(gen_a051654, (((i128)30030 * N) + (i128)1))   /* 30030*n+1 */
+PP_PRIME(gen_a052291, (((i128)4 * (N*N)) + (i128)1))   /* 4*n^2+1 */
+PP_PRIME(gen_a053182, (((N*N) + N) + (i128)1))   /* n^2+n+1 */
+PP_PRIME(gen_a053184, (((N*N) + N) - (i128)1))   /* n^2+n-1 */
+NF_PRIME(gen_a055494, (((N*N) - N) + (i128)1))   /* n^2-n+1 */
+NF_PRIME(gen_a056906, (((i128)36 * (N*N)) + (i128)5))   /* 36*n^2+5 */
+NF_PRIME(gen_a056908, ((((i128)36 * (N*N)) + ((i128)36 * N)) + (i128)13))   /* 36*n^2+36*n+13 */
+PF_PRIME(gen_a057604, (((i128)4 * (N*N)) + (i128)163))   /* 4*n^2+163 */
+PF_PRIME(gen_a059425, (((N*N) + ((i128)19 * N)) + (i128)17))   /* n^2+19*n+17 */
+PF_PRIME(gen_a060844, ((((i128)6 * (N*N)) + ((i128)6 * N)) + (i128)31))   /* 6*n^2+6*n+31 */
+PF_PRIME(gen_a061242, (((i128)9 * N) - (i128)1))   /* 9*n-1 */
+PF_PRIME(gen_a062800, (((i128)100 * N) + (i128)1))   /* 100*n+1 */
+PF_PRIME(gen_a063472, (((i128)666 * N) - (i128)1))   /* 666*n-1 */
+PP_PRIME(gen_a065508, (((N*N) - N) + (i128)1))   /* n^2-n+1 */
+NF_PRIME(gen_a066049, (((i128)2 * (N*N)) - (i128)1))   /* 2*n^2-1 */
+PF_PRIME(gen_a066436, (((i128)2 * (N*N)) - (i128)1))   /* 2*n^2-1 */
+PF_PRIME(gen_a073102, (((i128)210 * N) + (i128)1))   /* 210*n+1 */
+PF_PRIME(gen_a076339, (((i128)512 * N) + (i128)1))   /* 512*n+1 */
+PF_PRIME(gen_a076727, ((N*N) + ((N + (i128)3)*(N + (i128)3))))   /* n^2+(n+3)^2 */
+NF_PRIME(gen_a083022, (((i128)4 * (N*N)) - (i128)3))   /* 4*n^2-3 */
+NF_PRIME(gen_a086285, (((i128)1 + ((i128)2 * N)) + ((i128)3 * (N*N))))   /* 1+2*n+3*n^2 */
+NF_PRIME(gen_a086298, (((i128)1 - ((i128)2 * N)) + ((i128)3 * (N*N))))   /* 1-2*n+3*n^2 */
+NF_PRIME(gen_a086303, (N + (i128)15))   /* n+15 */
+NF_PRIME(gen_a086304, (N + (i128)6))   /* n+6 */
+NF_PRIME(gen_a088572, (((((i128)2 * N) + (i128)1)*(((i128)2 * N) + (i128)1)) - (i128)2))   /* (2*n+1)^2-2 */
+NF_PRIME(gen_a088758, (((((i128)4 * N) + (i128)1)*(((i128)4 * N) + (i128)1)) + ((((i128)4 * N) + (i128)2)*(((i128)4 * N) + (i128)2))))   /* (4*n+1)^2+(4*n+2)^2 */
+NF_PRIME(gen_a088759, (((((i128)4 * N) + (i128)3)*(((i128)4 * N) + (i128)3)) + ((((i128)4 * N) + (i128)2)*(((i128)4 * N) + (i128)2))))   /* (4*n+3)^2+(4*n+2)^2 */
+PF_PRIME(gen_a088955, (((i128)60 * N) + (i128)1))   /* 60*n+1 */
+NF_PRIME(gen_a088967, (N + (i128)9))   /* n+9 */
+NF_PRIME(gen_a089001, (((i128)2 * (N*N)) + (i128)1))   /* 2*n^2+1 */
+NF_PRIME(gen_a089008, (((i128)18 * (N*N)) + (i128)1))   /* 18*n^2+1 */
+NF_PRIME(gen_a089063, (((i128)840 * N) + (i128)175177943))   /* 840*n+175177943 */
+NF_PRIME(gen_a089373, (((N*N) - ((i128)7 * N)) + (i128)7))   /* n^2-7*n+7 */
+PF_PRIME(gen_a089376, (((N*N) - ((i128)7 * N)) + (i128)7))   /* n^2-7*n+7 */
+PP_PRIME(gen_a089438, (((i128)6 * N) + (i128)11))   /* 6*n+11 */
+PP_PRIME(gen_a089441, (((i128)16 * N) + (i128)17))   /* 16*n+17 */
+NF_PRIME(gen_a089593, (((N*N) + ((i128)2 * N)) + (i128)2))   /* n^2+2*n+2 */
+NF_PRIME(gen_a089623, (((N*N) + ((i128)2 * N)) - (i128)1))   /* n^2+2*n-1 */
+NF_PRIME(gen_a089681, (((i128)3 * (N*N)) - (i128)1))   /* 3*n^2-1 */
+PF_PRIME(gen_a089682, (((i128)3 * (N*N)) - (i128)1))   /* 3*n^2-1 */
+NF_PRIME(gen_a089747, (((N*N) - ((i128)2 * N)) + (i128)5))   /* n^2-2*n+5 */
+PF_PRIME(gen_a090187, (((i128)11 * N) + (i128)2))   /* 11*n+2 */
+PF_PRIME(gen_a090562, ((((i128)5 * (N*N)) + ((i128)5 * N)) + (i128)1))   /* 5*n^2+5*n+1 */
+NF_PRIME(gen_a090563, ((((i128)5 * (N*N)) + ((i128)5 * N)) + (i128)1))   /* 5*n^2+5*n+1 */
+PF_PRIME(gen_a090684, (((i128)8 * (N*N)) - (i128)1))   /* 8*n^2-1 */
+PF_PRIME(gen_a090685, (((i128)8 * (N*N)) + (i128)1))   /* 8*n^2+1 */
+PF_PRIME(gen_a090686, (((i128)6 * (N*N)) - (i128)1))   /* 6*n^2-1 */
+PF_PRIME(gen_a090687, (((i128)6 * (N*N)) + (i128)1))   /* 6*n^2+1 */
+NF_PRIME(gen_a090696, ((N*N) - (i128)11))   /* n^2-11 */
+PF_PRIME(gen_a090698, (((i128)2 * (N*N)) + (i128)1))   /* 2*n^2+1 */
+NF_PRIME(gen_a091271, (((i128)4 * (N*N)) - (i128)11))   /* 4*n^2-11 */
+PP_PRIME(gen_a091567, (((N*N) - N) - (i128)1))   /* n^2-n-1 */
+NF_PRIME(gen_a092968, (((i128)2 * (N*N)) + (i128)11))   /* 2*n^2+11 */
+PF_PRIME(gen_a093359, (((i128)28 * N) + (i128)1))   /* 28*n+1 */
+PF_PRIME(gen_a093838, (((i128)36 * N) + (i128)1))   /* 36*n+1 */
+NF_PRIME(gen_a094210, (((N*N) + ((i128)3 * N)) + (i128)1))   /* n^2+3*n+1 */
+PF_PRIME(gen_a094407, (((i128)16 * N) + (i128)1))   /* 16*n+1 */
+PF_PRIME(gen_a095995, (((i128)100 * N) - (i128)1))   /* 100*n-1 */
+NF_PRIME(gen_a096689, ((((i128)2 * (N*N)) + ((i128)3 * N)) + (i128)3))   /* 2*n^2+3*n+3 */
+NF_PRIME(gen_a096691, ((((i128)8 * (N*N)) + ((i128)6 * N)) + (i128)3))   /* 8*n^2+6*n+3 */
+PF_PRIME(gen_a098828, ((((i128)2 * (N*N)) + ((i128)2 * N)) - (i128)1))   /* 2*n^2+2*n-1 */
+PF_PRIME(gen_a099007, ((((i128)6 * (N*N)) - ((i128)2 * N)) - (i128)1))   /* 6*n^2-2*n-1 */
+PF_PRIME(gen_a100201, (((i128)23 * N) + (i128)3))   /* 23*n+3 */
+PF_PRIME(gen_a100202, (((i128)13 * N) + (i128)3))   /* 13*n+3 */
+PF_PRIME(gen_a100203, (((i128)37 * N) + (i128)3))   /* 37*n+3 */
+PF_PRIME(gen_a100494, (((i128)47 * N) + (i128)3))   /* 47*n+3 */
+PF_PRIME(gen_a100760, (((i128)47 * N) + (i128)5))   /* 47*n+5 */
+NF_PRIME(gen_a101444, (((i128)9973 * N) + (i128)10007))   /* (9973*n+10007) */
+NF_PRIME(gen_a101567, (((i128)1009 * N) + (i128)10007))   /* 1009*n+10007 */
+PF_PRIME(gen_a101780, (((i128)100 * N) + (i128)3))   /* 100*n+3 */
+PF_PRIME(gen_a102130, ((((i128)8 * (N*N)) + ((i128)4 * N)) + (i128)1))   /* 8*n^2+4*n+1 */
+NF_PRIME(gen_a102166, ((((i128)2 * (N*N)) + ((i128)11 * N)) + (i128)101))   /* 2*n^2+11*n+101 */
+NF_PRIME(gen_a102339, ((N * ((i128)10*(i128)10*(i128)10)) + (i128)333))   /* n*10^3+333 */
+NF_PRIME(gen_a102343, ((N * ((i128)10*(i128)10*(i128)10)) + (i128)777))   /* n*10^3+777 */
+NF_PRIME(gen_a102649, ((((i128)11 * (N*N)) + ((i128)11 * N)) + (i128)3))   /* 11*n^2+11*n+3 */
+NF_PRIME(gen_a102657, ((((i128)11 * (N*N)) + ((i128)11 * N)) + (i128)1))   /* 11*n^2+11*n+1 */
+PF_PRIME(gen_a102732, (((i128)13 * N) + (i128)5))   /* 13*n+5 */
+PF_PRIME(gen_a102734, (((i128)23 * N) + (i128)5))   /* 23*n+5 */
+PF_PRIME(gen_a102851, (((i128)19 * N) + (i128)5))   /* 19*n+5 */
+PP_PRIME(gen_a103564, (((i128)3 * (N*N)) + (i128)2))   /* 3*n^2+2 */
+PP_PRIME(gen_a103776, ((((i128)8 * (N*N)) + ((i128)4 * N)) + (i128)1))   /* 8*n^2+4*n+1 */
+NF_PRIME(gen_a105057, (((i128)10000 * N) - (i128)1))   /* 10000*n-1 */
+NF_PRIME(gen_a105059, (((i128)100000 * N) - (i128)1))   /* 100000*n-1 */
+NF_PRIME(gen_a105107, (((i128)10000 * N) + (i128)1001))   /* 10000*n+1001 */
+PF_PRIME(gen_a105126, (((i128)16 * N) + (i128)9))   /* 16*n+9 */
+PF_PRIME(gen_a105127, (((i128)32 * N) + (i128)17))   /* 32*n+17 */
+PF_PRIME(gen_a105128, (((i128)64 * N) + (i128)33))   /* 64*n+33 */
+PF_PRIME(gen_a105129, (((i128)128 * N) + (i128)65))   /* 128*n+65 */
+PF_PRIME(gen_a105130, (((i128)256 * N) + (i128)129))   /* 256*n+129 */
+PF_PRIME(gen_a105131, (((i128)512 * N) + (i128)257))   /* 512*n+257 */
+PF_PRIME(gen_a105132, (((i128)1024 * N) + (i128)513))   /* 1024*n+513 */
+NF_PRIME(gen_a105140, (((i128)1024 * N) + (i128)513))   /* 1024*n+513 */
+NF_PRIME(gen_a105680, (((i128)1009 * N) + (i128)9973))   /* 1009*n+9973 */
+NF_PRIME(gen_a105710, (((i128)9973 * N) + (i128)1009))   /* 9973*n+1009 */
+PF_PRIME(gen_a105854, (((i128)20 * N) + (i128)3))   /* 20*n+3 */
+PP_PRIME(gen_a106483, (((i128)2 * (N*N)) - (i128)1))   /* 2*n^2-1 */
+NF_PRIME(gen_a106699, (((i128)1009 * N) - (i128)9973))   /* 1009*n-9973 */
+NF_PRIME(gen_a106700, (((i128)9973 * N) - (i128)1009))   /* 9973*n-1009 */
+PF_PRIME(gen_a107003, (((i128)24 * N) + (i128)5))   /* 24*n+5 */
+NF_PRIME(gen_a107071, (((i128)1019 * N) + (i128)1021))   /* 1019*n+1021 */
+NF_PRIME(gen_a107072, (((i128)1021 * N) + (i128)1019))   /* 1021*n+1019 */
+NF_PRIME(gen_a107301, (((i128)10007 * N) + (i128)99991))   /* 10007*n+99991 */
+NF_PRIME(gen_a107302, (((i128)99991 * N) + (i128)10007))   /* 99991*n+10007 */
+NF_PRIME(gen_a107303, (((i128)3 * N) - (i128)5))   /* (3*n-5) */
+NF_PRIME(gen_a107306, (((i128)17 * N) - (i128)19))   /* (17*n-19) */
+NF_PRIME(gen_a107308, (((i128)29 * N) - (i128)31))   /* (29*n-31) */
+NF_PRIME(gen_a108058, (((i128)179 * N) + (i128)181))   /* 179*n+181 */
+NF_PRIME(gen_a108059, (((i128)181 * N) + (i128)179))   /* 181*n+179 */
+NF_PRIME(gen_a108060, (((i128)191 * N) + (i128)193))   /* 191*n+193 */
+NF_PRIME(gen_a108061, (((i128)193 * N) + (i128)191))   /* 193*n+191 */
+NF_PRIME(gen_a108187, (((i128)11 * N) - (i128)5))   /* 11*n-5 */
+NF_PRIME(gen_a108232, (((i128)11 * N) - (i128)7))   /* 11*n-7 */
+NF_PRIME(gen_a108233, (((i128)11 * N) + (i128)5))   /* 11*n+5 */
+NF_PRIME(gen_a108341, (((i128)997 * N) - (i128)1009))   /* 997*n-1009 */
+NF_PRIME(gen_a108342, (((i128)1009 * N) - (i128)997))   /* 1009*n-997 */
+NF_PRIME(gen_a108584, (((i128)10 * N) - (i128)97))   /* 10*n-97 */
+NF_PRIME(gen_a108588, (((i128)10 * N) + (i128)97))   /* 10*n+97 */
+NF_PRIME(gen_a108594, (((i128)10 * N) + (i128)101))   /* 10*n+101 */
+NF_PRIME(gen_a108595, (((i128)10 * N) + (i128)103))   /* 10*n+103 */
+NF_PRIME(gen_a108596, (((i128)911 * N) - (i128)7))   /* 911*n-7 */
+NF_PRIME(gen_a108597, (((i128)911 * N) - (i128)11))   /* 911*n-11 */
+NF_PRIME(gen_a108724, (((i128)11 * N) + (i128)17))   /* 11*n+17 */
+NF_PRIME(gen_a108725, (((i128)11 * N) + (i128)19))   /* 11*n+19 */
+NF_PRIME(gen_a108726, (((i128)11 * N) + (i128)29))   /* 11*n+29 */
+NF_PRIME(gen_a108727, (((i128)11 * N) + (i128)31))   /* 11*n+31 */
+NF_PRIME(gen_a108751, (((i128)11 * N) - (i128)911))   /* 11*n-911 */
+NF_PRIME(gen_a108757, (((i128)1000 * N) + (i128)911))   /* 1000*n+911 */
+NF_PRIME(gen_a108762, (((i128)911 * N) + (i128)13))   /* 911*n+13 */
+NF_PRIME(gen_a108854, (((i128)10 * N) - (i128)127))   /* 10*n-127 */
+NF_PRIME(gen_a108855, (((i128)10 * N) + (i128)127))   /* 10*n+127 */
+NF_PRIME(gen_a108856, (((i128)10 * N) - (i128)131))   /* 10*n-131 */
+NF_PRIME(gen_a108857, (((i128)10 * N) + (i128)131))   /* 10*n+131 */
+NF_PRIME(gen_a108874, (((i128)41 * N) + (i128)43))   /* 41*n+43 */
+NF_PRIME(gen_a108899, (((i128)11 * N) + (i128)2357))   /* 11*n+2357 */
+NF_PRIME(gen_a108900, (((i128)2357 * N) + (i128)11))   /* 2357*n+11 */
+NF_PRIME(gen_a108901, (((i128)2357 * N) + (i128)23))   /* 2357*n+23 */
+NF_PRIME(gen_a108902, (((i128)23 * N) + (i128)2357))   /* 23*n+2357 */
+NF_PRIME(gen_a108936, (((i128)11 * N) + (i128)911))   /* 11*n+911 */
+NF_PRIME(gen_a108937, (((i128)911 * N) + (i128)11))   /* 911*n+11 */
+NF_PRIME(gen_a108938, (((i128)911 * N) + (i128)7))   /* 911*n+7 */
+NF_PRIME(gen_a108969, (((i128)43 * N) + (i128)41))   /* 43*n+41 */
+NF_PRIME(gen_a108976, (((i128)17 * N) + (i128)19))   /* 17*n+19 */
+NF_PRIME(gen_a108977, (((i128)19 * N) + (i128)17))   /* 19*n+17 */
+NF_PRIME(gen_a108978, (((i128)29 * N) + (i128)31))   /* 29*n+31 */
+NF_PRIME(gen_a108979, (((i128)31 * N) + (i128)29))   /* 31*n+29 */
+NF_PRIME(gen_a109603, (((i128)43 * N) - (i128)41))   /* 43*n-41 */
+NF_PRIME(gen_a109604, (((i128)41 * N) - (i128)43))   /* 41*n-43 */
+NF_PRIME(gen_a109605, (((i128)100000 * N) + (i128)91111))   /* 100000*n+91111 */
+NF_PRIME(gen_a110801, (((i128)12 * N) + (i128)1))   /* 12*n+1 */
+NF_PRIME(gen_a110913, (((i128)23 * (N*N)) - (i128)49))   /* 23*n^2-49 */
+NF_PRIME(gen_a110959, (((i128)23 * (N*N)) + (i128)1))   /* 23*n^2+1 */
+NF_PRIME(gen_a110960, (((i128)23 * (N*N)) + (i128)4))   /* 23*n^2+4 */
+NF_PRIME(gen_a110961, (((i128)23 * (N*N)) + (i128)9))   /* 23*n^2+9 */
+NF_PRIME(gen_a110964, (((i128)23 * (N*N)) + (i128)16))   /* 23*n^2+16 */
+NF_PRIME(gen_a110965, (((i128)23 * (N*N)) + (i128)25))   /* 23*n^2+25 */
+NF_PRIME(gen_a110966, (((i128)23 * (N*N)) + (i128)36))   /* 23*n^2+36 */
+NF_PRIME(gen_a110967, (((i128)23 * (N*N)) + (i128)49))   /* 23*n^2+49 */
+NF_PRIME(gen_a110974, (((i128)23 * (N*N)) - (i128)1))   /* 23*n^2-1 */
+NF_PRIME(gen_a110994, (((i128)23 * (N*N)) - (i128)4))   /* 23*n^2-4 */
+NF_PRIME(gen_a110998, (((i128)23 * (N*N)) - (i128)9))   /* 23*n^2-9 */
+NF_PRIME(gen_a110999, (((i128)23 * (N*N)) - (i128)16))   /* 23*n^2-16 */
+NF_PRIME(gen_a111001, (((i128)23 * (N*N)) - (i128)25))   /* 23*n^2-25 */
+NF_PRIME(gen_a111040, (((i128)2 * (N*N)) + (i128)9))   /* 2*n^2+9 */
+NF_PRIME(gen_a111041, (((i128)2 * (N*N)) + (i128)25))   /* 2*n^2+25 */
+NF_PRIME(gen_a111051, (((i128)3 * (N*N)) + (i128)1))   /* 3*n^2+1 */
+NF_PRIME(gen_a111052, (((i128)3 * (N*N)) + (i128)4))   /* 3*n^2+4 */
+NF_PRIME(gen_a111068, (((i128)3 * (N*N)) + (i128)16))   /* 3*n^2+16 */
+NF_PRIME(gen_a111069, (((i128)3 * (N*N)) + (i128)25))   /* 3*n^2+25 */
+NF_PRIME(gen_a111082, (((i128)3 * (N*N)) + (i128)49))   /* 3*n^2+49 */
+NF_PRIME(gen_a111083, (((i128)3 * (N*N)) + (i128)64))   /* 3*n^2+64 */
+NF_PRIME(gen_a111094, (((i128)18 * N) + (i128)1))   /* 18*n+1 */
+NF_PRIME(gen_a111147, (((i128)5 * (N*N)) + (i128)1))   /* 5*n^2+1 */
+NF_PRIME(gen_a111148, (((i128)5 * (N*N)) + (i128)4))   /* 5*n^2+4 */
+NF_PRIME(gen_a111149, (((i128)5 * (N*N)) + (i128)9))   /* 5*n^2+9 */
+NF_PRIME(gen_a111174, (((i128)24 * N) + (i128)1))   /* 24*n+1 */
+NF_PRIME(gen_a111175, (((i128)30 * N) + (i128)1))   /* 30*n+1 */
+NF_PRIME(gen_a111251, ((((i128)3 * (N*N)) + ((i128)3 * N)) + (i128)1))   /* 3*n^2+3*n+1 */
+NF_PRIME(gen_a111292, ((((i128)6 * (N*N)) + ((i128)6 * N)) + (i128)1))   /* 6*n^2+6*n+1 */
+NF_PRIME(gen_a111294, (((i128)23 * N) + (i128)2))   /* 23*n+2 */
+NF_PRIME(gen_a111312, (((i128)11 * N) + (i128)2))   /* 11*n+2 */
+NF_PRIME(gen_a111369, (((i128)13 * N) + (i128)11))   /* 13*n+11 */
+NF_PRIME(gen_a111455, (((i128)101 * N) + (i128)97))   /* 101*n+97 */
+PP_PRIME(gen_a113151, (((i128)19 * N) + (i128)2))   /* 19*n+2 */
+NF_PRIME(gen_a113487, (((i128)17 * N) + (i128)2))   /* 17*n+2 */
+NF_PRIME(gen_a113488, (((i128)19 * N) + (i128)2))   /* 19*n+2 */
+NF_PRIME(gen_a113510, (((i128)29 * N) + (i128)2))   /* 29*n+2 */
+PF_PRIME(gen_a117047, (((i128)60 * N) + (i128)11))   /* 60*n+11 */
+PF_PRIME(gen_a117049, (((i128)22 * (N*N)) + (i128)1))   /* 22*(n^2)+1 */
+NF_PRIME(gen_a119409, (((i128)235 * N) + (i128)1))   /* 235*n+1 */
+NF_PRIME(gen_a120344, (((i128)23 * N) + (i128)1))   /* 23*n+1 */
+NF_PRIME(gen_a120345, (((i128)2357 * N) + (i128)1))   /* 2357*n+1 */
+NF_PRIME(gen_a121068, (((i128)8 * (N*N)) + (i128)7))   /* 8*n^2+7 */
+NF_PRIME(gen_a121817, ((i128)23 + (((i128)36 * N) * (N + (i128)1))))   /* 23+36*n*(n+1) */
+PF_PRIME(gen_a122114, ((((i128)2 * (N*N)) + ((i128)26 * N)) + (i128)1))   /* 2*n^2+26*n+1 */
+PF_PRIME(gen_a122430, (((i128)1 + ((i128)2 * N)) + ((i128)3 * (N*N))))   /* 1+2*n+3*n^2 */
+PP_PRIME(gen_a122482, (((i128)1 + ((i128)4 * N)) + ((i128)12 * (N*N))))   /* 1+4*n+12*n^2 */
+NF_PRIME(gen_a124127, (((i128)17 * N) + (i128)1))   /* 17*n+1 */
+NF_PRIME(gen_a124198, (((i128)21 * N) + (i128)1))   /* 21*n+1 */
+NF_PRIME(gen_a124204, (((i128)20 * N) + (i128)1))   /* 20*n+1 */
+NF_PRIME(gen_a126332, (((i128)10 * N) + (i128)13))   /* 10*n+13 */
+NF_PRIME(gen_a126785, (((i128)10 * N) + (i128)11))   /* 10*n+11 */
+PP_PRIME(gen_a126960, ((((i128)3 * N)*((i128)3 * N)) + (i128)2))   /* (3*n)^2+2 */
+PP_PRIME(gen_a127435, (((N - (i128)1)*(N - (i128)1)) + (i128)1))   /* (n-1)^2+1 */
+NF_PRIME(gen_a127575, (((i128)16 * N) + (i128)15))   /* 16*n+15 */
+PF_PRIME(gen_a127576, (((i128)16 * N) + (i128)15))   /* 16*n+15 */
+PF_PRIME(gen_a127579, (((i128)64 * N) + (i128)63))   /* 64*n+63 */
+NF_PRIME(gen_a127580, (((i128)64 * N) + (i128)63))   /* 64*n+63 */
+PF_PRIME(gen_a127589, (((i128)16 * N) + (i128)5))   /* 16*n+5 */
+NF_PRIME(gen_a127590, (((i128)16 * N) + (i128)5))   /* 16*n+5 */
+NF_PRIME(gen_a127591, (((i128)64 * N) + (i128)21))   /* 64*n+21 */
+PF_PRIME(gen_a127592, (((i128)64 * N) + (i128)21))   /* 64*n+21 */
+PF_PRIME(gen_a127593, (((i128)256 * N) + (i128)85))   /* 256*n+85 */
+NF_PRIME(gen_a127594, (((i128)256 * N) + (i128)85))   /* 256*n+85 */
+NF_PRIME(gen_a128829, (((i128)6 * (N*N)) + (i128)17))   /* 6*n^2+17 */
+PF_PRIME(gen_a129484, (((i128)17 * N) + (i128)1))   /* 17*n+1 */
+PP_TEST(gen_a039787, (N - (i128)1), squarefree64)   /* n-1 */
+PP_TEST(gen_a049097, (N + (i128)1), squarefree64)   /* n+1 */
+PP_TEST(gen_a049231, (N - (i128)2), squarefree64)   /* n-2 */
+PP_TEST(gen_a049233, (N + (i128)2), squarefree64)   /* n+2 */
+NF_SEMI(gen_a085722, ((N*N) + (i128)1))   /* n^2+1 */
+NF_SEMI(gen_a085746, (((N*N) + N) + (i128)1))   /* n^2+n+1 */
+PP_TEST(gen_a092109, (N + (i128)3), is_semi64)   /* n+3 */
+SEMI_FORM(gen_a108181, (((i128)4 * N) + (i128)1))   /* 4*n+1 */
+NF_SEMI(gen_a108769, ((N*N) + ((N + (i128)1)*(N + (i128)1))))   /* n^2+(n+1)^2 */
+PP_TEST(gen_a109953, ((N*N) + (i128)2), is_semi64)   /* n^2+2 */
+SEMI_FORM(gen_a112771, (((i128)6 * N) + (i128)1))   /* 6*n+1 */
+SEMI_FORM(gen_a112772, (((i128)6 * N) + (i128)2))   /* 6*n+2 */
+SEMI_FORM(gen_a112774, (((i128)6 * N) + (i128)4))   /* 6*n+4 */
+NF_SEMI(gen_a112775, (((i128)6 * N) + (i128)1))   /* 6*n+1 */
+NF_SEMI(gen_a112776, (((i128)6 * N) + (i128)5))   /* 6*n+5 */
+NF_SEMI(gen_a112777, (((i128)2 * (N*N)) + (i128)1))   /* 2*n^2+1 */
+NF_SEMI(gen_a122488, (((i128)1 + ((i128)2 * N)) + ((i128)3 * (N*N))))   /* 1+2*n+3*n^2 */
+static void gen_a033253(u64 *t, long cnt) { gen_bform(t, cnt, 1, 0, 83, 1); }
+static void gen_a033254(u64 *t, long cnt) { gen_bform(t, cnt, 1, 0, 85, 1); }
+static void gen_a033255(u64 *t, long cnt) { gen_bform(t, cnt, 1, 0, 86, 1); }
+static void gen_a033256(u64 *t, long cnt) { gen_bform(t, cnt, 1, 0, 87, 1); }
+static void gen_a033257(u64 *t, long cnt) { gen_bform(t, cnt, 1, 0, 89, 1); }
+static void gen_a033258(u64 *t, long cnt) { gen_bform(t, cnt, 1, 0, 91, 1); }
+static void gen_a106880(u64 *t, long cnt) { gen_bform(t, cnt, 1, 1, 9, 1); }
+static void gen_a106890(u64 *t, long cnt) { gen_bform(t, cnt, 1, 1, 11, 1); }
+static void gen_a106900(u64 *t, long cnt) { gen_bform(t, cnt, 1, 1, 12, 1); }
+static void gen_a106901(u64 *t, long cnt) { gen_bform(t, cnt, 3, 3, 5, 1); }
+static void gen_a106903(u64 *t, long cnt) { gen_bform(t, cnt, 1, 1, 13, 1); }
+static void gen_a106905(u64 *t, long cnt) { gen_bform(t, cnt, 2, 2, 7, 1); }
+static void gen_a106907(u64 *t, long cnt) { gen_bform(t, cnt, 4, 3, 4, 1); }
+static void gen_a106921(u64 *t, long cnt) { gen_bform(t, cnt, 1, 1, 15, 1); }
+static void gen_a106926(u64 *t, long cnt) { gen_bform(t, cnt, 2, 1, 8, 1); }
+static void gen_a106929(u64 *t, long cnt) { gen_bform(t, cnt, 1, 1, 16, 1); }
+static void gen_a106931(u64 *t, long cnt) { gen_bform(t, cnt, 4, 4, 5, 1); }
+static void gen_a106932(u64 *t, long cnt) { gen_bform(t, cnt, 1, 1, 17, 1); }
+static void gen_a106934(u64 *t, long cnt) { gen_bform(t, cnt, 3, 2, 6, 1); }
+static void gen_a106937(u64 *t, long cnt) { gen_bform(t, cnt, 2, 2, 9, 1); }
+static void gen_a106939(u64 *t, long cnt) { gen_bform(t, cnt, 4, 3, 5, 1); }
+static void gen_a106945(u64 *t, long cnt) { gen_bform(t, cnt, 2, 1, 9, 1); }
+static void gen_a106949(u64 *t, long cnt) { gen_bform(t, cnt, 2, 0, 9, 1); }
+static void gen_a106950(u64 *t, long cnt) { gen_bform(t, cnt, 1, 0, 18, 1); }
+static void gen_a106951(u64 *t, long cnt) { gen_bform(t, cnt, 3, 3, 7, 1); }
+static void gen_a106953(u64 *t, long cnt) { gen_bform(t, cnt, 4, 2, 5, 1); }
+static void gen_a106959(u64 *t, long cnt) { gen_bform(t, cnt, 2, 1, 10, 1); }
+static void gen_a106964(u64 *t, long cnt) { gen_bform(t, cnt, 3, 2, 7, 1); }
+static void gen_a106966(u64 *t, long cnt) { gen_bform(t, cnt, 3, 1, 7, 1); }
+static void gen_a106969(u64 *t, long cnt) { gen_bform(t, cnt, 1, 1, 21, 1); }
+static void gen_a106971(u64 *t, long cnt) { gen_bform(t, cnt, 5, 4, 5, 1); }
+static void gen_a106974(u64 *t, long cnt) { gen_bform(t, cnt, 2, 2, 11, 1); }
+static void gen_a106975(u64 *t, long cnt) { gen_bform(t, cnt, 4, 3, 6, 1); }
+static void gen_a106978(u64 *t, long cnt) { gen_bform(t, cnt, 3, 3, 8, 1); }
+static void gen_a106980(u64 *t, long cnt) { gen_bform(t, cnt, 2, 1, 11, 1); }
+static void gen_a106984(u64 *t, long cnt) { gen_bform(t, cnt, 2, 0, 11, 1); }
+static void gen_a106985(u64 *t, long cnt) { gen_bform(t, cnt, 5, 3, 5, 1); }
+static void gen_a106988(u64 *t, long cnt) { gen_bform(t, cnt, 1, 1, 23, 1); }
+static void gen_a106990(u64 *t, long cnt) { gen_bform(t, cnt, 5, 5, 6, 1); }
+static void gen_a106992(u64 *t, long cnt) { gen_bform(t, cnt, 4, 1, 6, 1); }
+static void gen_a106995(u64 *t, long cnt) { gen_bform(t, cnt, 3, 1, 8, 1); }
+static void gen_a106998(u64 *t, long cnt) { gen_bform(t, cnt, 2, 1, 12, 1); }
+static void gen_a107002(u64 *t, long cnt) { gen_bform(t, cnt, 5, 2, 5, 1); }
+static void gen_a107005(u64 *t, long cnt) { gen_bform(t, cnt, 4, 4, 7, 1); }
+static void gen_a107007(u64 *t, long cnt) { gen_bform(t, cnt, 3, 0, 8, 1); }
+static void gen_a107008(u64 *t, long cnt) { gen_bform(t, cnt, 1, 0, 24, 1); }
+static void gen_a107009(u64 *t, long cnt) { gen_bform(t, cnt, 5, 1, 5, 1); }
+static void gen_a107012(u64 *t, long cnt) { gen_bform(t, cnt, 1, 1, 25, 1); }
+static void gen_a107132(u64 *t, long cnt) { gen_bform(t, cnt, 2, 0, 13, 1); }
+static void gen_a107133(u64 *t, long cnt) { gen_bform(t, cnt, 4, 0, 7, 1); }
+static void gen_a127736(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)(((N * (((N*N) + ((i128)2 * N)) - (i128)1)) / (i128)2)); } }  /* n*(n^2+2*n-1)/2 */
+static void gen_a006000(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 0; t[i] = (u64)((((N + (i128)1) * (((N*N) + N) + (i128)2)) / (i128)2)); } }  /* (n+1)*(n^2+n+2)/2 */
+static void gen_a016061(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 0; t[i] = (u64)((((N * (N + (i128)1)) * (((i128)4 * N) + (i128)5)) / (i128)6)); } }  /* n*(n+1)*(4*n+5)/6 */
+static void gen_a027620(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 0; t[i] = (u64)(((N + ((N + (i128)1)*(N + (i128)1))) + ((N + (i128)2)*(N + (i128)2)*(N + (i128)2)))); } }  /* n+(n+1)^2+(n+2)^3 */
+static void gen_a033994(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)((((N * (N + (i128)1)) * (((i128)5 * N) + (i128)1)) / (i128)6)); } }  /* n*(n+1)*(5*n+1)/6 */
+static void gen_a035328(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 0; t[i] = (u64)(((N * (((i128)2 * N) - (i128)1)) * (((i128)2 * N) + (i128)1))); } }  /* n*(2*n-1)*(2*n+1) */
+static void gen_a035329(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 0; t[i] = (u64)(((N * (((i128)2 * N) + (i128)5)) * (((i128)2 * N) + (i128)7))); } }  /* n*(2*n+5)*(2*n+7) */
+static void gen_a037235(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 0; t[i] = (u64)(((N * ((((i128)2 * (N*N)) - ((i128)3 * N)) + (i128)4)) / (i128)3)); } }  /* n*(2*n^2-3*n+4)/3 */
+static void gen_a056578(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 0; t[i] = (u64)(((((i128)1 + ((i128)2 * N)) + ((i128)3 * (N*N))) + ((i128)4 * (N*N*N)))); } }  /* 1+2*n+3*n^2+4*n^3 */
+static void gen_a071230(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 0; t[i] = (u64)(((N * ((((i128)6 * (N*N)) - ((i128)7 * N)) + (i128)3)) / (i128)2)); } }  /* n*(6*n^2-7*n+3)/2 */
+static void gen_a086605(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 0; t[i] = (u64)(((((i128)9 * (N*N*N)) - ((i128)18 * (N*N))) + ((i128)10 * N))); } }  /* 9*n^3-18*n^2+10*n */
+static void gen_a101853(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)(((N * (((i128)20 + ((i128)15 * N)) + (N*N))) / (i128)6)); } }  /* n*(20+15*n+n^2)/6 */
+static void gen_a102094(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)(((((i128)2 * N) - (i128)1) * ((((i128)2 * N) + (i128)1)*(((i128)2 * N) + (i128)1)))); } }  /* (2*n-1)*(2*n+1)^2 */
+static void gen_a111144(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 0; t[i] = (u64)((((N * (N + (i128)13)) * (N + (i128)14)) / (i128)6)); } }  /* n*(n+13)*(n+14)/6 */
+static void gen_a115519(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 0; t[i] = (u64)(((N * (((i128)1 + ((i128)3 * N)) + ((i128)6 * (N*N)))) / (i128)2)); } }  /* n*(1+3*n+6*n^2)/2 */
+static void gen_a126335(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)(((N * ((((i128)4 * (N*N)) + ((i128)5 * N)) - (i128)3)) / (i128)2)); } }  /* n*(4*n^2+5*n-3)/2 */
+static void gen_a074742(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 0; t[i] = (u64)((((((N*N*N) + ((i128)6 * (N*N))) - N) + (i128)12) / (i128)6)); } }  /* (n^3+6*n^2-n+12)/6 */
+static void gen_a100207(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 0; t[i] = (u64)(((((i128)4 + ((i128)8 * N)) + ((i128)10 * (N*N))) + ((i128)4 * (N*N*N)))); } }  /* 4+8*n+10*n^2+4*n^3 */
+static void gen_a000297(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + -1; t[i] = (u64)(((((N + (i128)1) * (N + (i128)3)) * (N + (i128)8)) / (i128)6)); } }  /* (n+1)*(n+3)*(n+8)/6 */
+static void gen_a027602(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 0; t[i] = (u64)((((N*N*N) + ((N + (i128)1)*(N + (i128)1)*(N + (i128)1))) + ((N + (i128)2)*(N + (i128)2)*(N + (i128)2)))); } }  /* n^3+(n+1)^3+(n+2)^3 */
+static void gen_a027849(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 0; t[i] = (u64)(((N + (i128)1) * ((((i128)5 * (N*N)) + ((i128)4 * N)) + (i128)1))); } }  /* (n+1)*(5*n^2+4*n+1) */
+static void gen_a049480(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)((((((i128)2 * N) - (i128)1) * (((N*N) - N) + (i128)6)) / (i128)6)); } }  /* (2*n-1)*(n^2-n+6)/6 */
+static void gen_a056520(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 0; t[i] = (u64)((((N + (i128)2) * ((((i128)2 * (N*N)) - N) + (i128)3)) / (i128)6)); } }  /* (n+2)*(2*n^2-n+3)/6 */
+static void gen_a063488(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)((((((i128)2 * N) - (i128)1) * (((N*N) - N) + (i128)2)) / (i128)2)); } }  /* (2*n-1)*(n^2-n+2)/2 */
+static void gen_a101165(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 0; t[i] = (u64)((((((i128)7 * (N*N*N)) + ((i128)6 * (N*N))) + ((i128)5 * N)) / (i128)6)); } }  /* (7*n^3+6*n^2+5*n)/6 */
+static void gen_a071229(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 0; t[i] = (u64)(((N * ((((i128)14 * (N*N)) - ((i128)21 * N)) + (i128)13)) / (i128)6)); } }  /* n*(14*n^2-21*n+13)/6 */
+static void gen_a101860(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 0; t[i] = (u64)(((((i128)3 + N) * (((i128)2 + ((i128)33 * N)) + (N*N))) / (i128)6)); } }  /* (3+n)*(2+33*n+n^2)/6 */
+static void gen_a114211(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 0; t[i] = (u64)(((((((i128)5 * (N*N*N)) + ((i128)12 * (N*N))) + N) + (i128)6) / (i128)6)); } }  /* (5*n^3+12*n^2+n+6)/6 */
+static void gen_a011199(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 0; t[i] = (u64)((((N + (i128)1) * (((i128)2 * N) + (i128)1)) * (((i128)3 * N) + (i128)1))); } }  /* (n+1)*(2*n+1)*(3*n+1) */
+static void gen_a079588(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 0; t[i] = (u64)((((N + (i128)1) * (((i128)2 * N) + (i128)1)) * (((i128)4 * N) + (i128)1))); } }  /* (n+1)*(2*n+1)*(4*n+1) */
+static void gen_a095796(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 0; t[i] = (u64)(((i128)1 + ((((((i128)26 * N) + (i128)17) + ((i128)7 * (N*N))) * N) / (i128)2))); } }  /* 1+(26*n+17+7*n^2)*n/2 */
+static void gen_a100504(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 0; t[i] = (u64)(((((((i128)4 * (N*N*N)) + ((i128)6 * (N*N))) + ((i128)8 * N)) + (i128)6) / (i128)3)); } }  /* (4*n^3+6*n^2+8*n+6)/3 */
+static void gen_a034721(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 0; t[i] = (u64)(((((((i128)10 * (N*N*N)) - ((i128)9 * (N*N))) + ((i128)2 * N)) / (i128)3) + (i128)1)); } }  /* (10*n^3-9*n^2+2*n)/3+1 */
+static void gen_a087863(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 0; t[i] = (u64)((((((N*N*N) + ((i128)24 * (N*N))) + ((i128)65 * N)) + (i128)36) / (i128)6)); } }  /* (n^3+24*n^2+65*n+36)/6 */
+static void gen_a057813(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 0; t[i] = (u64)((((((i128)2 * N) + (i128)1) * ((((i128)4 * (N*N)) + ((i128)4 * N)) + (i128)3)) / (i128)3)); } }  /* (2*n+1)*(4*n^2+4*n+3)/3 */
+static void gen_a061550(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 0; t[i] = (u64)((((((i128)2 * N) + (i128)1) * (((i128)2 * N) + (i128)3)) * (((i128)2 * N) + (i128)5))); } }  /* (2*n+1)*(2*n+3)*(2*n+5) */
+static void gen_a063489(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)((((((i128)2 * N) - (i128)1) * ((((i128)5 * (N*N)) - ((i128)5 * N)) + (i128)6)) / (i128)6)); } }  /* (2*n-1)*(5*n^2-5*n+6)/6 */
+static void gen_a063490(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)((((((i128)2 * N) - (i128)1) * ((((i128)7 * (N*N)) - ((i128)7 * N)) + (i128)6)) / (i128)6)); } }  /* (2*n-1)*(7*n^2-7*n+6)/6 */
+static void gen_a063491(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)((((((i128)2 * N) - (i128)1) * ((((i128)3 * (N*N)) - ((i128)3 * N)) + (i128)2)) / (i128)2)); } }  /* (2*n-1)*(3*n^2-3*n+2)/2 */
+static void gen_a063494(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)((((((i128)2 * N) - (i128)1) * ((((i128)7 * (N*N)) - ((i128)7 * N)) + (i128)3)) / (i128)3)); } }  /* (2*n-1)*(7*n^2-7*n+3)/3 */
+static void gen_a047205(u64 *t, long cnt) { gen_res(t, cnt, 5, 25ULL, 0); }
+static void gen_a047206(u64 *t, long cnt) { gen_res(t, cnt, 5, 26ULL, 1); }
+static void gen_a047207(u64 *t, long cnt) { gen_res(t, cnt, 5, 27ULL, 0); }
+static void gen_a047208(u64 *t, long cnt) { gen_res(t, cnt, 5, 17ULL, 0); }
+static void gen_a047218(u64 *t, long cnt) { gen_res(t, cnt, 5, 9ULL, 0); }
+static void gen_a047219(u64 *t, long cnt) { gen_res(t, cnt, 5, 10ULL, 1); }
+static void gen_a047221(u64 *t, long cnt) { gen_res(t, cnt, 5, 12ULL, 2); }
+static void gen_a047222(u64 *t, long cnt) { gen_res(t, cnt, 5, 13ULL, 0); }
+static void gen_a047223(u64 *t, long cnt) { gen_res(t, cnt, 5, 14ULL, 1); }
+static void gen_a047227(u64 *t, long cnt) { gen_res(t, cnt, 6, 30ULL, 1); }
+static void gen_a047228(u64 *t, long cnt) { gen_res(t, cnt, 6, 28ULL, 2); }
+static void gen_a047230(u64 *t, long cnt) { gen_res(t, cnt, 6, 24ULL, 3); }
+static void gen_a047231(u64 *t, long cnt) { gen_res(t, cnt, 6, 25ULL, 0); }
+static void gen_a047233(u64 *t, long cnt) { gen_res(t, cnt, 6, 17ULL, 0); }
+static void gen_a047234(u64 *t, long cnt) { gen_res(t, cnt, 6, 19ULL, 0); }
+static void gen_a047235(u64 *t, long cnt) { gen_res(t, cnt, 6, 20ULL, 2); }
+static void gen_a047236(u64 *t, long cnt) { gen_res(t, cnt, 6, 22ULL, 1); }
+static void gen_a047237(u64 *t, long cnt) { gen_res(t, cnt, 6, 23ULL, 0); }
+static void gen_a047242(u64 *t, long cnt) { gen_res(t, cnt, 6, 11ULL, 0); }
+static void gen_a047243(u64 *t, long cnt) { gen_res(t, cnt, 6, 12ULL, 2); }
+static void gen_a047244(u64 *t, long cnt) { gen_res(t, cnt, 6, 13ULL, 0); }
+static void gen_a047245(u64 *t, long cnt) { gen_res(t, cnt, 6, 14ULL, 1); }
+static void gen_a047249(u64 *t, long cnt) { gen_res(t, cnt, 6, 56ULL, 3); }
+static void gen_a047252(u64 *t, long cnt) { gen_res(t, cnt, 6, 59ULL, 0); }
+static void gen_a047253(u64 *t, long cnt) { gen_res(t, cnt, 6, 62ULL, 1); }
+static void gen_a045324(u64 *t, long cnt) { gen_pres(t, cnt, 7, 31ULL); }
+static void gen_a045325(u64 *t, long cnt) { gen_pres(t, cnt, 7, 29ULL); }
+static void gen_a045328(u64 *t, long cnt) { gen_pres(t, cnt, 7, 79ULL); }
+static void gen_a045329(u64 *t, long cnt) { gen_pres(t, cnt, 7, 77ULL); }
+static void gen_a045346(u64 *t, long cnt) { gen_pres(t, cnt, 7, 119ULL); }
+static void gen_a045347(u64 *t, long cnt) { gen_pres(t, cnt, 7, 117ULL); }
+static void gen_a045350(u64 *t, long cnt) { gen_pres(t, cnt, 7, 55ULL); }
+static void gen_a045351(u64 *t, long cnt) { gen_pres(t, cnt, 7, 53ULL); }
+static void gen_a045352(u64 *t, long cnt) { gen_pres(t, cnt, 8, 166ULL); }
+static void gen_a045353(u64 *t, long cnt) { gen_pres(t, cnt, 7, 103ULL); }
+static void gen_a045354(u64 *t, long cnt) { gen_pres(t, cnt, 7, 101ULL); }
+static void gen_a045358(u64 *t, long cnt) { gen_pres(t, cnt, 7, 39ULL); }
+static void gen_a045369(u64 *t, long cnt) { gen_pres(t, cnt, 7, 87ULL); }
+static void gen_a045370(u64 *t, long cnt) { gen_pres(t, cnt, 7, 85ULL); }
+static void gen_a045376(u64 *t, long cnt) { gen_pres(t, cnt, 7, 71ULL); }
+static void gen_a045393(u64 *t, long cnt) { gen_pres(t, cnt, 7, 123ULL); }
+static void gen_a045394(u64 *t, long cnt) { gen_pres(t, cnt, 7, 121ULL); }
+static void gen_a045396(u64 *t, long cnt) { gen_pres(t, cnt, 7, 59ULL); }
+static void gen_a045397(u64 *t, long cnt) { gen_pres(t, cnt, 7, 57ULL); }
+static void gen_a045398(u64 *t, long cnt) { gen_pres(t, cnt, 7, 107ULL); }
+static void gen_a047254(u64 *t, long cnt) { gen_res(t, cnt, 6, 44ULL, 2); }
+static void gen_a047256(u64 *t, long cnt) { gen_res(t, cnt, 6, 47ULL, 0); }
+static void gen_a047257(u64 *t, long cnt) { gen_res(t, cnt, 6, 48ULL, 4); }
+static void gen_a047258(u64 *t, long cnt) { gen_res(t, cnt, 6, 49ULL, 0); }
+static void gen_a047259(u64 *t, long cnt) { gen_res(t, cnt, 6, 50ULL, 1); }
+static void gen_a047260(u64 *t, long cnt) { gen_res(t, cnt, 6, 51ULL, 0); }
+static void gen_a047262(u64 *t, long cnt) { gen_res(t, cnt, 6, 53ULL, 0); }
+static void gen_a047263(u64 *t, long cnt) { gen_res(t, cnt, 6, 55ULL, 0); }
 
 /* ------------------------------------------------------------------ */
 /* catalogue                                                           */
@@ -6614,6 +7053,1206 @@ static SeqDef defs[] = {
 { "a028839", "A028839", "Sum of digits of n is a square", "digit rule",
   "27 different gaps occur, from 1 to 49; the level share is 25.18 %; L = 1 holds 37 % of the level class.",
   100000, 1, gen_a028839 },
+{ "a002327", "A002327", "Primes of the form k^2 - k - 1", "primes",
+  "98,161 different gaps occur, from 6 to 79,615,620; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a002327 },
+{ "a002328", "A002328", "Numbers k such that k^2 - k - 1 is prime", "prime values",
+  "62 different gaps occur, from 1 to 64; the level share is 20.35 %; L = 1 holds 40 % of the level class.",
+  100000, 1, gen_a002328 },
+{ "a002383", "A002383", "Primes of form k^2 + k + 1", "primes",
+  "97,970 different gaps occur, from 4 to 251,450,628; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a002383 },
+{ "a002384", "A002384", "Numbers m such that m^2 + m + 1 is prime", "prime values",
+  "101 different gaps occur, from 1 to 132; the level share is 24.72 %; L = 1 holds 36 % of the level class.",
+  100000, 1, gen_a002384 },
+{ "a002970", "A002970", "Numbers k such that 4*k^2 + 9 is prime", "prime values",
+  "130 different gaps occur, from 1 to 171; the level share is 23.33 %.",
+  100000, 1, gen_a002970 },
+{ "a002971", "A002971", "Numbers k such that 4*k^2 + 25 is prime", "prime values",
+  "64 different gaps occur, from 1 to 90; the level share is 18.76 %; L = 1 holds 40 % of the level class.",
+  100000, 1, gen_a002971 },
+{ "a005846", "A005846", "Primes of the form k^2 + k + 41", "primes",
+  "96,902 different gaps occur, from 2 to 22,664,950; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a005846 },
+{ "a007635", "A007635", "Primes of form n^2 + n + 17", "primes",
+  "98,426 different gaps occur, from 2 to 61,808,838; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a007635 },
+{ "a007637", "A007637", "Primes of form 3*k^2 - 3*k + 23", "primes",
+  "97,802 different gaps occur, from 6 to 92,677,830; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a007637 },
+{ "a007639", "A007639", "Primes of form 2n^2 - 2n + 19", "primes",
+  "98,203 different gaps occur, from 4 to 94,621,500; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a007639 },
+{ "a007641", "A007641", "Primes of the form 2*k^2 + 29", "primes",
+  "98,737 different gaps occur, from 2 to 53,963,848; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a007641 },
+{ "a023219", "A023219", "Primes p such that 5p+6 is a prime", "primes",
+  "286 different gaps occur, from 2 to 836; the level share is 34.52 %.",
+  100000, 1, gen_a023219 },
+{ "a027753", "A027753", "Primes of form n^2 + n + 3", "primes",
+  "99,098 different gaps occur, from 2 to 1,357,903,764; every decomposable term is forced level (l <= d^2); 8 terms do not decompose.",
+  100000, 1, gen_a027753 },
+{ "a027755", "A027755", "Primes of the form k^2 + k + 5", "primes",
+  "99,023 different gaps occur, from 2 to 341,654,130; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a027755 },
+{ "a027758", "A027758", "Primes of the form k^2 + k + 9", "primes",
+  "98,728 different gaps occur, from 18 to 1,652,570,208; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a027758 },
+{ "a027861", "A027861", "Numbers k such that k^2 + (k+1)^2 is prime", "prime values",
+  "81 different gaps occur, from 1 to 105; the level share is 22.33 %; L = 1 holds 36 % of the level class.",
+  100000, 1, gen_a027861 },
+{ "a027863", "A027863", "Numbers k such that k^2 + (k+1)^2 + (k+2)^2 is prime", "prime values",
+  "113 different gaps occur, from 2 to 290; the level share is 23.47 %; L = 2 holds 31 % of the level class.",
+  100000, 1, gen_a027863 },
+{ "a027866", "A027866", "Numbers k such that k^2 + (k+1)^2 + (k+2)^2 + (k+3)^2 + (k+4)^2 + (k+5)^2 is prime", "prime values",
+  "102 different gaps occur, from 1 to 121; the level share is 21.37 %; L = 1 holds 34 % of the level class.",
+  100000, 1, gen_a027866 },
+{ "a027867", "A027867", "Primes of the form n^2 + (n+1)^2 + (n+2)^2 + (n+3)^2 + (n+4)^2 + (n+5)^2", "primes",
+  "99,063 different gaps occur, from 60 to 1,237,739,760; every decomposable term is forced level (l <= d^2); 6 terms do not decompose.",
+  100000, 1, gen_a027867 },
+{ "a037029", "A037029", "Primes of the form 666*n + 1", "primes",
+  "52 different gaps occur, from 666 to 35,964; the level share is 69.07 %; 7.0 % of terms are forced level (l <= d^2).",
+  100000, 1, gen_a037029 },
+{ "a048059", "A048059", "Primes of the form k^2 + k + 11", "primes",
+  "98,862 different gaps occur, from 2 to 112,335,618; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a048059 },
+{ "a048988", "A048988", "Primes of the form 4*k^2 + 4*k + 59", "primes",
+  "97,604 different gaps occur, from 8 to 116,656,960; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a048988 },
+{ "a050265", "A050265", "Primes of the form 2*n^2 + 11", "primes",
+  "99,333 different gaps occur, from 2 to 166,743,070; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a050265 },
+{ "a051647", "A051647", "Primes p such that 210*p + 1 is also prime", "primes",
+  "289 different gaps occur, from 1 to 964; the level share is 34.31 %.",
+  100000, 1, gen_a051647 },
+{ "a051653", "A051653", "Primes p such that 2310*p + 1 is also prime", "primes",
+  "280 different gaps occur, from 2 to 728; the level share is 34.77 %.",
+  100000, 1, gen_a051653 },
+{ "a051654", "A051654", "Primes p such that 30030*p + 1 is also prime", "primes",
+  "298 different gaps occur, from 2 to 1,052; the level share is 34.73 %.",
+  100000, 1, gen_a051654 },
+{ "a052291", "A052291", "Primes p such that 4p^2 + 1 is also prime", "primes",
+  "540 different gaps occur, from 1 to 3,630; the level share is 45.97 %; 6 terms do not decompose.",
+  100000, 1, gen_a052291 },
+{ "a053182", "A053182", "Primes p such that p^2 + p + 1 is prime", "primes",
+  "469 different gaps occur, from 1 to 4,392; the level share is 50.42 %; L = 1 holds 31 % of the level class; there are no ties; 6 terms do not decompose.",
+  100000, 1, gen_a053182 },
+{ "a053184", "A053184", "Primes p such that p^2+p-1 is prime", "primes",
+  "562 different gaps occur, from 1 to 2,072; the level share is 39.52 %.",
+  100000, 1, gen_a053184 },
+{ "a055494", "A055494", "Numbers k such that k^2 - k + 1 is prime", "prime values",
+  "101 different gaps occur, from 1 to 132; the level share is 24.96 %; L = 1 holds 36 % of the level class.",
+  100000, 1, gen_a055494 },
+{ "a056906", "A056906", "Numbers k such that 36*k^2 + 5 is prime", "prime values",
+  "83 different gaps occur, from 1 to 104; the level share is 21.06 %; L = 1 holds 36 % of the level class.",
+  100000, 1, gen_a056906 },
+{ "a056908", "A056908", "Numbers k such that 36*k^2 + 36*k + 13 is prime", "prime values",
+  "91 different gaps occur, from 1 to 134; the level share is 22.02 %; L = 1 holds 34 % of the level class.",
+  100000, 1, gen_a056908 },
+{ "a057604", "A057604", "Primes of the form 4*k^2 + 163", "primes",
+  "98,729 different gaps occur, from 4 to 93,888,512; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a057604 },
+{ "a059425", "A059425", "Primes of form n^2 + 19n + 17", "primes",
+  "98,132 different gaps occur, from 20 to 41,112,432; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a059425 },
+{ "a060844", "A060844", "Primes of the form 6*k^2 + 6*k + 31", "primes",
+  "96,829 different gaps occur, from 12 to 150,530,940; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a060844 },
+{ "a061242", "A061242", "Primes of the form 9*k - 1", "primes",
+  "41 different gaps occur, from 18 to 756; the level share is 42.75 %; L = 1 holds 38 % of the level class; there are no ties.",
+  100000, 1, gen_a061242 },
+{ "a062800", "A062800", "Primes of form 100*k + 1", "primes",
+  "58 different gaps occur, from 100 to 6,400; the level share is 53.08 %; 1.0 % of terms are forced level (l <= d^2).",
+  100000, 1, gen_a062800 },
+{ "a063472", "A063472", "Primes of the form 666*k - 1", "primes",
+  "56 different gaps occur, from 666 to 37,962; the level share is 68.86 %; 7.0 % of terms are forced level (l <= d^2); there are no ties.",
+  100000, 1, gen_a063472 },
+{ "a065508", "A065508", "Primes p such that p^2 - p + 1 is prime", "primes",
+  "457 different gaps occur, from 1 to 4,380; the level share is 50.27 %; L = 1 holds 31 % of the level class; 6 terms do not decompose.",
+  100000, 1, gen_a065508 },
+{ "a066049", "A066049", "Numbers k such that 2*k^2 - 1 is a prime", "prime values",
+  "61 different gaps occur, from 1 to 61; the level share is 20.78 %; L = 1 holds 41 % of the level class.",
+  100000, 1, gen_a066049 },
+{ "a066436", "A066436", "Primes of the form 2*n^2 - 1", "primes",
+  "98,979 different gaps occur, from 10 to 142,133,640; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a066436 },
+{ "a073102", "A073102", "Primes of the form 210n + 1", "primes",
+  "34 different gaps occur, from 210 to 7,350; the level share is 62.77 %; 1.2 % of terms are forced level (l <= d^2); L = 1 holds 39 % of the level class.",
+  100000, 1, gen_a073102 },
+{ "a076339", "A076339", "Primes of the form 512*k+1", "primes",
+  "80 different gaps occur, from 512 to 49,152; the level share is 64.20 %; 8.5 % of terms are forced level (l <= d^2).",
+  100000, 1, gen_a076339 },
+{ "a076727", "A076727", "Primes of the form x^2 + (x+3)^2", "primes",
+  "98,702 different gaps occur, from 12 to 975,329,472; every decomposable term is forced level (l <= d^2); 7 terms do not decompose.",
+  100000, 1, gen_a076727 },
+{ "a083022", "A083022", "Numbers n such that 4*n^2 - 3 is prime", "prime values",
+  "85 different gaps occur, from 1 to 102; the level share is 18.87 %.",
+  100000, 1, gen_a083022 },
+{ "a086285", "A086285", "Numbers k such that 1 + 2k + 3k^2 is prime", "prime values",
+  "85 different gaps occur, from 2 to 194; the level share is 24.05 %; L = 2 holds 39 % of the level class.",
+  100000, 1, gen_a086285 },
+{ "a086298", "A086298", "Numbers n such that 1-2n+3n^2 is prime", "prime values",
+  "87 different gaps occur, from 2 to 200; the level share is 23.68 %; L = 2 holds 38 % of the level class.",
+  100000, 1, gen_a086298 },
+{ "a086303", "A086303", "Numbers n such that n+15 is prime", "prime values",
+  "53 different gaps occur, from 2 to 114; the level share is 14.92 %; L = 2 holds 30 % of the level class; there are no ties.",
+  100000, 1, gen_a086303 },
+{ "a086304", "A086304", "Numbers n such that n+6 is prime", "prime values",
+  "53 different gaps occur, from 2 to 114; the level share is 25.65 %; L = 1 holds 35 % of the level class.",
+  100000, 1, gen_a086304 },
+{ "a088572", "A088572", "Numbers n such that (2n+1)^2 - 2 is prime", "prime values",
+  "64 different gaps occur, from 1 to 69; the level share is 20.64 %; L = 1 holds 42 % of the level class.",
+  100000, 1, gen_a088572 },
+{ "a088758", "A088758", "Numbers k such that (4*k + 1)^2 + (4*k + 2)^2 is prime", "prime values",
+  "91 different gaps occur, from 1 to 100; the level share is 22.13 %; L = 1 holds 32 % of the level class.",
+  100000, 1, gen_a088758 },
+{ "a088759", "A088759", "Numbers k such that (4*k+3)^2 + (4*k+2)^2 is prime", "prime values",
+  "97 different gaps occur, from 1 to 137; the level share is 23.84 %; L = 1 holds 38 % of the level class.",
+  100000, 1, gen_a088759 },
+{ "a088955", "A088955", "Primes of the form 60*k + 1", "primes",
+  "36 different gaps occur, from 60 to 2,160; the level share is 52.60 %; L = 1 holds 40 % of the level class.",
+  100000, 1, gen_a088955 },
+{ "a088967", "A088967", "Numbers n such that n+9 is a prime", "prime values",
+  "53 different gaps occur, from 2 to 114; the level share is 17.18 %; L = 2 holds 34 % of the level class; there are no ties.",
+  100000, 1, gen_a088967 },
+{ "a089001", "A089001", "Numbers k such that 2*k^2 + 1 is prime", "prime values",
+  "59 different gaps occur, from 2 to 192; the level share is 19.47 %; L = 3 holds 42 % of the level class.",
+  100000, 1, gen_a089001 },
+{ "a089008", "A089008", "Numbers k such that 18*k^2 + 1 is prime", "prime values",
+  "58 different gaps occur, from 1 to 64; the level share is 19.46 %; L = 1 holds 42 % of the level class.",
+  100000, 1, gen_a089008 },
+{ "a089063", "A089063", "Numbers k such that 840*k + 175177943 is a prime", "prime values",
+  "39 different gaps occur, from 1 to 40; the level share is 17.17 %; L = 1 holds 49 % of the level class.",
+  100000, 1, gen_a089063 },
+{ "a089373", "A089373", "Numbers k such that k^2 - 7*k + 7 is prime", "prime values",
+  "120 different gaps occur, from 1 to 168; the level share is 25.41 %; L = 1 holds 33 % of the level class.",
+  100000, 1, gen_a089373 },
+{ "a089376", "A089376", "Primes of the form k^2 - 7*k + 7", "primes",
+  "98,615 different gaps occur, from 24 to 464,991,240; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a089376 },
+{ "a089438", "A089438", "Primes p such that 6p+11 is also a prime", "primes",
+  "337 different gaps occur, from 1 to 898; the level share is 36.85 %.",
+  100000, 1, gen_a089438 },
+{ "a089441", "A089441", "Primes p such that 16*p+17 is a prime", "primes",
+  "275 different gaps occur, from 6 to 2,340; the level share is 48.31 %; L = 1 holds 35 % of the level class; there are no ties.",
+  100000, 1, gen_a089441 },
+{ "a089593", "A089593", "Numbers k such that k^2 + 2k + 2 is prime", "prime values",
+  "88 different gaps occur, from 1 to 212; the level share is 31.44 %; L = 1 holds 48 % of the level class.",
+  100000, 1, gen_a089593 },
+{ "a089623", "A089623", "Numbers n such that n^2 + 2n - 1 is prime", "prime values",
+  "65 different gaps occur, from 1 to 138; the level share is 20.64 %; L = 2 holds 42 % of the level class.",
+  100000, 1, gen_a089623 },
+{ "a089681", "A089681", "Numbers n such that 3n^2 - 1 is prime", "prime values",
+  "58 different gaps occur, from 1 to 120; the level share is 19.74 %; L = 2 holds 43 % of the level class.",
+  100000, 1, gen_a089681 },
+{ "a089682", "A089682", "Primes of the form 3*m^2 - 1", "primes",
+  "99,215 different gaps occur, from 9 to 875,458,032; every decomposable term is forced level (l <= d^2); 6 terms do not decompose.",
+  100000, 1, gen_a089682 },
+{ "a089747", "A089747", "Numbers n such that n^2 - 2n + 5 is prime", "prime values",
+  "82 different gaps occur, from 2 to 178; the level share is 21.60 %; L = 2 holds 37 % of the level class; there are no ties.",
+  100000, 1, gen_a089747 },
+{ "a090187", "A090187", "Primes of the form 11*n+2", "primes",
+  "57 different gaps occur, from 11 to 2,002; the level share is 41.80 %; there are no ties.",
+  100000, 1, gen_a090187 },
+{ "a090562", "A090562", "Primes of the form 5k^2 + 5k + 1", "primes",
+  "98,335 different gaps occur, from 20 to 322,474,490; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a090562 },
+{ "a090563", "A090563", "Numbers k such that 5*k^2 + 5*k + 1 is prime", "prime values",
+  "54 different gaps occur, from 1 to 71; the level share is 19.11 %; L = 1 holds 45 % of the level class.",
+  100000, 1, gen_a090563 },
+{ "a090684", "A090684", "Primes of the form 8*k^2 - 1", "primes",
+  "99,127 different gaps occur, from 24 to 741,263,360; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a090684 },
+{ "a090685", "A090685", "Primes of the form 8*k^2 + 1", "primes",
+  "99,280 different gaps occur, from 648 to 5,455,465,344; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a090685 },
+{ "a090686", "A090686", "Primes of the form 6n^2 - 1", "primes",
+  "99,422 different gaps occur, from 18 to 731,095,680; every decomposable term is forced level (l <= d^2); 7 terms do not decompose.",
+  100000, 1, gen_a090686 },
+{ "a090687", "A090687", "Primes of the form 6*k^2 + 1", "primes",
+  "99,454 different gaps occur, from 54 to 1,548,693,090; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a090687 },
+{ "a090696", "A090696", "Numbers k such that k^2 - 11 is a prime", "prime values",
+  "100 different gaps occur, from 2 to 308; the level share is 25.24 %; L = 2 holds 35 % of the level class.",
+  100000, 1, gen_a090696 },
+{ "a090698", "A090698", "Primes of the form 2*n^2+1", "primes",
+  "99,186 different gaps occur, from 16 to 1,438,225,920; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a090698 },
+{ "a091271", "A091271", "Numbers k such that 4*k^2-11 is a prime", "prime values",
+  "100 different gaps occur, from 1 to 154; the level share is 25.23 %; L = 1 holds 35 % of the level class.",
+  100000, 1, gen_a091271 },
+{ "a091567", "A091567", "Primes p such that p^2-p-1 is prime", "primes",
+  "561 different gaps occur, from 2 to 1,542; the level share is 40.35 %.",
+  100000, 1, gen_a091567 },
+{ "a092968", "A092968", "Numbers n such that 2n^2 + 11 is a prime", "prime values",
+  "68 different gaps occur, from 1 to 79; the level share is 19.62 %; L = 1 holds 41 % of the level class.",
+  100000, 1, gen_a092968 },
+{ "a093359", "A093359", "Primes of the form 28*k + 1", "primes",
+  "54 different gaps occur, from 28 to 1,596; the level share is 43.55 %.",
+  100000, 1, gen_a093359 },
+{ "a093838", "A093838", "Primes of the form 36n + 1", "primes",
+  "41 different gaps occur, from 36 to 1,548; the level share is 47.29 %; L = 1 holds 33 % of the level class.",
+  100000, 1, gen_a093838 },
+{ "a094210", "A094210", "Numbers k such that k^2 + 3k + 1 is a prime", "prime values",
+  "62 different gaps occur, from 1 to 64; the level share is 20.64 %; L = 1 holds 42 % of the level class.",
+  100000, 1, gen_a094210 },
+{ "a094407", "A094407", "Primes of the form 16n+1", "primes",
+  "59 different gaps occur, from 16 to 1,344; the level share is 38.24 %.",
+  100000, 1, gen_a094407 },
+{ "a095995", "A095995", "Primes of the form 100n - 1", "primes",
+  "57 different gaps occur, from 100 to 6,600; the level share is 53.11 %; 1.0 % of terms are forced level (l <= d^2); there are no ties.",
+  100000, 1, gen_a095995 },
+{ "a096689", "A096689", "Numbers n such that 2n^2 + 3n + 3 is prime", "prime values",
+  "95 different gaps occur, from 2 to 234; the level share is 19.36 %.",
+  100000, 1, gen_a096689 },
+{ "a096691", "A096691", "Numbers n such that 8n^2 + 6n + 3 is prime", "prime values",
+  "95 different gaps occur, from 1 to 117; the level share is 19.35 %.",
+  100000, 1, gen_a096691 },
+{ "a098828", "A098828", "Primes of the form 2*n^2 + 2*n - 1", "primes",
+  "97,983 different gaps occur, from 8 to 343,225,320; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a098828 },
+{ "a099007", "A099007", "Primes of the form 6n^2 - 2n - 1", "primes",
+  "99,955 different gaps occur, from 16 to 1,052,281,164; every decomposable term is forced level (l <= d^2); 7 terms do not decompose.",
+  100000, 1, gen_a099007 },
+{ "a100201", "A100201", "Primes of the form 23*k+3", "primes",
+  "63 different gaps occur, from 46 to 3,220; the level share is 46.46 %.",
+  100000, 1, gen_a100201 },
+{ "a100202", "A100202", "Primes of the form 13*k + 3", "primes",
+  "61 different gaps occur, from 26 to 1,638; the level share is 42.66 %.",
+  100000, 1, gen_a100202 },
+{ "a100203", "A100203", "Primes of the form 37n+3", "primes",
+  "67 different gaps occur, from 74 to 5,402; the level share is 49.18 %.",
+  100000, 1, gen_a100203 },
+{ "a100494", "A100494", "Primes of the form 47*k + 3", "primes",
+  "69 different gaps occur, from 94 to 7,144; the level share is 51.09 %; 1.2 % of terms are forced level (l <= d^2).",
+  100000, 1, gen_a100494 },
+{ "a100760", "A100760", "Primes of the form 47n+5", "primes",
+  "72 different gaps occur, from 94 to 7,050; the level share is 50.99 %; 1.2 % of terms are forced level (l <= d^2); there are no ties.",
+  100000, 1, gen_a100760 },
+{ "a101444", "A101444", "Numbers k such that (9973*k + 10007) is a prime", "prime values",
+  "99 different gaps occur, from 2 to 212; the level share is 25.42 %; L = 2 holds 37 % of the level class; there are no ties.",
+  100000, 1, gen_a101444 },
+{ "a101567", "A101567", "Numbers n such that 1009*n + 10007 is prime", "prime values",
+  "84 different gaps occur, from 2 to 200; the level share is 24.76 %; L = 2 holds 39 % of the level class.",
+  100000, 1, gen_a101567 },
+{ "a101780", "A101780", "Primes of the form 100*n + 3", "primes",
+  "58 different gaps occur, from 100 to 8,700; the level share is 53.06 %; 1.0 % of terms are forced level (l <= d^2); there are no ties.",
+  100000, 1, gen_a101780 },
+{ "a102130", "A102130", "Primes of the form 8*n^2 + 4*n + 1", "primes",
+  "99,898 different gaps occur, from 28 to 1,268,174,400; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a102130 },
+{ "a102166", "A102166", "Numbers n such that 2*n^2 + 11*n + 101 is prime", "prime values",
+  "81 different gaps occur, from 2 to 214; the level share is 23.38 %; L = 2 holds 40 % of the level class; there are no ties.",
+  100000, 1, gen_a102166 },
+{ "a102339", "A102339", "Numbers k such that k*10^3 + 333 is prime", "prime values",
+  "62 different gaps occur, from 1 to 120; the level share is 16.94 %; L = 1 holds 32 % of the level class.",
+  100000, 1, gen_a102339 },
+{ "a102343", "A102343", "Numbers k such that k*10^3 + 777 is prime", "prime values",
+  "69 different gaps occur, from 1 to 78; the level share is 15.98 %; L = 1 holds 30 % of the level class.",
+  100000, 1, gen_a102343 },
+{ "a102649", "A102649", "Numbers n such that 11*n^2 + 11*n + 3 is prime", "prime values",
+  "79 different gaps occur, from 3 to 270; the level share is 32.67 %; L = 1 holds 34 % of the level class.",
+  100000, 1, gen_a102649 },
+{ "a102657", "A102657", "Numbers k such that 11*k^2 + 11*k + 1 is prime", "prime values",
+  "73 different gaps occur, from 1 to 81; the level share is 20.69 %; L = 1 holds 39 % of the level class.",
+  100000, 1, gen_a102657 },
+{ "a102732", "A102732", "Primes of the form 13n+5", "primes",
+  "55 different gaps occur, from 26 to 2,106; the level share is 42.79 %; there are no ties.",
+  100000, 1, gen_a102732 },
+{ "a102734", "A102734", "Primes of the form 23n+5", "primes",
+  "64 different gaps occur, from 46 to 3,450; the level share is 46.48 %; there are no ties.",
+  100000, 1, gen_a102734 },
+{ "a102851", "A102851", "Primes of the form 19n + 5", "primes",
+  "62 different gaps occur, from 38 to 3,192; the level share is 45.09 %.",
+  100000, 1, gen_a102851 },
+{ "a103564", "A103564", "Primes p such that 3*p^2 + 2 is prime", "primes",
+  "729 different gaps occur, from 4 to 4,020; the level share is 49.16 %.",
+  100000, 1, gen_a103564 },
+{ "a103776", "A103776", "Primes p such that 8*p^2 + 4*p + 1 is also prime", "primes",
+  "547 different gaps occur, from 4 to 3,754; the level share is 43.62 %; 6 terms do not decompose.",
+  100000, 1, gen_a103776 },
+{ "a105057", "A105057", "Numbers n such that 10000 * n - 1 is prime", "prime values",
+  "74 different gaps occur, from 1 to 84; the level share is 23.23 %; L = 1 holds 41 % of the level class.",
+  100000, 1, gen_a105057 },
+{ "a105059", "A105059", "Numbers n such that 100000n - 1 is prime", "prime values",
+  "85 different gaps occur, from 1 to 104; the level share is 23.79 %; L = 1 holds 38 % of the level class.",
+  100000, 1, gen_a105059 },
+{ "a105107", "A105107", "Numbers n such that 10000n + 1001 is prime", "prime values",
+  "75 different gaps occur, from 1 to 88; the level share is 21.57 %; L = 1 holds 40 % of the level class.",
+  100000, 1, gen_a105107 },
+{ "a105126", "A105126", "Primes of the form 16n+9", "primes",
+  "65 different gaps occur, from 16 to 1,392; the level share is 38.10 %.",
+  100000, 1, gen_a105126 },
+{ "a105127", "A105127", "Primes of the form 32n+17", "primes",
+  "70 different gaps occur, from 32 to 2,400; the level share is 43.35 %.",
+  100000, 1, gen_a105127 },
+{ "a105128", "A105128", "Primes of the form 64n+33", "primes",
+  "69 different gaps occur, from 64 to 4,864; the level share is 47.91 %.",
+  100000, 1, gen_a105128 },
+{ "a105129", "A105129", "Primes of the form 128n+65", "primes",
+  "69 different gaps occur, from 128 to 9,984; the level share is 53.03 %; 1.8 % of terms are forced level (l <= d^2).",
+  100000, 1, gen_a105129 },
+{ "a105130", "A105130", "Primes of the form 256n+129", "primes",
+  "77 different gaps occur, from 256 to 20,736; the level share is 58.19 %; 4.1 % of terms are forced level (l <= d^2).",
+  100000, 1, gen_a105130 },
+{ "a105131", "A105131", "Primes of the form 512n+257", "primes",
+  "77 different gaps occur, from 512 to 48,128; the level share is 64.20 %; 8.5 % of terms are forced level (l <= d^2).",
+  100000, 1, gen_a105131 },
+{ "a105132", "A105132", "Primes of the form 1024n + 513", "primes",
+  "81 different gaps occur, from 1,024 to 136,192; the level share is 70.44 %; 16.2 % of terms are forced level (l <= d^2).",
+  100000, 1, gen_a105132 },
+{ "a105140", "A105140", "Numbers n such that 1024n+513 is prime", "prime values",
+  "81 different gaps occur, from 1 to 133; the level share is 20.02 %.",
+  100000, 1, gen_a105140 },
+{ "a105680", "A105680", "Numbers k such that 1009*k + 9973 is prime", "prime values",
+  "86 different gaps occur, from 2 to 222; the level share is 24.77 %; L = 2 holds 38 % of the level class; there are no ties.",
+  100000, 1, gen_a105680 },
+{ "a105710", "A105710", "Numbers k such that 9973*k + 1009 is prime", "prime values",
+  "93 different gaps occur, from 2 to 226; the level share is 25.33 %; L = 2 holds 38 % of the level class.",
+  100000, 1, gen_a105710 },
+{ "a105854", "A105854", "Primes of the form 20*k + 3", "primes",
+  "49 different gaps occur, from 20 to 1,080; the level share is 42.25 %; there are no ties.",
+  100000, 1, gen_a105854 },
+{ "a106483", "A106483", "Primes p such that 2*p^2 - 1 is also prime", "primes",
+  "550 different gaps occur, from 1 to 1,674; the level share is 39.87 %.",
+  100000, 1, gen_a106483 },
+{ "a106699", "A106699", "Numbers k such that 1009*k - 9973 is prime", "prime values",
+  "85 different gaps occur, from 2 to 210; the level share is 24.69 %; L = 2 holds 38 % of the level class.",
+  100000, 1, gen_a106699 },
+{ "a106700", "A106700", "Numbers k such that 9973*k - 1009 is prime", "prime values",
+  "97 different gaps occur, from 2 to 258; the level share is 25.29 %; L = 2 holds 37 % of the level class; there are no ties.",
+  100000, 1, gen_a106700 },
+{ "a107003", "A107003", "Primes of the form 24*k + 5", "primes",
+  "42 different gaps occur, from 24 to 1,056; the level share is 44.94 %; L = 1 holds 36 % of the level class; there are no ties.",
+  100000, 1, gen_a107003 },
+{ "a107071", "A107071", "Numbers k such that 1019*k + 1021 is prime", "prime values",
+  "86 different gaps occur, from 2 to 216; the level share is 24.42 %; L = 2 holds 38 % of the level class; there are no ties.",
+  100000, 1, gen_a107071 },
+{ "a107072", "A107072", "Numbers k such that 1021*k + 1019 is prime", "prime values",
+  "87 different gaps occur, from 2 to 212; the level share is 24.66 %; L = 2 holds 37 % of the level class; there are no ties.",
+  100000, 1, gen_a107072 },
+{ "a107301", "A107301", "Numbers k such that 10007*k + 99991 is prime", "prime values",
+  "94 different gaps occur, from 2 to 220; the level share is 25.22 %; L = 2 holds 37 % of the level class.",
+  100000, 1, gen_a107301 },
+{ "a107302", "A107302", "Numbers k such that 99991*k + 10007 is prime", "prime values",
+  "104 different gaps occur, from 2 to 342; the level share is 25.88 %; L = 2 holds 36 % of the level class.",
+  100000, 1, gen_a107302 },
+{ "a107303", "A107303", "Numbers k such that (3*k - 5) is prime", "prime values",
+  "39 different gaps occur, from 2 to 90; the level share is 16.26 %; L = 2 holds 48 % of the level class.",
+  100000, 1, gen_a107303 },
+{ "a107306", "A107306", "Numbers k such that (17*k - 19) is prime", "prime values",
+  "62 different gaps occur, from 2 to 134; the level share is 23.17 %; L = 2 holds 43 % of the level class.",
+  100000, 1, gen_a107306 },
+{ "a107308", "A107308", "Numbers k such that (29*k - 31) is prime", "prime values",
+  "65 different gaps occur, from 2 to 136; the level share is 23.86 %; L = 2 holds 42 % of the level class.",
+  100000, 1, gen_a107308 },
+{ "a108058", "A108058", "Numbers k such that 179*k + 181 is prime", "prime values",
+  "77 different gaps occur, from 2 to 204; the level share is 24.27 %; L = 2 holds 40 % of the level class; there are no ties.",
+  100000, 1, gen_a108058 },
+{ "a108059", "A108059", "Numbers k such that 181*k + 179 is prime", "prime values",
+  "76 different gaps occur, from 2 to 172; the level share is 24.20 %; L = 2 holds 39 % of the level class.",
+  100000, 1, gen_a108059 },
+{ "a108060", "A108060", "Numbers k such that 191*k + 193 is prime", "prime values",
+  "78 different gaps occur, from 2 to 214; the level share is 24.80 %; L = 2 holds 40 % of the level class.",
+  100000, 1, gen_a108060 },
+{ "a108061", "A108061", "Numbers k such that 193*k + 191 is prime", "prime values",
+  "75 different gaps occur, from 2 to 184; the level share is 24.38 %; L = 2 holds 38 % of the level class.",
+  100000, 1, gen_a108061 },
+{ "a108187", "A108187", "Numbers n such that 11*n - 5 is prime", "prime values",
+  "60 different gaps occur, from 2 to 150; the level share is 20.78 %; L = 2 holds 42 % of the level class.",
+  100000, 1, gen_a108187 },
+{ "a108232", "A108232", "Numbers n such that 11*n - 7 is prime", "prime values",
+  "57 different gaps occur, from 2 to 118; the level share is 21.62 %; L = 2 holds 43 % of the level class.",
+  100000, 1, gen_a108232 },
+{ "a108233", "A108233", "Numbers n such that 11*n + 5 is prime", "prime values",
+  "58 different gaps occur, from 2 to 130; the level share is 20.45 %; L = 2 holds 42 % of the level class; there are no ties.",
+  100000, 1, gen_a108233 },
+{ "a108341", "A108341", "Numbers n such that 997*n - 1009 is prime", "prime values",
+  "84 different gaps occur, from 2 to 186; the level share is 24.80 %; L = 2 holds 38 % of the level class; there are no ties.",
+  100000, 1, gen_a108341 },
+{ "a108342", "A108342", "Numbers n such that 1009*n - 997 is prime", "prime values",
+  "85 different gaps occur, from 2 to 222; the level share is 24.58 %; L = 2 holds 37 % of the level class.",
+  100000, 1, gen_a108342 },
+{ "a108584", "A108584", "Numbers k such that 10*k - 97 is prime", "prime values",
+  "50 different gaps occur, from 1 to 54; the level share is 21.84 %; L = 1 holds 49 % of the level class.",
+  100000, 1, gen_a108584 },
+{ "a108588", "A108588", "Numbers k such that 10*k + 97 is prime", "prime values",
+  "48 different gaps occur, from 1 to 50; the level share is 20.68 %; L = 1 holds 45 % of the level class.",
+  100000, 1, gen_a108588 },
+{ "a108594", "A108594", "Numbers k such that 10*k + 101 is prime", "prime values",
+  "47 different gaps occur, from 1 to 50; the level share is 22.08 %; L = 1 holds 45 % of the level class.",
+  100000, 1, gen_a108594 },
+{ "a108595", "A108595", "Numbers k such that 10*k + 103 is prime", "prime values",
+  "50 different gaps occur, from 1 to 54; the level share is 21.82 %; L = 1 holds 46 % of the level class.",
+  100000, 1, gen_a108595 },
+{ "a108596", "A108596", "Numbers k such that 911*k - 7 is prime", "prime values",
+  "85 different gaps occur, from 2 to 210; the level share is 23.94 %; L = 2 holds 38 % of the level class; there are no ties.",
+  100000, 1, gen_a108596 },
+{ "a108597", "A108597", "Numbers n such that 911*n - 11 is prime", "prime values",
+  "84 different gaps occur, from 2 to 180; the level share is 24.27 %; L = 2 holds 38 % of the level class; there are no ties.",
+  100000, 1, gen_a108597 },
+{ "a108724", "A108724", "Numbers n such that 11*n + 17 is prime", "prime values",
+  "60 different gaps occur, from 2 to 150; the level share is 22.37 %; L = 2 holds 43 % of the level class; there are no ties.",
+  100000, 1, gen_a108724 },
+{ "a108725", "A108725", "Numbers n such that 11*n + 19 is prime", "prime values",
+  "57 different gaps occur, from 2 to 132; the level share is 22.58 %; L = 2 holds 42 % of the level class; there are no ties.",
+  100000, 1, gen_a108725 },
+{ "a108726", "A108726", "Numbers n such that 11*n + 29 is prime", "prime values",
+  "57 different gaps occur, from 2 to 142; the level share is 23.44 %; L = 2 holds 42 % of the level class; there are no ties.",
+  100000, 1, gen_a108726 },
+{ "a108727", "A108727", "Numbers n such that 11*n + 31 is prime", "prime values",
+  "56 different gaps occur, from 2 to 128; the level share is 22.91 %; L = 2 holds 44 % of the level class.",
+  100000, 1, gen_a108727 },
+{ "a108751", "A108751", "Numbers k such that 11*k - 911 is prime", "prime values",
+  "57 different gaps occur, from 1 to 182; the level share is 22.91 %; L = 2 holds 43 % of the level class.",
+  100000, 1, gen_a108751 },
+{ "a108757", "A108757", "Numbers k such that 1000*k + 911 is prime", "prime values",
+  "66 different gaps occur, from 1 to 75; the level share is 22.53 %; L = 1 holds 43 % of the level class.",
+  100000, 1, gen_a108757 },
+{ "a108762", "A108762", "Numbers n such that 911*n + 13 is prime", "prime values",
+  "86 different gaps occur, from 2 to 204; the level share is 24.43 %; L = 2 holds 39 % of the level class.",
+  100000, 1, gen_a108762 },
+{ "a108854", "A108854", "Numbers k such that 10*k - 127 is prime", "prime values",
+  "50 different gaps occur, from 1 to 54; the level share is 20.98 %; L = 1 holds 45 % of the level class.",
+  100000, 1, gen_a108854 },
+{ "a108855", "A108855", "Numbers n such that 10*n + 127 is prime", "prime values",
+  "48 different gaps occur, from 1 to 50; the level share is 22.00 %; L = 1 holds 47 % of the level class.",
+  100000, 1, gen_a108855 },
+{ "a108856", "A108856", "Numbers k such that 10*k - 131 is prime", "prime values",
+  "47 different gaps occur, from 1 to 51; the level share is 21.80 %; L = 1 holds 46 % of the level class.",
+  100000, 1, gen_a108856 },
+{ "a108857", "A108857", "Numbers n such that 10*n + 131 is prime", "prime values",
+  "47 different gaps occur, from 1 to 50; the level share is 21.24 %; L = 1 holds 45 % of the level class.",
+  100000, 1, gen_a108857 },
+{ "a108874", "A108874", "Numbers k such that 41*k + 43 is prime", "prime values",
+  "72 different gaps occur, from 2 to 152; the level share is 23.80 %; L = 2 holds 41 % of the level class.",
+  100000, 1, gen_a108874 },
+{ "a108899", "A108899", "Numbers k such that 11*k + 2357 is prime", "prime values",
+  "60 different gaps occur, from 2 to 126; the level share is 22.71 %; L = 2 holds 44 % of the level class; there are no ties.",
+  100000, 1, gen_a108899 },
+{ "a108900", "A108900", "Numbers k such that 2357*k + 11 is prime", "prime values",
+  "84 different gaps occur, from 2 to 182; the level share is 24.52 %; L = 2 holds 39 % of the level class.",
+  100000, 1, gen_a108900 },
+{ "a108901", "A108901", "Numbers n such that 2357*n + 23 is prime", "prime values",
+  "90 different gaps occur, from 2 to 228; the level share is 24.76 %; L = 2 holds 37 % of the level class; there are no ties.",
+  100000, 1, gen_a108901 },
+{ "a108902", "A108902", "Numbers k such that 23*k + 2357 is prime", "prime values",
+  "64 different gaps occur, from 2 to 162; the level share is 23.62 %; L = 2 holds 41 % of the level class; there are no ties.",
+  100000, 1, gen_a108902 },
+{ "a108936", "A108936", "Numbers n such that 11*n + 911 is prime", "prime values",
+  "56 different gaps occur, from 2 to 128; the level share is 22.74 %; L = 2 holds 44 % of the level class; there are no ties.",
+  100000, 1, gen_a108936 },
+{ "a108937", "A108937", "Numbers k such that 911*k + 11 is prime", "prime values",
+  "85 different gaps occur, from 2 to 238; the level share is 24.58 %; L = 2 holds 39 % of the level class.",
+  100000, 1, gen_a108937 },
+{ "a108938", "A108938", "Numbers k such that 911*k + 7 is prime", "prime values",
+  "81 different gaps occur, from 2 to 180; the level share is 23.61 %; L = 2 holds 38 % of the level class; there are no ties.",
+  100000, 1, gen_a108938 },
+{ "a108969", "A108969", "Numbers n such that 43*n + 41 is prime", "prime values",
+  "66 different gaps occur, from 2 to 156; the level share is 23.86 %; L = 2 holds 41 % of the level class.",
+  100000, 1, gen_a108969 },
+{ "a108976", "A108976", "Numbers k such that 17*k + 19 is prime", "prime values",
+  "58 different gaps occur, from 2 to 124; the level share is 23.15 %; L = 2 holds 42 % of the level class.",
+  100000, 1, gen_a108976 },
+{ "a108977", "A108977", "Numbers n such that 19*n + 17 is prime", "prime values",
+  "67 different gaps occur, from 2 to 142; the level share is 23.61 %; L = 2 holds 42 % of the level class.",
+  100000, 1, gen_a108977 },
+{ "a108978", "A108978", "Numbers k such that 29*k + 31 is prime", "prime values",
+  "65 different gaps occur, from 2 to 156; the level share is 23.07 %; L = 2 holds 41 % of the level class.",
+  100000, 1, gen_a108978 },
+{ "a108979", "A108979", "Numbers k such that 31*k + 29 is prime", "prime values",
+  "66 different gaps occur, from 2 to 154; the level share is 23.05 %; L = 2 holds 41 % of the level class.",
+  100000, 1, gen_a108979 },
+{ "a109603", "A109603", "Numbers n such that 43*n - 41 is prime", "prime values",
+  "71 different gaps occur, from 2 to 156; the level share is 24.24 %; L = 2 holds 40 % of the level class.",
+  100000, 1, gen_a109603 },
+{ "a109604", "A109604", "Numbers n such that 41*n - 43 is prime", "prime values",
+  "66 different gaps occur, from 2 to 150; the level share is 23.56 %; L = 2 holds 41 % of the level class; there are no ties.",
+  100000, 1, gen_a109604 },
+{ "a109605", "A109605", "Numbers n such that 100000n + 91111 is prime", "prime values",
+  "80 different gaps occur, from 1 to 83; the level share is 23.81 %; L = 1 holds 38 % of the level class.",
+  100000, 1, gen_a109605 },
+{ "a110801", "A110801", "Numbers k such that 12k + 1 is prime", "prime values",
+  "40 different gaps occur, from 1 to 48; the level share is 18.29 %; L = 1 holds 49 % of the level class.",
+  100000, 1, gen_a110801 },
+{ "a110913", "A110913", "Numbers n such that 23*n^2 - 49 is prime", "prime values",
+  "79 different gaps occur, from 2 to 174; the level share is 20.73 %; L = 2 holds 38 % of the level class.",
+  100000, 1, gen_a110913 },
+{ "a110959", "A110959", "Numbers k such that 23*k^2 + 1 is prime", "prime values",
+  "58 different gaps occur, from 6 to 414; the level share is 18.84 %; L = 6 holds 44 % of the level class; there are no ties.",
+  100000, 1, gen_a110959 },
+{ "a110960", "A110960", "Numbers n such that 23*n^2 + 4 is prime", "prime values",
+  "55 different gaps occur, from 6 to 384; the level share is 28.31 %; L = 3 holds 55 % of the level class.",
+  100000, 1, gen_a110960 },
+{ "a110961", "A110961", "Numbers k such that 23*k^2 + 9 is prime", "prime values",
+  "81 different gaps occur, from 2 to 236; the level share is 17.59 %; L = 2 holds 31 % of the level class.",
+  100000, 1, gen_a110961 },
+{ "a110964", "A110964", "Numbers k such that 23*k^2 + 16 is prime", "prime values",
+  "56 different gaps occur, from 6 to 378; the level share is 28.32 %; L = 3 holds 55 % of the level class.",
+  100000, 1, gen_a110964 },
+{ "a110965", "A110965", "Numbers k such that 23*k^2 + 25 is prime", "prime values",
+  "69 different gaps occur, from 6 to 522; the level share is 19.19 %; L = 6 holds 39 % of the level class; there are no ties.",
+  100000, 1, gen_a110965 },
+{ "a110966", "A110966", "Numbers k such that 23*k^2 + 36 is prime", "prime values",
+  "72 different gaps occur, from 2 to 166; the level share is 27.70 %; L = 1 holds 36 % of the level class.",
+  100000, 1, gen_a110966 },
+{ "a110967", "A110967", "Numbers k such that 23*k^2 + 49 is prime", "prime values",
+  "69 different gaps occur, from 6 to 558; the level share is 19.57 %; L = 6 holds 40 % of the level class; there are no ties.",
+  100000, 1, gen_a110967 },
+{ "a110974", "A110974", "Numbers n such that 23*n^2 - 1 is prime", "prime values",
+  "97 different gaps occur, from 2 to 262; the level share is 23.13 %; L = 2 holds 35 % of the level class.",
+  100000, 1, gen_a110974 },
+{ "a110994", "A110994", "Numbers n such that 23*n^2 - 4 is prime", "prime values",
+  "90 different gaps occur, from 2 to 204; the level share is 32.21 %; L = 1 holds 48 % of the level class.",
+  100000, 1, gen_a110994 },
+{ "a110998", "A110998", "Numbers n such that 23*n^2 - 9 is prime", "prime values",
+  "136 different gaps occur, from 2 to 306; the level share is 22.63 %.",
+  100000, 1, gen_a110998 },
+{ "a110999", "A110999", "Numbers n such that 23*n^2 - 16 is prime", "prime values",
+  "91 different gaps occur, from 2 to 200; the level share is 32.01 %; L = 1 holds 49 % of the level class.",
+  100000, 1, gen_a110999 },
+{ "a111001", "A111001", "Numbers n such that 23*n^2 - 25 is prime", "prime values",
+  "115 different gaps occur, from 2 to 296; the level share is 23.43 %; L = 2 holds 32 % of the level class.",
+  100000, 1, gen_a111001 },
+{ "a111040", "A111040", "Numbers n such that 2*n^2 + 9 is prime", "prime values",
+  "77 different gaps occur, from 1 to 84; the level share is 17.87 %.",
+  100000, 1, gen_a111040 },
+{ "a111041", "A111041", "Numbers m such that 2*m^2 + 25 is prime", "prime values",
+  "73 different gaps occur, from 3 to 237; the level share is 19.77 %; L = 3 holds 38 % of the level class.",
+  100000, 1, gen_a111041 },
+{ "a111051", "A111051", "Numbers m such that 3*m^2 + 1 is prime", "prime values",
+  "73 different gaps occur, from 2 to 234; the level share is 21.51 %; L = 2 holds 38 % of the level class.",
+  100000, 1, gen_a111051 },
+{ "a111052", "A111052", "Numbers m such that 3*m^2 + 4 is prime", "prime values",
+  "71 different gaps occur, from 2 to 186; the level share is 30.79 %; L = 1 holds 51 % of the level class.",
+  100000, 1, gen_a111052 },
+{ "a111068", "A111068", "Numbers k such that 3*k^2 + 16 is prime", "prime values",
+  "73 different gaps occur, from 2 to 170; the level share is 30.78 %; L = 1 holds 51 % of the level class.",
+  100000, 1, gen_a111068 },
+{ "a111069", "A111069", "Numbers k such that 3*k^2 + 25 is prime", "prime values",
+  "92 different gaps occur, from 2 to 218; the level share is 21.86 %; L = 2 holds 35 % of the level class.",
+  100000, 1, gen_a111069 },
+{ "a111082", "A111082", "Numbers n such that 3*n^2 + 49 is prime", "prime values",
+  "65 different gaps occur, from 2 to 150; the level share is 18.80 %; L = 2 holds 42 % of the level class.",
+  100000, 1, gen_a111082 },
+{ "a111083", "A111083", "Numbers k such that 3*k^2 + 64 is prime", "prime values",
+  "75 different gaps occur, from 2 to 208; the level share is 30.72 %; L = 1 holds 51 % of the level class.",
+  100000, 1, gen_a111083 },
+{ "a111094", "A111094", "Numbers k such that 18*k + 1 is prime", "prime values",
+  "43 different gaps occur, from 1 to 50; the level share is 18.15 %; L = 1 holds 44 % of the level class.",
+  100000, 1, gen_a111094 },
+{ "a111147", "A111147", "Numbers k such that 5*k^2 + 1 is prime", "prime values",
+  "70 different gaps occur, from 6 to 450; the level share is 20.72 %; L = 6 holds 40 % of the level class; there are no ties.",
+  100000, 1, gen_a111147 },
+{ "a111148", "A111148", "Numbers k such that 5*k^2 + 4 is prime", "prime values",
+  "69 different gaps occur, from 6 to 510; the level share is 30.21 %; L = 3 holds 53 % of the level class.",
+  100000, 1, gen_a111148 },
+{ "a111149", "A111149", "Numbers k such that 5*k^2 + 9 is prime", "prime values",
+  "96 different gaps occur, from 2 to 256; the level share is 19.84 %.",
+  100000, 1, gen_a111149 },
+{ "a111174", "A111174", "Numbers k such that 24*k + 1 is prime", "prime values",
+  "41 different gaps occur, from 1 to 42; the level share is 18.57 %; L = 1 holds 47 % of the level class.",
+  100000, 1, gen_a111174 },
+{ "a111175", "A111175", "Numbers k such that 30*k + 1 is prime", "prime values",
+  "35 different gaps occur, from 1 to 35; the level share is 16.84 %; L = 1 holds 50 % of the level class.",
+  100000, 1, gen_a111175 },
+{ "a111251", "A111251", "Numbers k such that 3*k^2 + 3*k + 1 is prime", "prime values",
+  "71 different gaps occur, from 1 to 95; the level share is 21.09 %; L = 1 holds 39 % of the level class.",
+  100000, 1, gen_a111251 },
+{ "a111292", "A111292", "Numbers n such that 6*n^2 + 6*n + 1 is prime", "prime values",
+  "60 different gaps occur, from 1 to 68; the level share is 19.75 %; L = 1 holds 43 % of the level class.",
+  100000, 1, gen_a111292 },
+{ "a111294", "A111294", "Numbers n such that 23*n + 2 is prime", "prime values",
+  "63 different gaps occur, from 2 to 148; the level share is 31.41 %; L = 1 holds 57 % of the level class.",
+  100000, 1, gen_a111294 },
+{ "a111312", "A111312", "Numbers n such that 11*n + 2 is prime", "prime values",
+  "57 different gaps occur, from 1 to 182; the level share is 30.66 %; L = 1 holds 59 % of the level class.",
+  100000, 1, gen_a111312 },
+{ "a111369", "A111369", "Numbers k such that 13*k + 11 is prime", "prime values",
+  "59 different gaps occur, from 2 to 138; the level share is 22.61 %; L = 2 holds 43 % of the level class; there are no ties.",
+  100000, 1, gen_a111369 },
+{ "a111455", "A111455", "Numbers k such that 101*k + 97 is prime", "prime values",
+  "74 different gaps occur, from 2 to 170; the level share is 24.14 %; L = 2 holds 40 % of the level class; there are no ties.",
+  100000, 1, gen_a111455 },
+{ "a113151", "A113151", "Primes p such that 19*p + 2 is also prime", "primes",
+  "285 different gaps occur, from 2 to 2,142; the level share is 47.94 %; L = 1 holds 36 % of the level class; there are no ties.",
+  100000, 1, gen_a113151 },
+{ "a113487", "A113487", "Numbers k such that 17*k + 2 is prime", "prime values",
+  "59 different gaps occur, from 1 to 124; the level share is 33.37 %; L = 1 holds 58 % of the level class.",
+  100000, 1, gen_a113487 },
+{ "a113488", "A113488", "Numbers k such that 19*k + 2 is prime", "prime values",
+  "62 different gaps occur, from 2 to 142; the level share is 32.93 %; L = 1 holds 58 % of the level class.",
+  100000, 1, gen_a113488 },
+{ "a113510", "A113510", "Numbers k such that 29*k + 2 is prime", "prime values",
+  "66 different gaps occur, from 1 to 156; the level share is 33.54 %; L = 1 holds 56 % of the level class.",
+  100000, 1, gen_a113510 },
+{ "a117047", "A117047", "Primes of the form 60*k + 11", "primes",
+  "38 different gaps occur, from 60 to 2,340; the level share is 52.66 %; L = 1 holds 40 % of the level class; there are no ties.",
+  100000, 1, gen_a117047 },
+{ "a117049", "A117049", "Primes of the form 22*(n^2)+1", "primes",
+  "99,361 different gaps occur, from 66 to 1,913,043,968; every decomposable term is forced level (l <= d^2); 6 terms do not decompose.",
+  100000, 1, gen_a117049 },
+{ "a119409", "A119409", "Numbers k such that 235*k + 1 is prime", "prime values",
+  "62 different gaps occur, from 2 to 174; the level share is 23.06 %; L = 2 holds 42 % of the level class.",
+  100000, 1, gen_a119409 },
+{ "a120344", "A120344", "Numbers k such that 23*k + 1 is a prime", "prime values",
+  "66 different gaps occur, from 2 to 144; the level share is 23.11 %; L = 2 holds 41 % of the level class.",
+  100000, 1, gen_a120344 },
+{ "a120345", "A120345", "Numbers n such that 2357*n + 1 is prime", "prime values",
+  "89 different gaps occur, from 2 to 194; the level share is 25.22 %; L = 2 holds 38 % of the level class.",
+  100000, 1, gen_a120345 },
+{ "a121068", "A121068", "Numbers k such that 8*k^2 + 7 is prime", "prime values",
+  "104 different gaps occur, from 3 to 354; the level share is 24.40 %; L = 3 holds 35 % of the level class.",
+  100000, 1, gen_a121068 },
+{ "a121817", "A121817", "Numbers m such that 23 + 36*m*(m+1) is prime", "prime values",
+  "105 different gaps occur, from 1 to 133; the level share is 23.32 %; L = 1 holds 33 % of the level class.",
+  100000, 1, gen_a121817 },
+{ "a122114", "A122114", "Primes of the form 2n^2 + 26n + 1", "primes",
+  "97,916 different gaps occur, from 32 to 68,420,740; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a122114 },
+{ "a122430", "A122430", "Primes of the form 1+2*n+3*n^2", "primes",
+  "99,938 different gaps occur, from 160 to 1,958,965,080; every decomposable term is forced level (l <= d^2); 6 terms do not decompose.",
+  100000, 1, gen_a122430 },
+{ "a122482", "A122482", "Primes p such that 1 + 4p + 12p^2 is prime", "primes",
+  "368 different gaps occur, from 6 to 3,480; the level share is 48.96 %; L = 1 holds 33 % of the level class.",
+  100000, 1, gen_a122482 },
+{ "a124127", "A124127", "Numbers k such that 17k + 1 is prime", "prime values",
+  "60 different gaps occur, from 2 to 140; the level share is 23.13 %; L = 2 holds 44 % of the level class; there are no ties.",
+  100000, 1, gen_a124127 },
+{ "a124198", "A124198", "Numbers k such that 21*k + 1 is prime", "prime values",
+  "34 different gaps occur, from 2 to 98; the level share is 18.63 %; L = 2 holds 51 % of the level class.",
+  100000, 1, gen_a124198 },
+{ "a124204", "A124204", "Numbers k such that 20*k + 1 is prime", "prime values",
+  "49 different gaps occur, from 1 to 56; the level share is 21.32 %; L = 1 holds 46 % of the level class.",
+  100000, 1, gen_a124204 },
+{ "a126332", "A126332", "Numbers k such that 10k + 13 is prime", "prime values",
+  "50 different gaps occur, from 1 to 54; the level share is 20.76 %; L = 1 holds 46 % of the level class.",
+  100000, 1, gen_a126332 },
+{ "a126785", "A126785", "Numbers k such that 10*k + 11 is prime", "prime values",
+  "47 different gaps occur, from 1 to 50; the level share is 20.99 %; L = 1 holds 47 % of the level class.",
+  100000, 1, gen_a126785 },
+{ "a126960", "A126960", "Primes p such that (3p)^2 + 2 is prime", "primes",
+  "468 different gaps occur, from 2 to 1,694; the level share is 38.52 %.",
+  100000, 1, gen_a126960 },
+{ "a127435", "A127435", "Primes p such that (p-1)^2 + 1 is prime", "primes",
+  "515 different gaps occur, from 1 to 2,480; the level share is 42.79 %; 7 terms do not decompose.",
+  100000, 1, gen_a127435 },
+{ "a127575", "A127575", "Numbers n such that 16n+15 is prime", "prime values",
+  "61 different gaps occur, from 1 to 87; the level share is 16.21 %.",
+  100000, 1, gen_a127575 },
+{ "a127576", "A127576", "Primes of the form 16n+15", "primes",
+  "61 different gaps occur, from 16 to 1,392; the level share is 38.28 %; there are no ties.",
+  100000, 1, gen_a127576 },
+{ "a127579", "A127579", "Primes of the form 64n+63", "primes",
+  "71 different gaps occur, from 64 to 4,992; the level share is 47.76 %; there are no ties.",
+  100000, 1, gen_a127579 },
+{ "a127580", "A127580", "Numbers k such that 64k+63 is prime", "prime values",
+  "71 different gaps occur, from 1 to 78; the level share is 17.57 %; L = 1 holds 30 % of the level class.",
+  100000, 1, gen_a127580 },
+{ "a127589", "A127589", "Primes of the form 16k + 5", "primes",
+  "60 different gaps occur, from 16 to 1,104; the level share is 38.51 %; there are no ties.",
+  100000, 1, gen_a127589 },
+{ "a127590", "A127590", "Numbers n such that 16n+5 is prime", "prime values",
+  "60 different gaps occur, from 1 to 69; the level share is 21.18 %; L = 1 holds 41 % of the level class.",
+  100000, 1, gen_a127590 },
+{ "a127591", "A127591", "Numbers k such that 64k+21 is prime", "prime values",
+  "69 different gaps occur, from 1 to 75; the level share is 17.43 %; L = 1 holds 30 % of the level class.",
+  100000, 1, gen_a127591 },
+{ "a127592", "A127592", "Primes of the form 64k+21", "primes",
+  "69 different gaps occur, from 64 to 4,800; the level share is 47.72 %; there are no ties.",
+  100000, 1, gen_a127592 },
+{ "a127593", "A127593", "Primes of the form 256 k + 85", "primes",
+  "79 different gaps occur, from 256 to 23,552; the level share is 58.29 %; 4.0 % of terms are forced level (l <= d^2); there are no ties.",
+  100000, 1, gen_a127593 },
+{ "a127594", "A127594", "Numbers k such that 256 k + 85 is prime", "prime values",
+  "79 different gaps occur, from 1 to 92; the level share is 22.32 %; L = 1 holds 38 % of the level class.",
+  100000, 1, gen_a127594 },
+{ "a128829", "A128829", "Numbers k such that 6*k^2 + 17 is prime", "prime values",
+  "46 different gaps occur, from 1 to 50; the level share is 17.59 %; L = 1 holds 48 % of the level class.",
+  100000, 1, gen_a128829 },
+{ "a129484", "A129484", "Primes of the form 17k + 1", "primes",
+  "60 different gaps occur, from 34 to 2,380; the level share is 44.48 %.",
+  100000, 1, gen_a129484 },
+{ "a039787", "A039787", "Primes p such that p-1 is squarefree", "primes",
+  "78 different gaps occur, from 1 to 360; the level share is 29.95 %; there are no ties.",
+  100000, 1, gen_a039787 },
+{ "a049097", "A049097", "Primes p such that p+1 is squarefree", "primes",
+  "81 different gaps occur, from 3 to 400; the level share is 31.49 %.",
+  100000, 1, gen_a049097 },
+{ "a049231", "A049231", "Primes p such that p - 2 is squarefree", "primes",
+  "71 different gaps occur, from 2 to 180; the level share is 24.84 %; L = 1 holds 33 % of the level class.",
+  100000, 1, gen_a049231 },
+{ "a049233", "A049233", "Primes p such that p + 2 is squarefree", "primes",
+  "72 different gaps occur, from 2 to 196; the level share is 25.84 %; L = 1 holds 31 % of the level class.",
+  100000, 1, gen_a049233 },
+{ "a085722", "A085722", "Numbers k such that k^2 + 1 is a semiprime", "multiplicative",
+  "37 different gaps occur, from 1 to 40; the level share is 16.73 %; L = 2 holds 36 % of the level class.",
+  100000, 1, gen_a085722 },
+{ "a085746", "A085746", "Numbers n such that n^2 + n + 1 is a semiprime", "multiplicative",
+  "31 different gaps occur, from 1 to 31; the level share is 17.21 %; L = 1 holds 55 % of the level class.",
+  100000, 1, gen_a085746 },
+{ "a092109", "A092109", "Primes p such that p+3 is a semiprime", "primes",
+  "340 different gaps occur, from 4 to 2,328; the level share is 40.93 %; there are no ties.",
+  100000, 1, gen_a092109 },
+{ "a108181", "A108181", "Semiprimes of the form 4n + 1", "multiplicative",
+  "24 different gaps occur, from 4 to 96; the level share is 26.20 %; L = 1 holds 43 % of the level class.",
+  100000, 1, gen_a108181 },
+{ "a108769", "A108769", "Numbers m such that m^2 + (m+1)^2 is a semiprime", "multiplicative",
+  "29 different gaps occur, from 1 to 32; the level share is 15.84 %; L = 1 holds 56 % of the level class.",
+  100000, 1, gen_a108769 },
+{ "a109953", "A109953", "Primes p such that p^2+2 is a semiprime", "primes",
+  "629 different gaps occur, from 2 to 1,916; the level share is 41.16 %.",
+  100000, 1, gen_a109953 },
+{ "a112771", "A112771", "Semiprimes of the form 6n + 1", "multiplicative",
+  "19 different gaps occur, from 6 to 114; the level share is 33.55 %; L = 1 holds 64 % of the level class.",
+  100000, 1, gen_a112771 },
+{ "a112772", "A112772", "Semiprimes of the form 6n+2", "multiplicative",
+  "39 different gaps occur, from 12 to 540; the level share is 35.25 %; L = 2 holds 51 % of the level class; there are no ties.",
+  100000, 1, gen_a112772 },
+{ "a112774", "A112774", "Semiprimes of the form 6n+4", "multiplicative",
+  "41 different gaps occur, from 6 to 516; the level share is 35.17 %; L = 2 holds 51 % of the level class; there are no ties.",
+  100000, 1, gen_a112774 },
+{ "a112775", "A112775", "Numbers k such that 6k+1 is semiprime", "multiplicative",
+  "19 different gaps occur, from 1 to 19; the level share is 14.18 %; L = 1 holds 64 % of the level class.",
+  100000, 1, gen_a112775 },
+{ "a112776", "A112776", "Numbers k such that 6k+5 is semiprime", "multiplicative",
+  "20 different gaps occur, from 1 to 20; the level share is 13.26 %; L = 1 holds 64 % of the level class.",
+  100000, 1, gen_a112776 },
+{ "a112777", "A112777", "Numbers k such that 2*k^2 + 1 is a semiprime", "multiplicative",
+  "40 different gaps occur, from 1 to 45; the level share is 17.90 %; L = 1 holds 41 % of the level class.",
+  100000, 1, gen_a112777 },
+{ "a122488", "A122488", "Numbers k such that 1 + 2k + 3k^2 is semiprime", "multiplicative",
+  "42 different gaps occur, from 1 to 57; the level share is 17.65 %; L = 2 holds 36 % of the level class.",
+  100000, 1, gen_a122488 },
+{ "a033253", "A033253", "Primes of form x^2+83*y^2", "quadratic form",
+  "1,009 different gaps occur, from 2 to 3,378; the level share is 44.13 %.",
+  100000, 1, gen_a033253 },
+{ "a033254", "A033254", "Primes of form x^2+85*y^2", "quadratic form",
+  "140 different gaps occur, from 8 to 1,332; the level share is 40.52 %.",
+  100000, 1, gen_a033254 },
+{ "a033255", "A033255", "Primes of form x^2+86*y^2", "quadratic form",
+  "862 different gaps occur, from 2 to 3,344; the level share is 45.25 %.",
+  100000, 1, gen_a033255 },
+{ "a033256", "A033256", "Primes of form x^2+87*y^2", "quadratic form",
+  "259 different gaps occur, from 6 to 2,028; the level share is 47.38 %; L = 1 holds 36 % of the level class.",
+  100000, 1, gen_a033256 },
+{ "a033257", "A033257", "Primes of form x^2+89*y^2", "quadratic form",
+  "730 different gaps occur, from 4 to 4,088; the level share is 45.57 %.",
+  100000, 1, gen_a033257 },
+{ "a033258", "A033258", "Primes of form x^2+91*y^2", "quadratic form",
+  "665 different gaps occur, from 2 to 1,848; the level share is 40.30 %.",
+  100000, 1, gen_a033258 },
+{ "a106880", "A106880", "Primes of the form x^2+xy+9y^2, with x and y nonnegative", "quadratic form",
+  "148 different gaps occur, from 2 to 690; the level share is 35.50 %.",
+  100000, 1, gen_a106880 },
+{ "a106890", "A106890", "Primes of the form x^2 + xy + 11y^2, with x and y nonnegative", "quadratic form",
+  "126 different gaps occur, from 2 to 318; the level share is 29.70 %.",
+  100000, 1, gen_a106890 },
+{ "a106900", "A106900", "Primes of the form x^2+xy+12y^2, with x and y nonnegative", "quadratic form",
+  "646 different gaps occur, from 2 to 1,830; the level share is 40.15 %.",
+  100000, 1, gen_a106900 },
+{ "a106901", "A106901", "Primes of the form 3x^2+3xy+5y^2, with x and y nonnegative", "quadratic form",
+  "112 different gaps occur, from 2 to 756; the level share is 40.05 %; L = 1 holds 40 % of the level class; there are no ties.",
+  100000, 1, gen_a106901 },
+{ "a106903", "A106903", "Primes of the form x^2+xy+13y^2, with x and y nonnegative", "quadratic form",
+  "87 different gaps occur, from 6 to 666; the level share is 39.03 %; L = 1 holds 41 % of the level class.",
+  100000, 1, gen_a106903 },
+{ "a106905", "A106905", "Primes of the form 2x^2+2xy+7y^2, with x and y nonnegative", "quadratic form",
+  "148 different gaps occur, from 4 to 780; the level share is 36.70 %; there are no ties; 6 terms do not decompose.",
+  100000, 1, gen_a106905 },
+{ "a106907", "A106907", "Primes of the form 4x^2+3xy+4y^2, with x and y nonnegative", "quadratic form",
+  "741 different gaps occur, from 2 to 4,370; the level share is 49.74 %.",
+  100000, 1, gen_a106907 },
+{ "a106921", "A106921", "Primes of the form x^2+xy+15y^2, with x and y nonnegative", "quadratic form",
+  "390 different gaps occur, from 2 to 1,156; the level share is 37.52 %.",
+  100000, 1, gen_a106921 },
+{ "a106926", "A106926", "Primes of the form 2x^2+xy+8y^2, with x and y nonnegative", "quadratic form",
+  "183 different gaps occur, from 6 to 1,650; the level share is 42.55 %; L = 1 holds 30 % of the level class; there are no ties.",
+  100000, 1, gen_a106926 },
+{ "a106929", "A106929", "Primes of the form x^2+xy+16y^2, with x and y nonnegative", "quadratic form",
+  "192 different gaps occur, from 6 to 1,470; the level share is 42.19 %; L = 1 holds 30 % of the level class.",
+  100000, 1, gen_a106929 },
+{ "a106931", "A106931", "Primes of the form 4x^2+4xy+5y^2, with x and y nonnegative", "quadratic form",
+  "92 different gaps occur, from 8 to 1,024; the level share is 35.85 %; there are no ties.",
+  100000, 1, gen_a106931 },
+{ "a106932", "A106932", "Primes of the form x^2 + xy + 17y^2, with x and y nonnegative", "quadratic form",
+  "124 different gaps occur, from 2 to 300; the level share is 29.48 %.",
+  100000, 1, gen_a106932 },
+{ "a106934", "A106934", "Primes of the form 3x^2+2xy+6y^2, with x and y nonnegative", "quadratic form",
+  "287 different gaps occur, from 4 to 1,428; the level share is 38.06 %; there are no ties.",
+  100000, 1, gen_a106934 },
+{ "a106937", "A106937", "Primes of the form 2x^2+2xy+9y^2, with x and y nonnegative", "quadratic form",
+  "293 different gaps occur, from 4 to 1,408; the level share is 38.18 %.",
+  100000, 1, gen_a106937 },
+{ "a106939", "A106939", "Primes of the form 4x^2+3xy+5y^2, with x and y nonnegative", "quadratic form",
+  "1,023 different gaps occur, from 2 to 3,834; the level share is 43.42 %.",
+  100000, 1, gen_a106939 },
+{ "a106945", "A106945", "Primes of the form 2x^2+xy+9y^2, with x and y nonnegative", "quadratic form",
+  "858 different gaps occur, from 2 to 2,526; the level share is 42.34 %.",
+  100000, 1, gen_a106945 },
+{ "a106949", "A106949", "Primes of the form 2x^2 + 9y^2", "quadratic form",
+  "61 different gaps occur, from 6 to 534; the level share is 39.73 %; L = 1 holds 43 % of the level class; there are no ties.",
+  100000, 1, gen_a106949 },
+{ "a106950", "A106950", "Primes of the form x^2 + 18y^2", "quadratic form",
+  "57 different gaps occur, from 6 to 534; the level share is 39.60 %; L = 1 holds 43 % of the level class.",
+  100000, 1, gen_a106950 },
+{ "a106951", "A106951", "Primes of the form 3x^2+3xy+7y^2, with x and y nonnegative", "quadratic form",
+  "69 different gaps occur, from 4 to 930; the level share is 44.53 %; L = 1 holds 51 % of the level class.",
+  100000, 1, gen_a106951 },
+{ "a106953", "A106953", "Primes of the form 4x^2+2xy+5y^2, with x and y nonnegative", "quadratic form",
+  "400 different gaps occur, from 2 to 1,026; the level share is 38.58 %.",
+  100000, 1, gen_a106953 },
+{ "a106959", "A106959", "Primes of the form 2x^2+xy+10y^2, with x and y nonnegative", "quadratic form",
+  "620 different gaps occur, from 2 to 1,932; the level share is 39.82 %.",
+  100000, 1, gen_a106959 },
+{ "a106964", "A106964", "Primes of the form 3x^2+2xy+7y^2, with x and y nonnegative", "quadratic form",
+  "175 different gaps occur, from 4 to 1,604; the level share is 42.96 %; there are no ties.",
+  100000, 1, gen_a106964 },
+{ "a106966", "A106966", "Primes of the form 3x^2+xy+7y^2, with x and y nonnegative", "quadratic form",
+  "376 different gaps occur, from 2 to 1,238; the level share is 37.32 %; 6 terms do not decompose.",
+  100000, 1, gen_a106966 },
+{ "a106969", "A106969", "Primes of the form x^2+xy+21y^2, with x and y nonnegative", "quadratic form",
+  "384 different gaps occur, from 2 to 1,010; the level share is 37.23 %.",
+  100000, 1, gen_a106969 },
+{ "a106971", "A106971", "Primes of the form 5x^2+4xy+5y^2, with x and y nonnegative", "quadratic form",
+  "245 different gaps occur, from 12 to 4,260; the level share is 48.33 %; there are no ties.",
+  100000, 1, gen_a106971 },
+{ "a106974", "A106974", "Primes of the form 2x^2+2xy+11y^2, with x and y nonnegative", "quadratic form",
+  "99 different gaps occur, from 9 to 1,596; the level share is 43.01 %; there are no ties.",
+  100000, 1, gen_a106974 },
+{ "a106975", "A106975", "Primes of the form 4x^2+3xy+6y^2, with x and y nonnegative", "quadratic form",
+  "316 different gaps occur, from 6 to 2,598; the level share is 48.94 %; L = 1 holds 35 % of the level class.",
+  100000, 1, gen_a106975 },
+{ "a106978", "A106978", "Primes of the form 3x^2+3xy+8y^2, with x and y nonnegative", "quadratic form",
+  "320 different gaps occur, from 6 to 2,838; the level share is 48.92 %; L = 1 holds 35 % of the level class; there are no ties.",
+  100000, 1, gen_a106978 },
+{ "a106980", "A106980", "Primes of the form 2x^2+xy+11y^2, with x and y nonnegative", "quadratic form",
+  "279 different gaps occur, from 6 to 2,070; the level share is 47.85 %; L = 1 holds 36 % of the level class; there are no ties.",
+  100000, 1, gen_a106980 },
+{ "a106984", "A106984", "Primes of the form 2x^2 + 11y^2", "quadratic form",
+  "171 different gaps occur, from 2 to 550; the level share is 35.23 %.",
+  100000, 1, gen_a106984 },
+{ "a106985", "A106985", "Primes of the form 5x^2+3xy+5y^2, with x and y nonnegative", "quadratic form",
+  "566 different gaps occur, from 2 to 1,656; the level share is 38.69 %.",
+  100000, 1, gen_a106985 },
+{ "a106988", "A106988", "Primes of the form x^2+xy+23y^2, with x and y nonnegative", "quadratic form",
+  "229 different gaps occur, from 2 to 714; the level share is 33.27 %.",
+  100000, 1, gen_a106988 },
+{ "a106990", "A106990", "Primes of the form 5x^2+5xy+6y^2, with x and y nonnegative", "quadratic form",
+  "801 different gaps occur, from 2 to 5,800; the level share is 50.24 %.",
+  100000, 1, gen_a106990 },
+{ "a106992", "A106992", "Primes of the form 4x^2+xy+6y^2, with x and y nonnegative", "quadratic form",
+  "602 different gaps occur, from 2 to 3,192; the level share is 47.94 %.",
+  100000, 1, gen_a106992 },
+{ "a106995", "A106995", "Primes of the form 3x^2+xy+8y^2, with x and y nonnegative", "quadratic form",
+  "597 different gaps occur, from 4 to 2,894; the level share is 47.99 %.",
+  100000, 1, gen_a106995 },
+{ "a106998", "A106998", "Primes of the form 2x^2+xy+12y^2, with x and y nonnegative", "quadratic form",
+  "608 different gaps occur, from 4 to 2,940; the level share is 47.83 %.",
+  100000, 1, gen_a106998 },
+{ "a107002", "A107002", "Primes of the form 5x^2+2xy+5y^2, with x and y nonnegative", "quadratic form",
+  "106 different gaps occur, from 24 to 3,168; the level share is 49.73 %; L = 1 holds 32 % of the level class; there are no ties.",
+  100000, 1, gen_a107002 },
+{ "a107005", "A107005", "Primes of the form 4x^2+4xy+7y^2, with x and y nonnegative", "quadratic form",
+  "62 different gaps occur, from 24 to 1,968; the level share is 46.27 %; L = 1 holds 34 % of the level class; there are no ties.",
+  100000, 1, gen_a107005 },
+{ "a107007", "A107007", "Primes of the form 3*x^2+8*y^2", "quadratic form",
+  "42 different gaps occur, from 8 to 1,056; the level share is 44.34 %; L = 1 holds 36 % of the level class; there are no ties.",
+  100000, 1, gen_a107007 },
+{ "a107008", "A107008", "Primes of the form x^2 + 24*y^2", "quadratic form",
+  "41 different gaps occur, from 24 to 1,008; the level share is 44.44 %; L = 1 holds 36 % of the level class.",
+  100000, 1, gen_a107008 },
+{ "a107009", "A107009", "Primes of the form 5x^2+xy+5y^2, with x and y nonnegative", "quadratic form",
+  "182 different gaps occur, from 6 to 1,320; the level share is 46.39 %; L = 1 holds 40 % of the level class; there are no ties.",
+  100000, 1, gen_a107009 },
+{ "a107012", "A107012", "Primes of the form x^2+xy+25y^2, with x and y nonnegative", "quadratic form",
+  "86 different gaps occur, from 6 to 582; the level share is 42.05 %; L = 1 holds 46 % of the level class.",
+  100000, 1, gen_a107012 },
+{ "a107132", "A107132", "Primes of the form 2x^2 + 13y^2", "quadratic form",
+  "510 different gaps occur, from 2 to 2,242; the level share is 42.97 %.",
+  100000, 1, gen_a107132 },
+{ "a107133", "A107133", "Primes of the form 4x^2 + 7y^2", "quadratic form",
+  "114 different gaps occur, from 4 to 580; the level share is 30.41 %; there are no ties.",
+  100000, 1, gen_a107133 },
+{ "a127736", "A127736", "a(n) = n*(n^2 + 2*n - 1)/2", "polynomial",
+  "Every gap is different, from 6 to 15,000,350,001; every decomposable term is forced level (l <= d^2); 6 terms do not decompose.",
+  100000, 1, gen_a127736 },
+{ "a006000", "A006000", "a(n) = (n+1)*(n^2+n+2)/2", "polynomial",
+  "Every gap is different, from 3 to 15,000,050,001; every decomposable term is forced level (l <= d^2); 7 terms do not decompose.",
+  100000, 0, gen_a006000 },
+{ "a016061", "A016061", "a(n) = n*(n+1)*(4*n+5)/6", "polynomial",
+  "Every gap is different, from 3 to 20,000,100,000; every decomposable term is forced level (l <= d^2); 7 terms do not decompose.",
+  100000, 0, gen_a016061 },
+{ "a027620", "A027620", "a(n) = n + (n+1)^2 + (n+2)^3", "polynomial",
+  "Every gap is different, from 23 to 30,001,100,009; every decomposable term is forced level (l <= d^2).",
+  100000, 0, gen_a027620 },
+{ "a033994", "A033994", "a(n) = n*(n+1)*(5*n+1)/6", "polynomial",
+  "Every gap is different, from 9 to 25,000,450,002; every decomposable term is forced level (l <= d^2); 6 terms do not decompose.",
+  100000, 1, gen_a033994 },
+{ "a035328", "A035328", "a(n) = n*(2*n-1)*(2*n+1)", "polynomial",
+  "Every gap is different, from 3 to 119,998,800,003; every decomposable term is forced level (l <= d^2); 7 terms do not decompose.",
+  100000, 0, gen_a035328 },
+{ "a035329", "A035329", "a(n) = n*(2*n+5)*(2*n+7)", "polynomial",
+  "Every gap is different, from 63 to 120,003,600,015; every decomposable term is forced level (l <= d^2); 6 terms do not decompose.",
+  100000, 0, gen_a035329 },
+{ "a037235", "A037235", "a(n) = n*(2*n^2 - 3*n + 4)/3", "polynomial",
+  "Every gap is different, from 1 to 19,999,600,003; every decomposable term is forced level (l <= d^2); 8 terms do not decompose.",
+  100000, 0, gen_a037235 },
+{ "a056578", "A056578", "a(n) = 1 + 2*n + 3*n^2 + 4*n^3", "polynomial",
+  "Every gap is different, from 9 to 119,999,400,003; every decomposable term is forced level (l <= d^2); 7 terms do not decompose.",
+  100000, 0, gen_a056578 },
+{ "a071230", "A071230", "a(n) = n*(6*n^2 - 7*n + 3)/2", "polynomial",
+  "Every gap is different, from 1 to 89,998,400,008; every decomposable term is forced level (l <= d^2); 8 terms do not decompose.",
+  100000, 0, gen_a071230 },
+{ "a086605", "A086605", "a(n) = 9*n^3 - 18*n^2 + 10*n", "polynomial",
+  "Every gap is different, from 1 to 269,993,700,037; every decomposable term is forced level (l <= d^2); 8 terms do not decompose.",
+  100000, 0, gen_a086605 },
+{ "a101853", "A101853", "a(n) = n*(20 + 15*n + n^2)/6", "polynomial",
+  "Every gap is different, from 12 to 5,000,550,006; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a101853 },
+{ "a102094", "A102094", "a(n) = (2*n-1)*(2*n+1)^2", "polynomial",
+  "Every gap is different, from 66 to 240,003,200,010; every decomposable term is forced level (l <= d^2); 6 terms do not decompose.",
+  100000, 1, gen_a102094 },
+{ "a111144", "A111144", "a(n) = n*(n+13)*(n+14)/6", "polynomial",
+  "Every gap is different, from 35 to 5,000,850,026; every decomposable term is forced level (l <= d^2).",
+  100000, 0, gen_a111144 },
+{ "a115519", "A115519", "a(n) = n*(1+3*n+6*n^2)/2", "polynomial",
+  "Every gap is different, from 5 to 89,999,400,002; every decomposable term is forced level (l <= d^2); 7 terms do not decompose.",
+  100000, 0, gen_a115519 },
+{ "a126335", "A126335", "a(n) = n*(4*n^2+5*n-3)/2", "polynomial",
+  "Every gap is different, from 20 to 60,001,100,003; every decomposable term is forced level (l <= d^2); 6 terms do not decompose.",
+  100000, 1, gen_a126335 },
+{ "a074742", "A074742", "a(n) = (n^3 + 6n^2 - n + 12)/6", "polynomial",
+  "Every gap is different, from 1 to 5,000,149,999; every decomposable term is forced level (l <= d^2); 6 terms do not decompose.",
+  100000, 0, gen_a074742 },
+{ "a100207", "A100207", "a(n) = 4 + 8*n + 10*n^2 + 4*n^3", "polynomial",
+  "Every gap is different, from 22 to 120,000,800,002; every decomposable term is forced level (l <= d^2); 7 terms do not decompose.",
+  100000, 0, gen_a100207 },
+{ "a000297", "A000297", "a(n) = (n+1)*(n+3)*(n+8)/6", "polynomial",
+  "Every gap is different, from 4 to 5,000,250,001; every decomposable term is forced level (l <= d^2).",
+  100000, -1, gen_a000297 },
+{ "a027602", "A027602", "a(n) = n^3 + (n+1)^3 + (n+2)^3", "polynomial",
+  "Every gap is different, from 27 to 90,000,900,009; every decomposable term is forced level (l <= d^2); 6 terms do not decompose.",
+  100000, 0, gen_a027602 },
+{ "a027849", "A027849", "a(n) = (n+1)*(5*n^2+4*n+1)", "polynomial",
+  "Every gap is different, from 19 to 150,000,300,001; every decomposable term is forced level (l <= d^2); 7 terms do not decompose.",
+  100000, 0, gen_a027849 },
+{ "a049480", "A049480", "a(n) = (2*n-1)*(n^2 -n +6)/6", "polynomial",
+  "Every gap is different, from 3 to 10,000,000,002; every decomposable term is forced level (l <= d^2); 6 terms do not decompose.",
+  100000, 1, gen_a049480 },
+{ "a056520", "A056520", "a(n) = (n + 2)*(2*n^2 - n + 3)/6", "polynomial",
+  "Every gap is different, from 1 to 10,000,000,000; every decomposable term is forced level (l <= d^2); 7 terms do not decompose.",
+  100000, 0, gen_a056520 },
+{ "a063488", "A063488", "a(n) = (2*n-1)*(n^2 -n +2)/2", "polynomial",
+  "Every gap is different, from 5 to 30,000,000,002; every decomposable term is forced level (l <= d^2); 7 terms do not decompose.",
+  100000, 1, gen_a063488 },
+{ "a101165", "A101165", "a(n) = (7*n^3 + 6*n^2 + 5*n) / 6", "polynomial",
+  "Every gap is different, from 3 to 34,999,850,001; every decomposable term is forced level (l <= d^2); 7 terms do not decompose.",
+  100000, 0, gen_a101165 },
+{ "a071229", "A071229", "a(n) = n*(14*n^2 - 21*n + 13)/6", "polynomial",
+  "Every gap is different, from 1 to 69,998,600,008; every decomposable term is forced level (l <= d^2); 8 terms do not decompose.",
+  100000, 0, gen_a071229 },
+{ "a101860", "A101860", "a(n) = (3+n)*(2 + 33*n + n^2)/6", "polynomial",
+  "Every gap is different, from 23 to 5,001,150,011; every decomposable term is forced level (l <= d^2).",
+  100000, 0, gen_a101860 },
+{ "a114211", "A114211", "a(n) = (5*n^3+12*n^2+n+6)/6", "polynomial",
+  "Every gap is different, from 3 to 25,000,149,999; every decomposable term is forced level (l <= d^2); 7 terms do not decompose.",
+  100000, 0, gen_a114211 },
+{ "a011199", "A011199", "a(n) = (n+1)*(2*n+1)*(3*n+1)", "polynomial",
+  "Every gap is different, from 23 to 180,000,400,001; every decomposable term is forced level (l <= d^2); 7 terms do not decompose.",
+  100000, 0, gen_a011199 },
+{ "a079588", "A079588", "a(n) = (n+1)*(2*n+1)*(4*n+1)", "polynomial",
+  "Every gap is different, from 29 to 240,000,400,001; every decomposable term is forced level (l <= d^2); 7 terms do not decompose.",
+  100000, 0, gen_a079588 },
+{ "a095796", "A095796", "a(n) = 1 + (26*n+17+7*n^2)*n/2", "polynomial",
+  "Every gap is different, from 25 to 105,001,549,999; every decomposable term is forced level (l <= d^2); 6 terms do not decompose.",
+  100000, 0, gen_a095796 },
+{ "a100504", "A100504", "a(n) = (4*n^3 + 6*n^2 + 8*n + 6)/3", "polynomial",
+  "Every gap is different, from 6 to 40,000,000,002; every decomposable term is forced level (l <= d^2); 7 terms do not decompose.",
+  100000, 0, gen_a100504 },
+{ "a034721", "A034721", "a(n) = (10*n^3 - 9*n^2 + 2*n)/3 + 1", "polynomial",
+  "Every gap is different, from 1 to 99,998,400,007; every decomposable term is forced level (l <= d^2); 8 terms do not decompose.",
+  100000, 0, gen_a034721 },
+{ "a087863", "A087863", "a(n) = (n^3 + 24*n^2 + 65*n + 36)/6", "polynomial",
+  "Every gap is different, from 15 to 5,000,750,007; every decomposable term is forced level (l <= d^2).",
+  100000, 0, gen_a087863 },
+{ "a057813", "A057813", "a(n) = (2*n+1)*(4*n^2+4*n+3)/3", "polynomial",
+  "Every gap is different, from 10 to 80,000,000,002; every decomposable term is forced level (l <= d^2); 7 terms do not decompose.",
+  100000, 0, gen_a057813 },
+{ "a061550", "A061550", "a(n) = (2*n+1)*(2*n+3)*(2*n+5)", "polynomial",
+  "Every gap is different, from 90 to 240,004,800,018; every decomposable term is forced level (l <= d^2); 6 terms do not decompose.",
+  100000, 0, gen_a061550 },
+{ "a063489", "A063489", "a(n) = (2*n-1)*(5*n^2-5*n+6)/6", "polynomial",
+  "Every gap is different, from 7 to 50,000,000,002; every decomposable term is forced level (l <= d^2); 7 terms do not decompose.",
+  100000, 1, gen_a063489 },
+{ "a063490", "A063490", "a(n) = (2*n - 1)*(7*n^2 - 7*n + 6)/6", "polynomial",
+  "Every gap is different, from 9 to 70,000,000,002; every decomposable term is forced level (l <= d^2); 7 terms do not decompose.",
+  100000, 1, gen_a063490 },
+{ "a063491", "A063491", "a(n) = (2*n - 1)*(3*n^2 - 3*n + 2)/2", "polynomial",
+  "Every gap is different, from 11 to 90,000,000,002; every decomposable term is forced level (l <= d^2); 7 terms do not decompose.",
+  100000, 1, gen_a063491 },
+{ "a063494", "A063494", "a(n) = (2*n - 1)*(7*n^2 - 7*n + 3)/3", "polynomial",
+  "Every gap is different, from 16 to 140,000,000,002; every decomposable term is forced level (l <= d^2); 7 terms do not decompose.",
+  100000, 1, gen_a063494 },
+{ "a047205", "A047205", "Numbers that are congruent to {0, 3, 4} mod 5", "residue class",
+  "The gaps are 1 and 3; the level share is 14.85 %; L = 1 holds 77 % of the level class; there are no ties.",
+  100000, 1, gen_a047205 },
+{ "a047206", "A047206", "Numbers that are congruent to {1, 3, 4} mod 5", "residue class",
+  "The gaps are 1 and 2; the level share is 15.48 %; L = 1 holds 74 % of the level class.",
+  100000, 1, gen_a047206 },
+{ "a047207", "A047207", "Numbers that are congruent to {0, 1, 3, 4} mod 5", "residue class",
+  "The gaps are 1 and 2; the level share is 13.30 %; L = 1 holds 88 % of the level class.",
+  100000, 1, gen_a047207 },
+{ "a047208", "A047208", "Numbers that are congruent to {0, 4} mod 5", "residue class",
+  "The gaps are 1 and 4; the level share is 17.57 %; L = 1 holds 63 % of the level class.",
+  100000, 1, gen_a047208 },
+{ "a047218", "A047218", "Numbers that are congruent to {0, 3} mod 5", "residue class",
+  "The gaps are 2 and 3; the level share is 18.92 %; L = 1 holds 58 % of the level class.",
+  100000, 1, gen_a047218 },
+{ "a047219", "A047219", "Numbers that are congruent to {1, 3} mod 5", "residue class",
+  "The gaps are 2 and 3; the level share is 8.46 %; L = 1 holds 65 % of the level class.",
+  100000, 1, gen_a047219 },
+{ "a047221", "A047221", "Numbers that are congruent to {2, 3} mod 5", "residue class",
+  "The gaps are 1 and 4; the level share is 17.55 %; L = 1 holds 63 % of the level class.",
+  100000, 1, gen_a047221 },
+{ "a047222", "A047222", "Numbers that are congruent to {0, 2, 3} mod 5", "residue class",
+  "The gaps are 1 and 2; the level share is 15.50 %; L = 1 holds 74 % of the level class.",
+  100000, 1, gen_a047222 },
+{ "a047223", "A047223", "Numbers that are congruent to {1, 2, 3} mod 5", "residue class",
+  "The gaps are 1 and 3; the level share is 3.81 %; L = 1 holds 100 % of the level class.",
+  100000, 1, gen_a047223 },
+{ "a047227", "A047227", "Numbers that are congruent to {1, 2, 3, 4} mod 6", "residue class",
+  "The gaps are 1 and 3; the level share is 13.81 %; L = 1 holds 100 % of the level class.",
+  100000, 1, gen_a047227 },
+{ "a047228", "A047228", "Numbers that are congruent to {2, 3, 4} mod 6", "residue class",
+  "The gaps are 1 and 4; the level share is 8.99 %; L = 1 holds 100 % of the level class.",
+  100000, 1, gen_a047228 },
+{ "a047230", "A047230", "Numbers that are congruent to {3, 4} mod 6", "residue class",
+  "The gaps are 1 and 5; the level share is 16.04 %; L = 1 holds 81 % of the level class; there are no ties.",
+  100000, 1, gen_a047230 },
+{ "a047231", "A047231", "Numbers that are congruent to {0, 3, 4} mod 6", "residue class",
+  "The gaps are 1, 2 and 3; the level share is 11.43 %; L = 3 holds 58 % of the level class.",
+  100000, 1, gen_a047231 },
+{ "a047233", "A047233", "Numbers that are congruent to {0, 4} mod 6", "residue class",
+  "The gaps are 2 and 4; the level share is 17.53 %; L = 2 holds 79 % of the level class; there are no ties.",
+  100000, 1, gen_a047233 },
+{ "a047234", "A047234", "Numbers that are congruent to {0, 1, 4} mod 6", "residue class",
+  "The gaps are 1, 2 and 3; the level share is 18.59 %; L = 2 holds 52 % of the level class.",
+  100000, 1, gen_a047234 },
+{ "a047235", "A047235", "Numbers that are congruent to {2, 4} mod 6", "residue class",
+  "The gaps are 2 and 4; the level share is 0.01 %; L = 2 holds 40 % of the level class.",
+  100000, 1, gen_a047235 },
+{ "a047236", "A047236", "Numbers that are congruent to {1, 2, 4} mod 6", "residue class",
+  "The gaps are 1, 2 and 3; the level share is 8.99 %; L = 1 holds 100 % of the level class.",
+  100000, 1, gen_a047236 },
+{ "a047237", "A047237", "Numbers that are congruent to {0, 1, 2, 4} mod 6", "residue class",
+  "The gaps are 1 and 2; the level share is 10.62 %; L = 1 holds 65 % of the level class; there are no ties.",
+  100000, 1, gen_a047237 },
+{ "a047242", "A047242", "Numbers that are congruent to {0, 1, 3} mod 6", "residue class",
+  "The gaps are 1, 2 and 3; the level share is 17.99 %; L = 1 holds 100 % of the level class; there are no ties.",
+  100000, 1, gen_a047242 },
+{ "a047243", "A047243", "Numbers that are congruent to {2, 3} mod 6", "residue class",
+  "The gaps are 1 and 5; the level share is 23.59 %; L = 1 holds 55 % of the level class.",
+  100000, 1, gen_a047243 },
+{ "a047244", "A047244", "Numbers that are congruent to {0, 2, 3} mod 6", "residue class",
+  "The gaps are 1, 2 and 3; the level share is 13.80 %; L = 1 holds 65 % of the level class.",
+  100000, 1, gen_a047244 },
+{ "a047245", "A047245", "Numbers that are congruent to {1, 2, 3} mod 6", "residue class",
+  "The gaps are 1 and 4; the level share is 17.98 %; L = 1 holds 100 % of the level class.",
+  100000, 1, gen_a047245 },
+{ "a047249", "A047249", "Numbers that are congruent to {3, 4, 5} mod 6", "residue class",
+  "The gaps are 1 and 4; the level share is 8.99 %; L = 1 holds 100 % of the level class.",
+  100000, 1, gen_a047249 },
+{ "a047252", "A047252", "Numbers that are congruent to {0, 1, 3, 4, 5} mod 6", "residue class",
+  "The gaps are 1 and 2; the level share is 11.33 %; L = 1 holds 100 % of the level class.",
+  100000, 1, gen_a047252 },
+{ "a047253", "A047253", "Numbers that are congruent to {1, 2, 3, 4, 5} mod 6", "residue class",
+  "The gaps are 1 and 2; the level share is 5.64 %; L = 1 holds 100 % of the level class.",
+  100000, 1, gen_a047253 },
+{ "a045324", "A045324", "Primes congruent to {0, 1, 2, 3, 4} (mod 7)", "primes",
+  "79 different gaps occur, from 1 to 190; the level share is 26.36 %; L = 1 holds 31 % of the level class.",
+  100000, 1, gen_a045324 },
+{ "a045325", "A045325", "Primes congruent to {0, 2, 3, 4} (mod 7)", "primes",
+  "83 different gaps occur, from 1 to 258; the level share is 28.94 %.",
+  100000, 1, gen_a045325 },
+{ "a045328", "A045328", "Primes congruent to {0, 1, 2, 3, 6} (mod 7)", "primes",
+  "80 different gaps occur, from 1 to 204; the level share is 27.36 %; L = 1 holds 32 % of the level class.",
+  100000, 1, gen_a045328 },
+{ "a045329", "A045329", "Primes congruent to {0, 2, 3, 6} (mod 7)", "primes",
+  "80 different gaps occur, from 1 to 252; the level share is 29.35 %.",
+  100000, 1, gen_a045329 },
+{ "a045346", "A045346", "Primes congruent to {0, 1, 2, 4, 5, 6} mod 7", "primes",
+  "67 different gaps occur, from 2 to 158; the level share is 24.38 %; L = 3 holds 30 % of the level class.",
+  100000, 1, gen_a045346 },
+{ "a045347", "A045347", "Primes congruent to {0, 2, 4, 5, 6} mod 7", "primes",
+  "84 different gaps occur, from 2 to 178; the level share is 26.00 %.",
+  100000, 1, gen_a045347 },
+{ "a045350", "A045350", "Primes congruent to {0, 1, 2, 4, 5} mod 7", "primes",
+  "76 different gaps occur, from 2 to 210; the level share is 26.57 %.",
+  100000, 1, gen_a045350 },
+{ "a045351", "A045351", "Primes congruent to {0, 2, 4, 5} mod 7", "primes",
+  "103 different gaps occur, from 2 to 260; the level share is 29.45 %.",
+  100000, 1, gen_a045351 },
+{ "a045352", "A045352", "Primes congruent to {1, 2, 5, 7} mod 8", "primes",
+  "74 different gaps occur, from 2 to 162; the level share is 25.04 %.",
+  100000, 1, gen_a045352 },
+{ "a045353", "A045353", "Primes congruent to {0, 1, 2, 5, 6} mod 7", "primes",
+  "78 different gaps occur, from 2 to 194; the level share is 26.45 %; L = 3 holds 30 % of the level class.",
+  100000, 1, gen_a045353 },
+{ "a045354", "A045354", "Primes congruent to {0, 2, 5, 6} mod 7", "primes",
+  "81 different gaps occur, from 2 to 276; the level share is 27.84 %; L = 3 holds 31 % of the level class.",
+  100000, 1, gen_a045354 },
+{ "a045358", "A045358", "Primes congruent to {0, 1, 2, 5} mod 7", "primes",
+  "81 different gaps occur, from 2 to 280; the level share is 30.11 %.",
+  100000, 1, gen_a045358 },
+{ "a045369", "A045369", "Primes congruent to {0, 1, 2, 4, 6} mod 7", "primes",
+  "80 different gaps occur, from 2 to 192; the level share is 26.30 %.",
+  100000, 1, gen_a045369 },
+{ "a045370", "A045370", "Primes congruent to {0, 2, 4, 6} mod 7", "primes",
+  "79 different gaps occur, from 2 to 306; the level share is 29.43 %.",
+  100000, 1, gen_a045370 },
+{ "a045376", "A045376", "Primes congruent to {0, 1, 2, 6} mod 7", "primes",
+  "108 different gaps occur, from 2 to 254; the level share is 29.60 %.",
+  100000, 1, gen_a045376 },
+{ "a045393", "A045393", "Primes congruent to {0, 1, 3, 4, 5, 6} mod 7", "primes",
+  "65 different gaps occur, from 2 to 168; the level share is 23.73 %; L = 1 holds 30 % of the level class.",
+  100000, 1, gen_a045393 },
+{ "a045394", "A045394", "Primes congruent to {0, 3, 4, 5, 6} mod 7", "primes",
+  "81 different gaps occur, from 2 to 224; the level share is 24.76 %.",
+  100000, 1, gen_a045394 },
+{ "a045396", "A045396", "Primes congruent to {0, 1, 3, 4, 5} mod 7", "primes",
+  "83 different gaps occur, from 2 to 184; the level share is 27.47 %.",
+  100000, 1, gen_a045396 },
+{ "a045397", "A045397", "Primes congruent to {0, 3, 4, 5} mod 7", "primes",
+  "78 different gaps occur, from 2 to 252; the level share is 29.80 %.",
+  100000, 1, gen_a045397 },
+{ "a045398", "A045398", "Primes congruent to {0, 1, 3, 5, 6} mod 7", "primes",
+  "79 different gaps occur, from 2 to 192; the level share is 24.66 %.",
+  100000, 1, gen_a045398 },
+{ "a047254", "A047254", "Numbers that are congruent to {2, 3, 5} mod 6", "residue class",
+  "The gaps are 1, 2 and 3; the level share is 22.76 %; L = 1 holds 79 % of the level class.",
+  100000, 1, gen_a047254 },
+{ "a047256", "A047256", "Numbers that are congruent to {0, 1, 2, 3, 5} mod 6", "residue class",
+  "The gaps are 1 and 2; the level share is 16.93 %; L = 1 holds 100 % of the level class.",
+  100000, 1, gen_a047256 },
+{ "a047257", "A047257", "Numbers that are congruent to {4, 5} mod 6", "residue class",
+  "The gaps are 1 and 5; the level share is 0.01 %; L = 1 holds 33 % of the level class.",
+  100000, 1, gen_a047257 },
+{ "a047258", "A047258", "Numbers that are congruent to {0, 4, 5} mod 6", "residue class",
+  "The gaps are 1 and 4; the level share is 7.36 %; L = 2 holds 65 % of the level class.",
+  100000, 1, gen_a047258 },
+{ "a047259", "A047259", "Numbers that are congruent to {1, 4, 5} mod 6", "residue class",
+  "The gaps are 1, 2 and 3; the level share is 4.81 %; L = 2 holds 100 % of the level class.",
+  100000, 1, gen_a047259 },
+{ "a047260", "A047260", "Numbers that are congruent to {0, 1, 4, 5} mod 6", "residue class",
+  "The gaps are 1 and 3; the level share is 10.65 %; L = 1 holds 65 % of the level class.",
+  100000, 1, gen_a047260 },
+{ "a047262", "A047262", "Numbers that are congruent to {0, 2, 4, 5} mod 6", "residue class",
+  "The gaps are 1 and 2; the level share is 3.71 %; L = 2 holds 100 % of the level class.",
+  100000, 1, gen_a047262 },
+{ "a047263", "A047263", "Numbers that are congruent to {0, 1, 2, 4, 5} mod 6", "residue class",
+  "The gaps are 1 and 2; the level share is 5.67 %; L = 1 holds 100 % of the level class.",
+  100000, 1, gen_a047263 },
 };
 static const int NDEF = (int)(sizeof defs / sizeof defs[0]);
 
