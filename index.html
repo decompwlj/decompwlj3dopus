@@ -1,0 +1,2282 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%230b0e14'/%3E%3Ccircle cx='10' cy='21' r='3' fill='%234c8dff'/%3E%3Ccircle cx='19' cy='13' r='3' fill='%23ff8c42'/%3E%3Ccircle cx='25' cy='7' r='2' fill='%23ffe45c'/%3E%3C/svg%3E">
+<title>decompwlj 3D</title>
+<meta name="description" content="Gallery and interactive 3-D atlas of the decomposition into weight × level + jump for fifty integer sequences, 10⁵ terms each. three.js / WebGL.">
+<style>
+/* the base rules the claude.ai wrapper used to supply */
+[hidden] { display: none !important; }
+img { max-width: 100%; }
+
+/* decompwlj 3D — layout and theme.  Dark-first: bare :root is the dark
+   palette; the light palette applies under a light system setting (unless the
+   viewer chose dark) and whenever the viewer or the toggle chooses light. */
+
+:root {
+  --bg:        #0b0e14;
+  --bg-2:      #11151f;
+  --bg-3:      #171c28;
+  --line:      #232a39;
+  --line-2:    #2f394d;
+  --fg:        #e6ebf5;
+  --fg-2:      #9aa6bd;
+  --fg-3:      #64708a;
+  --accent:    #7aa2ff;
+
+  --c-weight:  #4c8dff;
+  --c-level:   #ff8c42;
+  --c-tie:     #ffe45c;
+  --c-one:     #55e0c0;
+
+  --ax-x:      #e04b4b;   /* weight axis  */
+  --ax-y:      #3fbf5a;   /* level axis   */
+  --ax-z:      #e8b73a;   /* jump axis    */
+  --ax-ink:    #0b0e14;
+
+  --r:         10px;
+  --shadow:    0 8px 30px rgba(0,0,0,.45);
+  --scrim:     rgba(4,6,10,.72);
+  --mono:      ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+  --sans:      system-ui, -apple-system, "Segoe UI", Inter, Roboto, sans-serif;
+  --gut:       16px;
+  --t-weight:  #3b7fe6;   /* plate colours, baked into the PNGs */
+  --t-level:   #e0621a;
+  color-scheme: dark;
+}
+
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    --bg:        #f6f7fa;
+    --bg-2:      #ffffff;
+    --bg-3:      #eef1f7;
+    --line:      #dde2ec;
+    --line-2:    #c6cfdf;
+    --fg:        #11151f;
+    --fg-2:      #4c5670;
+    --fg-3:      #6b768d;
+    --accent:    #2f5fd0;
+    --c-weight:  #2f6fdb;
+    --c-level:   #e2661a;
+    --c-tie:     #b8860b;
+    --c-one:     #0f9c86;
+    --ax-x:      #c22f2f;
+    --ax-y:      #1e8f38;
+    --ax-z:      #b4860a;
+    --ax-ink:    #ffffff;
+    --shadow:    0 8px 30px rgba(20,30,60,.12);
+    --scrim:     rgba(240,242,247,.8);
+    color-scheme: light;
+  }
+}
+:root[data-theme="light"] {
+  --bg:        #f6f7fa;
+  --bg-2:      #ffffff;
+  --bg-3:      #eef1f7;
+  --line:      #dde2ec;
+  --line-2:    #c6cfdf;
+  --fg:        #11151f;
+  --fg-2:      #4c5670;
+  --fg-3:      #6b768d;
+  --accent:    #2f5fd0;
+  --c-weight:  #2f6fdb;
+  --c-level:   #e2661a;
+  --c-tie:     #b8860b;
+  --c-one:     #0f9c86;
+  --ax-x:      #c22f2f;
+  --ax-y:      #1e8f38;
+  --ax-z:      #b4860a;
+  --ax-ink:    #ffffff;
+  --shadow:    0 8px 30px rgba(20,30,60,.12);
+  --scrim:     rgba(240,242,247,.8);
+  color-scheme: light;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  height: 100%; margin: 0;
+  background: var(--bg); color: var(--fg);
+  font: 14px/1.5 var(--sans);
+  -webkit-font-smoothing: antialiased;
+  overscroll-behavior: none;
+  overflow: hidden;
+}
+
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+#app {
+  display: grid;
+  grid-template-columns: 292px minmax(0,1fr) 312px;
+  height: 100%; width: 100%;
+  transition: grid-template-columns .28s cubic-bezier(.4,0,.2,1);
+}
+#app.no-cat   { grid-template-columns: 0 minmax(0,1fr) 312px; }
+#app.no-panel { grid-template-columns: 292px minmax(0,1fr) 0; }
+#app.no-cat.no-panel { grid-template-columns: 0 minmax(0,1fr) 0; }
+
+/* ── catalogue ─────────────────────────────────────────────── */
+
+#catalog {
+  display: flex; flex-direction: column; min-width: 0; overflow: hidden;
+  background: var(--bg-2); border-right: 1px solid var(--line);
+}
+.cat-head {
+  display: flex; align-items: center; gap: 10px;
+  padding: 14px var(--gut) 12px; border-bottom: 1px solid var(--line);
+}
+.brand { display: flex; align-items: center; gap: 9px; font-weight: 600; letter-spacing: -.01em; font-size: 15px; flex: 1; color: var(--fg); text-decoration: none; }
+.brand-mark {
+  width: 15px; height: 15px; border-radius: 4px; flex: none;
+  background:
+    radial-gradient(circle at 26% 74%, var(--c-weight) 0 34%, transparent 36%),
+    radial-gradient(circle at 68% 40%, var(--c-level) 0 30%, transparent 32%),
+    radial-gradient(circle at 86% 16%, var(--c-tie) 0 20%, transparent 22%),
+    var(--bg-3);
+}
+.brand-dim { color: var(--fg-3); font-weight: 500; }
+
+.cat-search { position: relative; padding: 12px var(--gut); border-bottom: 1px solid var(--line); }
+#search {
+  width: 100%; padding: 9px 56px 9px 12px; font: 13px var(--sans);
+  color: var(--fg); background: var(--bg-3);
+  border: 1px solid var(--line); border-radius: 8px; outline: none;
+}
+#search:focus { border-color: var(--accent); }
+.search-count {
+  position: absolute; right: calc(var(--gut) + 10px); top: 50%; transform: translateY(-50%);
+  font: 11px var(--mono); color: var(--fg-3); pointer-events: none;
+  font-variant-numeric: tabular-nums;
+}
+
+.cat-list { flex: 1; overflow-y: auto; overflow-x: hidden; outline: none; }
+#catRows { display: flex; flex-direction: column; }
+
+.row {
+  position: relative; height: 58px; width: 100%; flex: none;
+  display: flex; flex-direction: column; justify-content: center; gap: 2px;
+  padding: 0 var(--gut); cursor: pointer; text-align: left;
+  font: inherit; color: var(--fg); background: none; border: 0; border-left: 2px solid transparent;
+}
+.row:hover { background: var(--bg-3); }
+.row.sel { background: color-mix(in oklab, var(--accent) 16%, transparent); border-left-color: var(--accent); }
+.row .r1, .row .r2 { width: 100%; }
+.row .r1 { display: flex; align-items: baseline; gap: 8px; min-width: 0; }
+.row .nm { font-weight: 550; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.row .an { font: 11px var(--mono); color: var(--fg-3); flex: none; margin-left: auto; }
+.row .r2 { display: flex; align-items: center; gap: 8px; font-size: 11px; color: var(--fg-3); }
+.row .bar { flex: 1; height: 3px; border-radius: 2px; background: var(--c-weight); overflow: hidden; min-width: 40px; }
+.row .bar > i { display: block; height: 100%; background: var(--c-level); }
+.row .pct { font: 11px var(--mono); color: var(--fg-2); flex: none; font-variant-numeric: tabular-nums; }
+
+.cat-pager { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 4px; padding: 10px var(--gut); border-top: 1px solid var(--line); }
+.cat-pager button {
+  min-width: 28px; height: 28px; padding: 0 6px; font: 11px var(--mono); color: var(--fg-2);
+  background: var(--bg-3); border: 1px solid var(--line); border-radius: 6px; cursor: pointer;
+}
+.cat-pager button:hover:not(:disabled) { color: var(--fg); border-color: var(--line-2); }
+.cat-pager button[aria-current="page"] { background: color-mix(in oklab, var(--accent) 22%, var(--bg-3)); color: var(--fg); border-color: var(--accent); }
+.cat-pager button:disabled { opacity: .4; cursor: default; }
+.cat-pager .range { flex-basis: 100%; text-align: center; margin-top: 2px; font: 11px var(--mono); color: var(--fg-3); font-variant-numeric: tabular-nums; }
+
+.cat-foot {
+  display: flex; flex-wrap: wrap; gap: 6px 14px; padding: 10px var(--gut); border-top: 1px solid var(--line);
+  font-size: 11px;
+}
+.cat-foot a { color: var(--fg-3); text-decoration: none; }
+.cat-foot a:hover { color: var(--accent); }
+
+/* ── stage ─────────────────────────────────────────────────── */
+
+#stage { position: relative; min-width: 0; overflow: hidden; background: var(--bg); }
+#gl { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
+#overlay { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+
+.lbl {
+  position: absolute; left: 0; top: 0; font: 11px var(--mono); color: var(--fg-3);
+  transform: translate(-50%, -50%); white-space: nowrap; user-select: none;
+}
+.lbl.name { font: 600 12px var(--sans); letter-spacing: .02em; }
+.lbl.name.x { color: var(--ax-x); } .lbl.name.y { color: var(--ax-y); } .lbl.name.z { color: var(--ax-z); }
+
+#topbar {
+  position: absolute; left: 0; right: 0; top: 0; z-index: 3;
+  display: flex; align-items: center; gap: 12px; padding: 12px var(--gut);
+  background: linear-gradient(var(--bg) 12%, color-mix(in oklab, var(--bg) 55%, transparent) 70%, transparent);
+  pointer-events: none;
+}
+#topbar > * { pointer-events: auto; }
+.title-block { min-width: 0; }
+#seqName { margin: 0; font-size: 16px; font-weight: 600; letter-spacing: -.01em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sub { font: 11px var(--mono); color: var(--fg-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.spacer { flex: 1; }
+.load-state { font: 11px var(--mono); color: var(--fg-3); font-variant-numeric: tabular-nums; }
+
+#legend {
+  position: absolute; left: var(--gut); bottom: 44px; z-index: 3;
+  display: flex; flex-direction: column; gap: 1px;
+  background: color-mix(in oklab, var(--bg-2) 88%, transparent);
+  border: 1px solid var(--line); border-radius: var(--r);
+  padding: 6px; backdrop-filter: blur(8px);
+}
+.lg {
+  display: flex; align-items: center; gap: 8px; width: 100%;
+  padding: 5px 8px; border: 0; border-radius: 6px; background: none;
+  color: var(--fg-2); font: 11px var(--sans); cursor: pointer; text-align: left;
+}
+.lg:hover { background: var(--bg-3); }
+.lg.off { opacity: .38; }
+.lg i { width: 9px; height: 9px; border-radius: 50%; background: var(--c); flex: none; }
+.lg span { flex: 1; }
+.lg em { font-style: normal; font-family: var(--mono); color: var(--fg-3); font-size: 10px; }
+.lg b { font: 500 11px var(--mono); color: var(--fg); font-variant-numeric: tabular-nums; min-width: 7ch; text-align: right; }
+
+#statusbar {
+  position: absolute; left: 0; right: 0; bottom: 0; z-index: 3;
+  display: flex; align-items: center; gap: 16px; padding: 7px var(--gut);
+  font: 11px var(--mono); color: var(--fg-3);
+  background: linear-gradient(transparent, color-mix(in oklab, var(--bg) 70%, transparent) 40%, var(--bg));
+  pointer-events: none; font-variant-numeric: tabular-nums;
+}
+#statusbar > span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#statusbar #stDots { flex: none; }
+#statusbar .hint { color: var(--fg-3); opacity: .8; flex: none; }
+@media (max-width: 1680px) { #stRange { display: none; } }
+@media (max-width: 1200px) { #statusbar .hint { display: none; } }
+
+.tip {
+  position: absolute; z-index: 5; pointer-events: none;
+  background: var(--bg-2); border: 1px solid var(--line-2); border-radius: 8px;
+  box-shadow: var(--shadow); padding: 9px 11px; font: 11.5px/1.65 var(--mono);
+  white-space: pre; color: var(--fg); font-variant-numeric: tabular-nums;
+}
+.tip b { color: var(--accent); font-weight: 600; }
+.tip .cw { color: var(--c-weight); } .tip .cl { color: var(--c-level); } .tip .ct { color: var(--c-tie); }
+
+#progress { position: absolute; left: 0; right: 0; top: 0; height: 2px; z-index: 6; background: transparent; }
+#progressBar { height: 100%; width: 0; background: var(--accent); transition: width .18s linear, opacity .4s; }
+
+/* ── control panel ─────────────────────────────────────────── */
+
+#panel {
+  overflow-y: auto; min-width: 0;
+  background: var(--bg-2); border-left: 1px solid var(--line);
+  padding: 12px var(--gut) 40px;
+}
+.grp { padding: 12px 0; border-bottom: 1px solid var(--line); }
+.grp:last-child { border-bottom: 0; }
+.grp h2 {
+  margin: 0 0 10px; font-size: 11px; font-weight: 600;
+  text-transform: uppercase; letter-spacing: .08em; color: var(--fg-3);
+  display: flex; align-items: baseline; gap: 8px;
+}
+.grp h2 small { font-size: 10px; text-transform: none; letter-spacing: 0; font-weight: 400; opacity: .75; }
+
+.axis-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+.ax {
+  width: 20px; height: 20px; flex: none; border-radius: 5px;
+  display: grid; place-items: center; font: 600 11px var(--mono); color: var(--ax-ink);
+}
+.ax.x { background: var(--ax-x); } .ax.y { background: var(--ax-y); } .ax.z { background: var(--ax-z); }
+select {
+  flex: 1; min-width: 0; padding: 6px 8px; font: 12px var(--sans);
+  color: var(--fg); background: var(--bg-3); border: 1px solid var(--line);
+  border-radius: 6px; outline: none;
+}
+select:focus { border-color: var(--accent); }
+
+.btn-row { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0 4px; }
+.chip {
+  padding: 5px 10px; font: 11.5px var(--sans); color: var(--fg-2);
+  background: var(--bg-3); border: 1px solid var(--line); border-radius: 6px;
+  cursor: pointer; text-decoration: none; text-align: center;
+}
+.chip:hover { color: var(--fg); border-color: var(--line-2); }
+.chip.on { background: color-mix(in oklab, var(--accent) 22%, var(--bg-3)); color: var(--fg); border-color: var(--accent); }
+.chip.wide { flex: 1; }
+
+.check { display: flex; align-items: center; gap: 8px; padding: 4px 0; font-size: 12px; color: var(--fg-2); cursor: pointer; }
+.check input { accent-color: var(--accent); }
+
+.slider-row { display: grid; grid-template-columns: 58px 1fr 44px; align-items: center; gap: 8px; margin: 6px 0; }
+.slider-row label { font-size: 11.5px; color: var(--fg-3); }
+.slider-row output { font: 11px var(--mono); color: var(--fg-2); text-align: right; font-variant-numeric: tabular-nums; }
+input[type=range] { width: 100%; accent-color: var(--accent); height: 18px; }
+
+.range2 { margin: 8px 0 2px; }
+.range2 > label { font-size: 11.5px; color: var(--fg-3); }
+.range2 .dual { display: grid; gap: 2px; margin: 2px 0; }
+.range2 output { font: 11px var(--mono); color: var(--fg-2); }
+
+.stats { display: grid; grid-template-columns: auto 1fr; gap: 3px 12px; margin: 0; font: 11.5px var(--mono); font-variant-numeric: tabular-nums; }
+.stats dt { color: var(--fg-3); }
+.stats dd { margin: 0; text-align: right; color: var(--fg); }
+.stats dd.c-level { color: var(--c-level); } .stats dd.c-weight { color: var(--c-weight); }
+
+.note { margin: 10px 0 0; font-size: 11.5px; line-height: 1.55; color: var(--fg-2); }
+.def { margin: 0 0 8px; font-size: 11.5px; line-height: 1.75; color: var(--fg-2); }
+.def i { font-family: var(--mono); font-style: italic; color: var(--fg); }
+.def b { color: var(--fg); font-weight: 600; }
+.def.dim { color: var(--fg-3); line-height: 1.6; }
+.c-level { color: var(--c-level); font-style: normal; }
+.c-weight { color: var(--c-weight); font-style: normal; }
+
+.icon-btn {
+  width: 30px; height: 30px; flex: none; display: grid; place-items: center;
+  background: var(--bg-3); border: 1px solid var(--line); border-radius: 7px;
+  color: var(--fg-2); cursor: pointer; font-size: 14px; line-height: 1;
+}
+.icon-btn:hover { color: var(--fg); border-color: var(--line-2); }
+.icon-btn.ghost { background: color-mix(in oklab, var(--bg-2) 80%, transparent); backdrop-filter: blur(6px); }
+#catShow { display: none; }
+#app.no-cat #catShow { display: grid; }
+
+/* ── snapshot ──────────────────────────────────────────────── */
+
+.modal {
+  position: fixed; inset: 0; z-index: 30; display: grid; place-items: center;
+  padding: var(--gut); background: var(--scrim); backdrop-filter: blur(4px);
+}
+.modal-in {
+  width: min(920px, 100%); max-height: 100%; overflow: auto;
+  background: var(--bg-2); border: 1px solid var(--line-2); border-radius: var(--r);
+  box-shadow: var(--shadow); padding: 14px var(--gut) 16px;
+  display: flex; flex-direction: column; gap: 10px;
+}
+.modal-head { display: flex; align-items: center; gap: 10px; }
+.modal-head h2 { margin: 0; flex: 1; font-size: 13px; font-weight: 600; }
+#snapImg { display: block; width: 100%; height: auto; border-radius: 6px; border: 1px solid var(--line); background: var(--bg); }
+.modal-hint { margin: 0; font-size: 12px; color: var(--fg-2); }
+
+/* ── boot / errors ─────────────────────────────────────────── */
+
+.boot {
+  position: fixed; inset: 0; z-index: 40; display: grid; place-items: center;
+  padding: var(--gut); background: var(--bg); transition: opacity .4s; font-size: 13px; color: var(--fg-2);
+}
+.boot.gone { opacity: 0; pointer-events: none; }
+.boot-in { text-align: center; }
+.boot-in p { white-space: pre-line; max-width: 52ch; margin: 0 auto 14px; }
+.boot-dot {
+  width: 26px; height: 26px; margin: 0 auto 14px; border-radius: 50%;
+  border: 2px solid var(--line-2); border-top-color: var(--accent);
+  animation: spin .8s linear infinite;
+}
+.boot.err .boot-dot { animation: none; border-color: var(--c-level); }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+
+/* ── home: the gallery ─────────────────────────────────────── */
+
+#home {
+  position: fixed; inset: 0; overflow-y: auto; background: var(--bg);
+  padding: env(safe-area-inset-top, 0px) 0 env(safe-area-inset-bottom, 0px);
+}
+.home-wrap { max-width: 1320px; margin: 0 auto; padding: 28px var(--gut) 40px; display: flex; flex-direction: column; gap: 18px; }
+.home-head { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px 24px; }
+.home-title { flex: 1 1 420px; min-width: 0; }
+.home-title .brand { display: inline-flex; font-size: 13px; color: var(--fg-2); margin-bottom: 10px; }
+.home-title h1 { margin: 0; font-size: clamp(22px, 2.6vw, 30px); font-weight: 650; letter-spacing: -.02em; text-wrap: balance; }
+.home-title p { margin: 8px 0 0; max-width: 72ch; color: var(--fg-2); font-size: 13.5px; line-height: 1.6; }
+.home-title p i { font-family: var(--mono); color: var(--fg); }
+.home-links { display: flex; gap: 14px; font-size: 12px; }
+.home-links a { color: var(--fg-3); text-decoration: none; }
+.home-links a:hover { color: var(--accent); }
+
+.home-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 18px; }
+.home-search { flex: 1 1 300px; max-width: 520px; }
+#homeSearch {
+  width: 100%; padding: 10px 12px; font: 14px var(--sans); color: var(--fg);
+  background: var(--bg-2); border: 1px solid var(--line); border-radius: 8px; outline: none;
+}
+#homeSearch:focus { border-color: var(--accent); }
+.home-count { font: 12px var(--mono); color: var(--fg-3); font-variant-numeric: tabular-nums; }
+.home-key { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 11.5px; color: var(--fg-3); margin-left: auto; }
+.home-key span { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+.home-key i { width: 8px; height: 8px; border-radius: 50%; background: var(--c); }
+.home-key b { width: 16px; border-top: 1px dashed var(--fg-3); }
+.home-key b.edge { border-top: 1px dotted var(--fg-3); }
+
+.grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 14px; }
+.card {
+  display: flex; flex-direction: column; gap: 9px; padding: 10px; min-width: 0;
+  border: 1px solid var(--line); border-radius: var(--r); background: var(--bg-2);
+  color: var(--fg); text-decoration: none; transition: border-color .15s;
+}
+.card:hover { border-color: var(--accent); }
+.plate { position: relative; aspect-ratio: 1; max-width: 100%; border-radius: 6px; background: var(--bg); overflow: hidden; }
+.plate svg, .plate img { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.plate svg line, .plate svg rect { fill: none; stroke: var(--line-2); stroke-width: 1; vector-effect: non-scaling-stroke; }
+.plate svg .dg { stroke: var(--fg-3); stroke-dasharray: 4 3; }
+.plate svg .ed { stroke-dasharray: 1 3; }
+.plate .axl { position: absolute; font: 10px var(--mono); color: var(--fg-3); pointer-events: none; }
+.plate .axl.k { right: 6px; bottom: 3px; } .plate .axl.L { left: 5px; top: 3px; }
+.card .nm { font-weight: 600; font-size: 13px; line-height: 1.3; min-height: 2.6em;
+            display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.card .sub2 { display: flex; align-items: baseline; gap: 8px; font-size: 11px; color: var(--fg-3); min-width: 0; }
+.card .sub2 .an { font-family: var(--mono); flex: none; }
+.card .sub2 .fam { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.card .r2 { display: flex; align-items: center; gap: 8px; }
+.lvl-bar { flex: 1; height: 3px; border-radius: 2px; background: var(--t-weight); overflow: hidden; min-width: 30px; }
+.lvl-bar > i { display: block; height: 100%; background: var(--t-level); }
+.card .pct { font: 11px var(--mono); color: var(--fg-2); flex: none; font-variant-numeric: tabular-nums; }
+
+.empty { margin: 0; padding: 48px 0; text-align: center; color: var(--fg-2); }
+.home-foot { margin: 6px 0 0; font-size: 12px; line-height: 1.6; color: var(--fg-3); max-width: 90ch; }
+
+@media (max-width: 819px) {
+  .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  .home-key { margin-left: 0; }
+  .home-wrap { padding-top: 20px; }
+}
+
+/* ── narrow screens ────────────────────────────────────────── */
+
+/* A drawer is position:fixed, which takes it out of the grid flow — so the
+   column template has to lose its track too, or #stage lands in the wrong one. */
+@media (max-width: 1080px) {
+  #app, #app.no-panel { grid-template-columns: 258px minmax(0,1fr); }
+  #app.no-cat, #app.no-cat.no-panel { grid-template-columns: 0 minmax(0,1fr); }
+  #panel { position: fixed; right: 0; top: 0; bottom: 0; width: min(300px, 86vw); z-index: 8;
+           transform: translateX(100%); transition: transform .28s cubic-bezier(.4,0,.2,1); box-shadow: var(--shadow);
+           padding-top: calc(12px + env(safe-area-inset-top, 0px)); padding-bottom: calc(40px + env(safe-area-inset-bottom, 0px)); }
+  #app.show-panel #panel { transform: none; }
+}
+@media (max-width: 720px) {
+  #app, #app.no-cat, #app.no-panel, #app.no-cat.no-panel { grid-template-columns: minmax(0,1fr); }
+  #catalog { position: fixed; left: 0; top: 0; bottom: 0; width: min(268px, 82vw); z-index: 9;
+             transform: translateX(-100%); transition: transform .28s cubic-bezier(.4,0,.2,1); box-shadow: var(--shadow);
+             padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
+  #app.show-cat #catalog { transform: none; }
+  #catShow { display: grid !important; }
+  #legend { bottom: 40px; padding: 4px; }
+  .lg em { display: none; }
+  #topbar { padding: 10px var(--gut); }
+  #seqName { font-size: 14px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #app, #panel, #catalog, #progressBar, .boot { transition: none; }
+  .boot-dot { animation-duration: 2.4s; }
+}
+</style>
+<script type="importmap">
+{ "imports": { "three": "./vendor/three.module.min.js",
+               "three/addons/": "./vendor/addons/" } }
+</script>
+</head>
+<body>
+
+
+<section id="home" aria-label="All sequences">
+  <div class="home-wrap">
+    <header class="home-head">
+      <div class="home-title">
+        <a class="brand" href="#home"><span class="brand-mark" aria-hidden="true"></span><span class="brand-text">decompwlj<span class="brand-dim"> 3D</span></span></a>
+        <h1>Weight × level + jump, fifty sequences</h1>
+        <p>Every term of a strictly increasing sequence is written <i>a</i>(n) = <i>k</i>(n)·<i>L</i>(n) + <i>d</i>(n):
+          the jump <i>d</i> = a(n+1) − a(n), the weight <i>k</i> the least divisor of a − d above d, the level <i>L</i> = (a − d)/k.
+          10⁵ terms per sequence. Open a plate to explore it in three dimensions.</p>
+      </div>
+      <nav class="home-links" aria-label="References">
+        <a href="https://decompwlj.com" target="_blank" rel="noopener">decompwlj.com</a>
+        <a href="https://arxiv.org/abs/0711.0865" target="_blank" rel="noopener">arXiv:0711.0865</a>
+      </nav>
+    </header>
+    <div class="home-tools">
+      <div class="home-search"><input id="homeSearch" type="search" placeholder="Search by name, A-number or family" autocomplete="off" spellcheck="false" aria-label="Search sequences"></div>
+      <span id="homeCount" class="home-count"></span>
+      <div class="home-key" aria-hidden="true">
+        <span><i style="--c:var(--t-weight)"></i>weight k ≤ L</span>
+        <span><i style="--c:var(--t-level)"></i>level k &gt; L</span>
+        <span><b></b>k = L</span>
+        <span><b class="edge"></b>kL = A</span>
+      </div>
+    </div>
+    <div id="grid" class="grid" role="list"></div>
+    <p id="empty" class="empty" hidden></p>
+    <p class="home-foot">Each plate is the weight–level plane on a square with equal aspect: log k / log A across, log L / log A up, A the largest term shown.
+      Every sequence then shares one frame. Points lie below the dotted edge kL = A, and level-classified terms (k &gt; L) fall below the dashed diagonal k = L.
+      Blue is weight (k ≤ L, ties included), orange is level.</p>
+  </div>
+</section>
+
+<div id="app" hidden>
+
+  <!-- ─────────────────────────  catalogue  ───────────────────────── -->
+  <aside id="catalog" aria-label="Sequence catalogue">
+    <header class="cat-head">
+      <a class="brand" href="#home" title="All sequences">
+        <span class="brand-mark" aria-hidden="true"></span>
+        <span class="brand-text">decompwlj<span class="brand-dim"> 3D</span></span>
+      </a>
+      <button id="catToggle" class="icon-btn" title="Hide catalogue (C)" aria-label="Hide catalogue">&#9776;</button>
+    </header>
+    <div class="cat-search">
+      <input id="search" type="search" placeholder="Search 50 sequences…" autocomplete="off" spellcheck="false" aria-label="Search sequences">
+      <span id="searchCount" class="search-count"></span>
+    </div>
+    <div id="catList" class="cat-list" aria-label="Sequences">
+      <div id="catRows"></div>
+    </div>
+    <nav id="catPager" class="cat-pager" aria-label="Sequence pages" hidden></nav>
+    <footer class="cat-foot">
+      <a href="https://decompwlj.com" target="_blank" rel="noopener">decompwlj.com</a>
+      <a href="https://arxiv.org/abs/0711.0865" target="_blank" rel="noopener">arXiv:0711.0865</a>
+    </footer>
+  </aside>
+
+  <!-- ─────────────────────────  stage  ───────────────────────── -->
+  <main id="stage">
+    <canvas id="gl"></canvas>
+
+    <div id="overlay" aria-hidden="true"></div>
+
+    <div id="topbar">
+      <button id="toHome" class="icon-btn ghost" title="All sequences (G)" aria-label="Back to all sequences"><svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor" aria-hidden="true"><rect x="1" y="1" width="6" height="6" rx="1.2"/><rect x="9" y="1" width="6" height="6" rx="1.2"/><rect x="1" y="9" width="6" height="6" rx="1.2"/><rect x="9" y="9" width="6" height="6" rx="1.2"/></svg></button>
+      <button id="catShow" class="icon-btn ghost" title="Show catalogue (C)" aria-label="Show catalogue">&#9776;</button>
+      <div class="title-block">
+        <h1 id="seqName">—</h1>
+        <div id="seqSub" class="sub"></div>
+      </div>
+      <div class="spacer"></div>
+      <div id="loadState" class="load-state"></div>
+      <button id="panelToggle" class="icon-btn ghost" title="Controls (P)" aria-label="Toggle controls">&#9881;</button>
+    </div>
+
+    <div id="legend">
+      <button class="lg" data-class="weight"><i style="--c:var(--c-weight)"></i><span>weight <em>k ≤ L</em></span><b id="lgWeight">—</b></button>
+      <button class="lg" data-class="level"><i style="--c:var(--c-level)"></i><span>level <em>k &gt; L</em></span><b id="lgLevel">—</b></button>
+      <button class="lg" data-class="tie"><i style="--c:var(--c-tie)"></i><span>tie <em>k = L</em></span><b id="lgTie">—</b></button>
+      <button class="lg" data-class="one"><i style="--c:var(--c-one)"></i><span>level line <em>L = 1</em></span><b id="lgOne">—</b></button>
+    </div>
+
+    <div id="tip" class="tip" hidden></div>
+
+    <div id="statusbar">
+      <span id="stDots">—</span>
+      <span id="stRange"></span>
+      <span class="spacer"></span>
+      <span class="hint">drag rotate · wheel zoom · right-drag pan · hover a point</span>
+    </div>
+
+    <div id="progress"><div id="progressBar"></div></div>
+  </main>
+
+  <!-- ─────────────────────────  controls  ───────────────────────── -->
+  <aside id="panel" aria-label="Controls">
+
+    <section class="grp">
+      <h2>Axes <small>1 unit = 1 decade, equal aspect</small></h2>
+      <div class="axis-row"><label class="ax x" for="axX">X</label><select id="axX"></select></div>
+      <div class="axis-row"><label class="ax y" for="axY">Y</label><select id="axY"></select></div>
+      <div class="axis-row"><label class="ax z" for="axZ">Z</label><select id="axZ"></select></div>
+      <div class="btn-row">
+        <button id="vIso" data-view="iso" class="chip on">iso</button>
+        <button id="vXY" data-view="xy" class="chip">X–Y</button>
+        <button id="vXZ" data-view="xz" class="chip">X–Z</button>
+        <button id="vYZ" data-view="yz" class="chip">Y–Z</button>
+        <button id="vEdge" data-view="edge" class="chip" title="k = L plane seen edge-on">edge</button>
+      </div>
+      <div class="btn-row">
+        <button id="pPersp" data-proj="persp" class="chip on wide">perspective</button>
+        <button id="pOrtho" data-proj="ortho" class="chip wide" title="no foreshortening — the flat views are then true plates">orthographic</button>
+      </div>
+      <label class="check"><input type="checkbox" id="showPlane" checked> <span>k = L plane</span></label>
+      <label class="check"><input type="checkbox" id="showBox" checked> <span>decade box &amp; ticks</span></label>
+      <label class="check"><input type="checkbox" id="spin"> <span>slow rotation</span></label>
+    </section>
+
+    <section class="grp">
+      <h2>Points</h2>
+      <div class="slider-row"><label for="ptSize">size</label><input type="range" id="ptSize" min="0.4" max="12" step="0.1" value="2.4"><output id="ptSizeOut">2.4</output></div>
+      <div class="slider-row"><label for="ptOpacity">opacity</label><input type="range" id="ptOpacity" min="0.05" max="1" step="0.01" value="0.85"><output id="ptOpacityOut">0.85</output></div>
+      <div class="btn-row">
+        <button id="mSolid" data-mode="solid" class="chip on">solid</button>
+        <button id="mDensity" data-mode="density" class="chip" title="additive blending — bright where the cloud is dense">density</button>
+      </div>
+      <label class="check"><input type="checkbox" id="attenuate" checked> <span>size attenuation</span></label>
+      <label class="check"><input type="checkbox" id="hiOne"> <span>highlight the line L = 1</span></label>
+    </section>
+
+    <section class="grp">
+      <h2>Filters</h2>
+      <div class="slider-row"><label for="fReveal">terms n</label><input type="range" id="fReveal" min="0" max="1" step="0.0005" value="1"><output id="fRevealOut">all</output></div>
+      <div class="btn-row"><button id="play" class="chip wide">▶ sweep along the sequence</button></div>
+      <div class="range2">
+        <label for="fDLo">jump d</label>
+        <div class="dual"><input type="range" id="fDLo" min="0" max="1" step="0.001" value="0" aria-label="smallest jump"><input type="range" id="fDHi" min="0" max="1" step="0.001" value="1" aria-label="largest jump"></div>
+        <output id="fDOut">all</output>
+      </div>
+      <div class="btn-row"><button id="resetFilters" class="chip wide">reset filters</button></div>
+    </section>
+
+    <section class="grp">
+      <h2>Sequence</h2>
+      <dl id="stats" class="stats"></dl>
+      <p id="note" class="note"></p>
+      <div class="btn-row">
+        <a id="oeisLink" class="chip wide" target="_blank" rel="noopener">OEIS entry</a>
+      </div>
+      <div class="btn-row">
+        <button id="snap" class="chip wide">snapshot</button>
+        <button id="share" class="chip wide" title="Copies a tag such as #primes.kLd.iso.solid. Add it to the end of this page's link to open the same view.">copy view tag</button>
+      </div>
+    </section>
+
+    <section class="grp">
+      <h2>Definition</h2>
+      <p class="def">
+        For a strictly increasing sequence <i>a</i>(1) &lt; <i>a</i>(2) &lt; …
+        <br><b>jump</b> <i>d</i>(n) = <i>a</i>(n+1) − <i>a</i>(n)
+        <br><i>ℓ</i>(n) = <i>a</i>(n) − <i>d</i>(n) when that exceeds <i>d</i>(n), else 0
+        <br><b>weight</b> <i>k</i>(n) = least divisor of <i>ℓ</i>(n) greater than <i>d</i>(n)
+        <br><b>level</b> <i>L</i>(n) = <i>ℓ</i>(n) / <i>k</i>(n)
+        <br><b><i>a</i>(n) = <i>k</i>(n) · <i>L</i>(n) + <i>d</i>(n)</b>
+      </p>
+      <p class="def dim">Every decomposable term lies on the hyperbola <i>k·L</i> = <i>ℓ</i>. The term is
+        <em class="c-level">level-classified</em> when <i>k</i> &gt; <i>L</i>,
+        <em class="c-weight">weight-classified</em> otherwise — readable here as which side of the
+        <i>k</i> = <i>L</i> plane it falls on. Non-decomposable terms carry no point.</p>
+      <div class="btn-row"><button id="themeBtn" class="chip wide">light theme</button></div>
+    </section>
+  </aside>
+</div>
+
+<div id="snapModal" class="modal" hidden role="dialog" aria-modal="true" aria-labelledby="snapTitle">
+  <div class="modal-in">
+    <div class="modal-head">
+      <h2 id="snapTitle">Snapshot</h2>
+      <button id="snapClose" class="icon-btn" aria-label="Close snapshot">&#10005;</button>
+    </div>
+    <img id="snapImg" alt="Snapshot of the current view">
+    <p class="modal-hint">Right-click the image and choose Save Image As, or long-press it on a phone.</p>
+  </div>
+</div>
+
+<div id="boot" class="boot"><div class="boot-in"><div class="boot-dot"></div><p id="bootMsg">loading…</p><p><a id="bootHome" class="chip" href="#home" hidden>back to all sequences</a></p></div></div>
+
+<script type="module">
+/* decompwlj 3D — static build for your own server.  Fifty sequences, 10^5 terms each.
+   three.js r169 (MIT) is vendored under vendor/ and imported on the first visit to the
+   3-D viewer; the data and the gallery plates sit beside this file.  Serve the folder
+   over HTTP(S): ES modules and fetch() do not work from file://.  */
+let THREE, OrbitControls;
+window.__dwljStarted = true;
+
+/* ═══════════════ csv.js ═══════════════ */
+/* csv.js — CSV readers.
+ *
+ * Two readers, because the two files have opposite shapes:
+ *
+ *   parseIntRows()  bulk numeric data.  Reads bytes straight out of an
+ *                   ArrayBuffer into pre-allocated Float64Array columns —
+ *                   no strings, no per-row allocation, no split().
+ *
+ *   RecordParser    the catalogue.  Full RFC-4180 handling (quotes, escaped
+ *                   quotes, embedded commas and newlines) because the note
+ *                   column is prose.  Fed incrementally so a large catalogue
+ *                   can be shown while it is still downloading.
+ *
+ * fetchBytes() also accepts a gzipped body (a .csv.gz twin served without
+ * Content-Encoding) and inflates it with DecompressionStream; a body the
+ * server declared as gzip has already been inflated by fetch().
+ */
+
+async function fetchBytes(url, signal) {
+  const res = await fetch(url, { signal });
+  if (!res.ok) throw new Error(`${res.status} — ${url}`);
+  let bytes = new Uint8Array(await res.arrayBuffer());
+  if (bytes.length > 2 && bytes[0] === 0x1f && bytes[1] === 0x8b) {
+    if (typeof DecompressionStream === 'undefined')
+      throw new Error('this browser cannot inflate gzip (no DecompressionStream); a current Chrome, Edge, Firefox or Safari can');
+    const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'));
+    bytes = new Uint8Array(await new Response(stream).arrayBuffer());
+  }
+  return bytes;
+}
+
+/** Read `cols.length` unsigned integers per line from `bytes` into the
+ *  Float64Array columns, starting at row `row0`.  Any line whose first
+ *  byte is not a digit (a header, a comment, a blank) is skipped.
+ *  Values are exact to 2^53; the generator refuses any sequence that
+ *  reaches it.
+ *  @returns {number} rows written */
+function parseIntRows(bytes, cols, row0) {
+  const n = bytes.length, ncol = cols.length;
+  let i = 0, row = row0;
+  while (i < n) {
+    let c = bytes[i];
+    if (c < 48 || c > 57) {                    // not a digit: skip the line
+      while (i < n && bytes[i] !== 10) i++;
+      i++;
+      continue;
+    }
+    for (let col = 0; ; col++) {
+      let v = 0;
+      while (i < n) {
+        const ch = bytes[i];
+        if (ch < 48 || ch > 57) break;
+        v = v * 10 + (ch - 48);
+        i++;
+      }
+      if (col < ncol) cols[col][row] = v;
+      if (i < n && bytes[i] === 44) { i++; continue; }   // ','
+      while (i < n && bytes[i] !== 10) i++;              // to end of line
+      i++;
+      break;
+    }
+    row++;
+  }
+  return row - row0;
+}
+
+/** Incremental RFC-4180 parser.  Feed it text with push(); it calls
+ *  onRow(array of strings) for every complete row.  Call end() at EOF. */
+class RecordParser {
+  constructor(onRow) {
+    this.onRow = onRow;
+    this.buf = '';
+    this.field = '';
+    this.row = [];
+    this.inQuote = false;
+  }
+  push(text) {
+    const s = this.buf + text;
+    this.buf = '';
+    let i = 0;
+    const n = s.length;
+    while (i < n) {
+      const ch = s[i];
+      if (this.inQuote) {
+        if (ch === '"') {
+          if (i + 1 < n) {
+            if (s[i + 1] === '"') { this.field += '"'; i += 2; continue; }
+            this.inQuote = false; i++; continue;
+          }
+          this.buf = s.slice(i);                 // '"' at the very end: wait
+          return;
+        }
+        this.field += ch; i++; continue;
+      }
+      if (ch === '"' && this.field === '') { this.inQuote = true; i++; continue; }
+      if (ch === ',') { this.row.push(this.field); this.field = ''; i++; continue; }
+      if (ch === '\n' || ch === '\r') {
+        if (ch === '\r' && i + 1 === n) { this.buf = s.slice(i); return; }
+        if (ch === '\r' && s[i + 1] === '\n') i++;
+        this.row.push(this.field); this.field = '';
+        if (this.row.length > 1 || this.row[0] !== '') this.onRow(this.row);
+        this.row = []; i++; continue;
+      }
+      this.field += ch; i++;
+    }
+  }
+  end() {
+    if (this.field !== '' || this.row.length) {
+      this.row.push(this.field);
+      if (this.row.length > 1 || this.row[0] !== '') this.onRow(this.row);
+    }
+    this.field = ''; this.row = [];
+  }
+}
+
+/** Stream a CSV over the network, emitting rows as they arrive.
+ *  Falls back to a single text() read where streaming is unavailable. */
+async function streamRecords(url, onRow, signal) {
+  const res = await fetch(url, { signal });
+  if (!res.ok) throw new Error(`${res.status} ${res.statusText} — ${url}`);
+  const parser = new RecordParser(onRow);
+  if (!res.body || !res.body.getReader) {
+    parser.push(await res.text());
+    parser.end();
+    return;
+  }
+  const reader = res.body.getReader();
+  const dec = new TextDecoder('utf-8');
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    parser.push(dec.decode(value, { stream: true }));
+  }
+  parser.push(dec.decode());
+  parser.end();
+}
+
+/* ═══════════════ catalog.js ═══════════════ */
+/* catalog.js — the sequence catalogue and its virtualised list.
+ *
+ * The catalogue is one CSV row per sequence.  It is streamed and parsed
+ * incrementally.
+ */
+
+const NUM = new Set(['n0', 'terms', 'chunks', 'chunk_rows', 'decomposable',
+                     'level', 'weight', 'ties', 'level_one', 'forced',
+                     'amin', 'amax', 'kmax', 'Lmax', 'dmin', 'dmax']);
+
+/** Stream data/catalog.csv.  onBatch(records) fires as rows arrive. */
+async function loadCatalog(url, onBatch, signal) {
+  let header = null;
+  const all = [];
+  let batch = [];
+  await streamRecords(url, (row) => {
+    if (!header) { header = row.map(s => s.trim()); return; }
+    const r = {};
+    for (let i = 0; i < header.length; i++) {
+      const key = header[i];
+      const v = row[i] === undefined ? '' : row[i];
+      r[key] = NUM.has(key) ? Number(v) : v;
+    }
+    if (!r.id) return;
+    r._key = `${r.id} ${r.anumber} ${r.name} ${r.family}`.toLowerCase();
+    r.levelShare = r.decomposable ? r.level / r.decomposable : 0;
+    all.push(r);
+    batch.push(r);
+    if (batch.length >= 512) { onBatch(batch, all); batch = []; }
+  }, signal);
+  if (batch.length) onBatch(batch, all);
+  return all;
+}
+
+/** Case-insensitive token search: every token must appear in the key. */
+function filterCatalog(all, query) {
+  const q = query.trim().toLowerCase();
+  if (!q) return all;
+  const toks = q.split(/\s+/);
+  const out = [];
+  for (let i = 0; i < all.length; i++) {
+    const k = all[i]._key;
+    let ok = true;
+    for (let t = 0; t < toks.length; t++) if (k.indexOf(toks[t]) === -1) { ok = false; break; }
+    if (ok) out.push(all[i]);
+  }
+  return out;
+}
+
+const fmtC = new Intl.NumberFormat('en-US');
+
+/* The viewer's sidebar: ten sequences per page, with a pager under the list.
+   Selecting a sequence (from the list, the keyboard or a link) turns to its page. */
+const LIST_PER_PAGE = 10;
+
+class PagedList {
+  constructor(host, pager, onPick) {
+    this.host = host;
+    this.pager = pager;
+    this.onPick = onPick;
+    this.items = [];
+    this.selected = null;
+    this.page = 1;
+    host.addEventListener('click', (e) => {
+      const el = e.target.closest('.row');
+      if (el && el.dataset.id) this.onPick(el.dataset.id);
+    });
+    pager.addEventListener('click', (e) => {
+      const b = e.target.closest('button[data-page]');
+      if (!b || b.disabled) return;
+      this.page = +b.dataset.page;
+      this.render();
+      const cur = pager.querySelector('[aria-current="page"]');
+      if (cur) cur.focus({ preventScroll: true });
+    });
+  }
+
+  get pages() { return Math.max(1, Math.ceil(this.items.length / LIST_PER_PAGE)); }
+
+  /** New contents (a search): back to the first page. */
+  setItems(items) {
+    this.items = items;
+    this.page = 1;
+    this.render();
+  }
+
+  select(id) {
+    this.selected = id;
+    const i = this.items.findIndex(r => r.id === id);
+    if (i >= 0) this.page = Math.floor(i / LIST_PER_PAGE) + 1;
+    this.render();
+  }
+
+  render() {
+    if (this.page > this.pages) this.page = this.pages;
+    const from = (this.page - 1) * LIST_PER_PAGE;
+    const shown = this.items.slice(from, from + LIST_PER_PAGE);
+    this.host.replaceChildren(...shown.map(r => this._row(r)));
+    this.host.parentElement.scrollTop = 0;
+
+    const n = this.items.length, pages = this.pages;
+    this.pager.hidden = n <= LIST_PER_PAGE;
+    if (n <= LIST_PER_PAGE) { this.pager.replaceChildren(); return; }
+    const btn = (label, page, o = {}) =>
+      `<button type="button" data-page="${page}"${o.cur ? ' aria-current="page"' : ''}${o.dis ? ' disabled' : ''}` +
+      ` aria-label="${o.aria || 'Page ' + page}">${label}</button>`;
+    let h = btn('‹', this.page - 1, { dis: this.page === 1, aria: 'Previous page' });
+    for (let p = 1; p <= pages; p++) h += btn(String(p), p, { cur: p === this.page });
+    h += btn('›', this.page + 1, { dis: this.page === pages, aria: 'Next page' });
+    h += `<span class="range">${fmtC.format(from + 1)}–${fmtC.format(from + shown.length)} of ${fmtC.format(n)}</span>`;
+    this.pager.innerHTML = h;
+  }
+
+  _row(r) {
+    const el = document.createElement('button');
+    el.type = 'button';
+    el.className = 'row' + (r.id === this.selected ? ' sel' : '');
+    if (r.id === this.selected) el.setAttribute('aria-current', 'true');
+    el.dataset.id = r.id;
+    el.innerHTML = '<span class="r1"><span class="nm"></span><span class="an"></span></span>' +
+                   '<span class="r2"><span class="ct"></span><span class="bar"><i></i></span><span class="pct"></span></span>';
+    el.querySelector('.nm').textContent = r.name;
+    el.querySelector('.an').textContent = r.anumber;
+    el.querySelector('.ct').textContent = fmtC.format(r.terms) + ' terms';
+    el.querySelector('.bar > i').style.width = (r.levelShare * 100).toFixed(2) + '%';
+    el.querySelector('.pct').textContent = (r.levelShare * 100).toFixed(1) + '% lvl';
+    el.title = `${r.name} (${r.anumber}) — ${r.family}\n${fmtC.format(r.decomposable)} decomposable, ` +
+               `${fmtC.format(r.level)} level-classified`;
+    return el;
+  }
+}
+
+/* ═══════════════ data.js ═══════════════ */
+/* data.js — loading one sequence.
+ *
+ * A sequence lives in data/seq/<id>/chunk-NNN.csv, each chunk `chunk_rows`
+ * rows, every term present whether it decomposes or not, so row i of the
+ * concatenation is always sequence index n = n0 + i.  Two chunk formats:
+ *
+ *   "a,d,k,L" rows          the generator's own output (the Apache build)
+ *   "#a0=<a>", then "d,k"   the hosted build: a is rebuilt as a running sum
+ *                           of d from a0, and L = (a - d) / k, checked exact
+ *
+ * The compact form keeps twenty sequences under the host's size limit.
+ *
+ * Chunks are fetched with bounded concurrency and parsed straight into the
+ * right slice of pre-allocated columns, so they may land in any order.  The
+ * contiguous prefix is converted to point attributes as it completes and
+ * handed to the renderer, which is why the cloud builds in front of you
+ * instead of appearing all at once at the end.
+ */
+
+const LOG10 = Math.LN10;
+const CONCURRENCY = 4;
+const CHUNK_EXT = '.csv';
+
+const FIELDS = {
+  k: { label: 'log₁₀ k  (weight)', short: 'k' },
+  L: { label: 'log₁₀ L  (level)',  short: 'L' },
+  d: { label: 'log₁₀ d  (jump)',   short: 'd' },
+  a: { label: 'log₁₀ a  (term)',   short: 'a' },
+  l: { label: 'log₁₀ ℓ  (k·L)',    short: 'l' },
+  n: { label: 'log₁₀ n  (index)',  short: 'n' },
+};
+
+class Dataset {
+  constructor(rec, baseUrl) {
+    this.rec = rec;
+    this.base = `${baseUrl}/seq/${rec.id}`;
+    const N = rec.terms;
+
+    this.a = new Float64Array(N);
+    this.d = new Float64Array(N);
+    this.k = new Float64Array(N);
+    this.L = new Float64Array(N);
+
+    this.count = 0;                       // decomposable points converted
+    this.row   = new Int32Array(N);       // point -> row (n - n0)
+    this.cls   = new Uint8Array(N);       // 0 weight, 1 level, 2 tie
+    this.one   = new Uint8Array(N);       // 1 when L = 1
+
+    this._cache = new Map();              // field -> Float32Array
+    this._built = 0;                      // rows already converted
+    this._done = new Uint8Array(rec.chunks);
+    this._prefix = 0;
+    this.complete = false;
+  }
+
+  /** @param {(d: Dataset, frac: number) => void} onGrow */
+  async load(onGrow, signal) {
+    const { chunks, chunk_rows, terms } = this.rec;
+    let next = 0, loaded = 0;
+
+    const worker = async () => {
+      for (;;) {
+        const c = next++;
+        if (c >= chunks) return;
+        const url = `${this.base}/chunk-${String(c).padStart(3, '0')}${CHUNK_EXT}`;
+        const bytes = await fetchBytes(url, signal);
+        const at = c * chunk_rows;
+        const want = Math.min(chunk_rows, terms - at);
+        const got = bytes[0] === 35 /* '#' */
+          ? this._readCompact(bytes, at, url)
+          : parseIntRows(bytes, [this.a, this.d, this.k, this.L], at);
+        if (got !== want)
+          throw new Error(`${url}: ${got} rows, expected ${want}`);
+        this._done[c] = 1;
+        loaded++;
+        while (this._prefix < chunks && this._done[this._prefix]) this._prefix++;
+        this._convert(Math.min(this._prefix * chunk_rows, terms));
+        onGrow(this, loaded / chunks);
+      }
+    };
+
+    await Promise.all(Array.from({ length: Math.min(CONCURRENCY, chunks) }, worker));
+    /* chunks were rebuilt independently: each must start where the last ended */
+    for (let c = 1; c < chunks; c++) {
+      const r = c * chunk_rows;
+      if (this.a[r] !== this.a[r - 1] + this.d[r - 1])
+        throw new Error(`${this.rec.id}: chunk ${c} does not continue chunk ${c - 1}`);
+    }
+    this._convert(terms);
+    this.complete = true;
+    onGrow(this, 1);
+  }
+
+  /** "#a0=<a>" then "d,k" rows: rebuild a and L.  Returns rows read. */
+  _readCompact(bytes, at, url) {
+    let i = 0, a = 0;
+    while (i < bytes.length && bytes[i] !== 61 /* '=' */ && bytes[i] !== 10) i++;
+    for (i++; i < bytes.length && bytes[i] >= 48 && bytes[i] <= 57; i++) a = a * 10 + (bytes[i] - 48);
+    const got = parseIntRows(bytes, [this.d, this.k], at);     // header lines are skipped
+    for (let r = at; r < at + got; r++) {
+      const d = this.d[r], k = this.k[r];
+      this.a[r] = a;
+      if (k === 0) this.L[r] = 0;
+      else {
+        const L = (a - d) / k;
+        if (!Number.isInteger(L) || k <= d) throw new Error(`${url}: k = ${k} does not fit a = ${a}, d = ${d}`);
+        this.L[r] = L;
+      }
+      a += d;
+    }
+    return got;
+  }
+
+  /** Convert rows [_built, upto) into point attributes. */
+  _convert(upto) {
+    if (upto <= this._built) return;
+    const { k, L } = this;
+    let c = this.count;
+    for (let i = this._built; i < upto; i++) {
+      const kk = k[i];
+      if (kk === 0) continue;                     // non-decomposable: no point
+      const ll = L[i];
+      this.row[c] = i;
+      this.cls[c] = kk === ll ? 2 : (kk > ll ? 1 : 0);
+      this.one[c] = ll === 1 ? 1 : 0;
+      c++;
+    }
+    this.count = c;
+    this._built = upto;
+    this._cache.clear();                          // lengths changed
+  }
+
+  /** log₁₀ of one field over the decomposable points, cached. */
+  field(name) {
+    const hit = this._cache.get(name);
+    if (hit && hit.length >= this.count) return hit;
+    const n = this.count, out = new Float32Array(n);
+    const row = this.row, n0 = this.rec.n0;
+    if (name === 'n') {
+      for (let i = 0; i < n; i++) out[i] = Math.log(row[i] + n0) / LOG10;
+    } else if (name === 'l') {
+      const k = this.k, L = this.L;
+      for (let i = 0; i < n; i++) { const r = row[i]; out[i] = Math.log(k[r] * L[r]) / LOG10; }
+    } else {
+      const src = this[name];
+      for (let i = 0; i < n; i++) out[i] = Math.log(src[row[i]]) / LOG10;
+    }
+    this._cache.set(name, out);
+    return out;
+  }
+
+  /** Counts under the live filters — recomputed on the CPU, ~1 ms at 2·10⁵. */
+  stats(dLo, dHi, nMax) {
+    const logd = this.field('d'), cls = this.cls, one = this.one;
+    let weight = 0, level = 0, tie = 0, lone = 0;
+    const n = Math.min(this.count, nMax);
+    for (let i = 0; i < n; i++) {
+      const x = logd[i];
+      if (x < dLo || x > dHi) continue;
+      const c = cls[i];
+      if (c === 1) level++; else { weight++; if (c === 2) tie++; }
+      if (one[i]) lone++;
+    }
+    return { weight, level, tie, one: lone, shown: weight + level };
+  }
+
+  /** Everything about one point, for the read-out. */
+  point(i) {
+    const r = this.row[i];
+    const k = this.k[r], L = this.L[r], d = this.d[r], a = this.a[r];
+    return { i, n: r + this.rec.n0, a, d, k, L, l: k * L, cls: this.cls[i], one: !!this.one[i] };
+  }
+}
+
+/* ═══════════════ viz.js ═══════════════ */
+/* viz.js — the WebGL scene.
+ *
+ * One unit of world space is one decade on every axis, so the aspect is
+ * equal by construction: the k = L plane really is at 45°, and how far a
+ * point sits from it is exactly the level/weight margin log k − log L.
+ *
+ * Every point of the sequence is uploaded once.  Class visibility, the jump
+ * filter and the sweep along n are uniforms applied in the vertex shader —
+ * filtering never touches the buffers, so it costs nothing and stays smooth
+ * whether the cloud holds 10³ or 10⁷ points.
+ */
+
+const SUP = ['⁰','¹','²','³','⁴','⁵','⁶','⁷','⁸','⁹'];
+const sup = (n) => (n < 0 ? '⁻' : '') + String(Math.abs(n)).split('').map(d => SUP[+d]).join('');
+
+const VERT = /* glsl */`
+  attribute vec4 meta;          // x class(0 w,1 l,2 tie)  y log10 d  z index  w L==1
+  uniform float uSize, uDpr, uAtten, uNMax, uHiOne, uRef, uOrthoAtt;
+  uniform vec2  uD;
+  uniform vec3  uShow;          // weight, level, tie
+  uniform vec3  cWeight, cLevel, cTie, cOne;
+  varying vec3 vColor;
+  void main() {
+    float cls = meta.x;
+    float show = (cls > 0.5 && cls < 1.5) ? uShow.y : (cls > 1.5 ? uShow.z : uShow.x);
+    if (meta.z > uNMax) show = 0.0;
+    if (meta.y < uD.x || meta.y > uD.y) show = 0.0;
+
+    vec4 mv = modelViewMatrix * vec4(position, 1.0);
+    gl_Position = projectionMatrix * mv;
+
+    float boost = 1.0;
+    vColor = (cls > 1.5) ? cTie : ((cls > 0.5) ? cLevel : cWeight);
+    if (uHiOne > 0.5 && meta.w > 0.5) { vColor = cOne; boost = 1.7; }
+
+    /* uSize is the pixel size at the framing distance; nearer points grow. */
+    float att = (uOrthoAtt > 0.0) ? uOrthoAtt : clamp(uRef / max(-mv.z, 0.001), 0.2, 8.0);
+    gl_PointSize = show * uSize * uDpr * mix(1.0, att, uAtten) * boost;
+  }`;
+
+const FRAG = /* glsl */`
+  uniform float uOpacity, uSoft;
+  varying vec3 vColor;
+  void main() {
+    vec2 c = gl_PointCoord - 0.5;
+    float r2 = dot(c, c);
+    if (r2 > 0.25) discard;
+    float a = uOpacity * mix(1.0, smoothstep(0.25, 0.02, r2), uSoft);
+    gl_FragColor = vec4(vColor, a);
+    #include <colorspace_fragment>
+  }`;
+
+class Viz {
+  constructor(canvas, overlay) {
+    this.canvas = canvas;
+    this.overlay = overlay;
+
+    this.renderer = new THREE.WebGLRenderer({
+      canvas, antialias: true, alpha: false, powerPreference: 'high-performance',
+      preserveDrawingBuffer: true,
+    });
+    this.renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 2));
+
+    this.scene = new THREE.Scene();
+    this.persp = new THREE.PerspectiveCamera(32, 1, 0.05, 4000);
+    this.ortho = new THREE.OrthographicCamera(-1, 1, 1, -1, -5000, 5000);
+    this.camera = this.persp;
+    this.projection = 'persp';
+    this.camera.position.set(14, 11, 18);
+    this._orthoH = 8;
+    this._autoRotate = false;
+
+    this._makeControls();
+
+    this.box = new THREE.Vector3(10, 10, 10);
+    this.lo = [0, 0, 0];
+    this.labels = [];
+    this.dirty = true;
+    this.tween = null;
+    this.onPick = () => {};
+
+    this.uniforms = {
+      uSize:    { value: 2.4 },
+      uDpr:     { value: this.renderer.getPixelRatio() },
+      uAtten:   { value: 1 },
+      uRef:     { value: 16 },
+      uOrthoAtt:{ value: 0 },
+      uNMax:    { value: 1e9 },
+      uHiOne:   { value: 0 },
+      uD:       { value: new THREE.Vector2(-9, 99) },
+      uShow:    { value: new THREE.Vector3(1, 1, 1) },
+      uOpacity: { value: 0.85 },
+      uSoft:    { value: 1 },
+      cWeight:  { value: new THREE.Color(0x4c8dff) },
+      cLevel:   { value: new THREE.Color(0xff8c42) },
+      cTie:     { value: new THREE.Color(0xffe45c) },
+      cOne:     { value: new THREE.Color(0x55e0c0) },
+    };
+
+    this.material = new THREE.ShaderMaterial({
+      uniforms: this.uniforms, vertexShader: VERT, fragmentShader: FRAG,
+      transparent: true, depthWrite: true, depthTest: true,
+    });
+
+    this.geometry = new THREE.BufferGeometry();
+    this.points = new THREE.Points(this.geometry, this.material);
+    this.points.frustumCulled = false;
+    this.scene.add(this.points);
+
+    this.frame = new THREE.Group();
+    this.scene.add(this.frame);
+
+    new ResizeObserver(() => this.resize()).observe(canvas.parentElement);
+    this.resize();
+
+    canvas.addEventListener('pointermove', (e) => this._hover(e));
+    canvas.addEventListener('pointerdown', (e) => this._hover(e));
+    canvas.addEventListener('pointerleave', () => { this._ptr = null; this.onPick(null); });
+    this._raf = requestAnimationFrame(this._loop.bind(this));
+  }
+
+  /* OrbitControls caches a quaternion built from camera.up, so it is rebuilt
+     whenever the camera object or its up vector changes. */
+  _makeControls() {
+    const target = this.controls ? this.controls.target.clone() : new THREE.Vector3();
+    if (this.controls) this.controls.dispose();
+    const c = new OrbitControls(this.camera, this.canvas);
+    c.enableDamping = true;
+    c.dampingFactor = 0.075;
+    c.rotateSpeed = 0.85;
+    c.zoomSpeed = 0.9;
+    c.autoRotateSpeed = 0.55;
+    c.autoRotate = this._autoRotate;
+    c.target.copy(target);
+    c.addEventListener('change', () => { this.dirty = true; });
+    this.controls = c;
+  }
+
+  setProjection(kind) {
+    if (kind === this.projection) return;
+    const from = this.camera, to = kind === 'ortho' ? this.ortho : this.persp;
+    to.position.copy(from.position);
+    to.up.copy(from.up);
+    to.quaternion.copy(from.quaternion);
+    this.camera = to;
+    this.projection = kind;
+    this._makeControls();
+    this.resize();
+    this.dirty = true;
+  }
+
+  /* ── theme ─────────────────────────────────────────────── */
+
+  applyTheme() {
+    const cs = getComputedStyle(document.documentElement);
+    const c = (n) => cs.getPropertyValue(n).trim() || '#888';
+    this.scene.background = new THREE.Color().setStyle(c('--bg'));
+    this.uniforms.cWeight.value.setStyle(c('--c-weight'));
+    this.uniforms.cLevel.value.setStyle(c('--c-level'));
+    this.uniforms.cTie.value.setStyle(c('--c-tie'));
+    this.uniforms.cOne.value.setStyle(c('--c-one'));
+    this.axCol = [c('--ax-x'), c('--ax-y'), c('--ax-z')];
+    this.gridCol = c('--line-2');
+    this.planeCol = c('--fg-3');
+    if (this._frameArgs) this.buildFrame(...this._frameArgs);
+    this.dirty = true;
+  }
+
+  resize() {
+    const el = this.canvas.parentElement;
+    const w = el.clientWidth || 1, h = el.clientHeight || 1;
+    const aspect = w / h;
+    this.persp.aspect = aspect;
+    this.persp.updateProjectionMatrix();
+    const H = this._orthoH;
+    this.ortho.top = H; this.ortho.bottom = -H;
+    this.ortho.left = -H * aspect; this.ortho.right = H * aspect;
+    this.ortho.updateProjectionMatrix();
+    this.renderer.setSize(w, h, false);
+    this.uniforms.uDpr.value = this.renderer.getPixelRatio();
+    const tight = w < 720;
+    if (this._tight !== undefined && tight !== this._tight && this._frameArgs) this.buildFrame(...this._frameArgs);
+    this._tight = tight;
+    this.dirty = true;
+  }
+
+  /* ── geometry upload ───────────────────────────────────── */
+
+  /** Bind the point cloud.  `fields` are three Float32Arrays already in
+   *  log₁₀; `lo` their per-axis decade floor; `box` the decade span. */
+  setPoints(dataset, fx, fy, fz, lo, box) {
+    const n = dataset.count;
+    const pos = new Float32Array(n * 3);
+    const meta = new Float32Array(n * 4);
+    const hx = box[0] / 2, hy = box[1] / 2, hz = box[2] / 2;
+    const logd = dataset.field('d');
+    const cls = dataset.cls, one = dataset.one;
+    for (let i = 0; i < n; i++) {
+      pos[i * 3]     = fx[i] - lo[0] - hx;
+      pos[i * 3 + 1] = fy[i] - lo[1] - hy;
+      pos[i * 3 + 2] = fz[i] - lo[2] - hz;
+      meta[i * 4]     = cls[i];
+      meta[i * 4 + 1] = logd[i];
+      meta[i * 4 + 2] = i;
+      meta[i * 4 + 3] = one[i];
+    }
+    this.geometry.dispose();
+    this.geometry = new THREE.BufferGeometry();
+    this.geometry.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+    this.geometry.setAttribute('meta', new THREE.BufferAttribute(meta, 4));
+    this.points.geometry = this.geometry;
+    this.points.frustumCulled = false;
+    this._pos = pos;
+    this._meta = meta;
+    this._n = n;
+    this.dirty = true;
+  }
+
+  /* ── axes, ticks, decade box, k = L plane ──────────────── */
+
+  buildFrame(names, lo, hi, box, opts) {
+    this._frameArgs = [names, lo, hi, box, opts];
+    for (const o of [...this.frame.children]) {
+      this.frame.remove(o);
+      o.geometry && o.geometry.dispose();
+      o.material && o.material.dispose();
+    }
+    for (const l of this.labels) l.remove();
+    this.labels = [];
+
+    this.lo = lo; this.box = new THREE.Vector3(...box);
+    const h = box.map(v => v / 2);
+    const O = [-h[0], -h[1], -h[2]];
+
+    const line = (pts, color, opacity = 1) => {
+      const g = new THREE.BufferGeometry().setFromPoints(pts.map(p => new THREE.Vector3(...p)));
+      const m = new THREE.LineBasicMaterial({ color: new THREE.Color().setStyle(color), transparent: opacity < 1, opacity });
+      const o = new THREE.Line(g, m);
+      this.frame.add(o);
+      return o;
+    };
+    const seg = (pts, color, opacity = 1) => {
+      const g = new THREE.BufferGeometry().setFromPoints(pts.map(p => new THREE.Vector3(...p)));
+      const m = new THREE.LineBasicMaterial({ color: new THREE.Color().setStyle(color), transparent: opacity < 1, opacity });
+      const o = new THREE.LineSegments(g, m);
+      this.frame.add(o);
+      return o;
+    };
+
+    /* the decade box: twelve faint edges */
+    if (opts.box) {
+      const [X, Y, Z] = box, e = [];
+      const c = [[0,0,0],[X,0,0],[X,Y,0],[0,Y,0],[0,0,Z],[X,0,Z],[X,Y,Z],[0,Y,Z]]
+                .map(p => [p[0] + O[0], p[1] + O[1], p[2] + O[2]]);
+      for (const [i, j] of [[0,1],[1,2],[2,3],[3,0],[4,5],[5,6],[6,7],[7,4],[0,4],[1,5],[2,6],[3,7]])
+        e.push(c[i], c[j]);
+      seg(e, this.gridCol, 0.34);
+    }
+
+    /* the three axes, from the box corner */
+    const dirs = [[1,0,0],[0,1,0],[0,0,1]];
+    this._axes = [];
+    for (let ax = 0; ax < 3; ax++) {
+      const end = O.map((v, i) => v + dirs[ax][i] * box[ax]);
+      this._axes[ax] = [new THREE.Vector3(...O), new THREE.Vector3(...end)];
+      line([O, end], this.axCol[ax]);
+      this._label(names[ax].t, end.map((v, i) => v + dirs[ax][i] * 0.55), 'name ' + 'xyz'[ax], ax);
+
+      if (!opts.box) continue;
+      const span = hi[ax] - lo[ax];
+      const tight = this.canvas.clientWidth < 720;
+      const step = span > 26 ? 5 : span > 12 ? 2 : (tight ? 2 : 1);
+      const ticks = [];
+      const start = Math.ceil(lo[ax]);
+      const off = (ax + 1) % 3;
+      for (let v = start; v <= hi[ax] + 1e-9; v += step) {
+        const t = v - lo[ax];
+        const p = O.slice(); p[ax] += t;
+        const q = p.slice(); q[off] -= box[off] * 0.02 + 0.1;
+        ticks.push(p, q);
+        /* the three axes share a corner; only X labels it, or the three
+           minimum labels pile up on top of one another */
+        if (v === start && ax > 0) continue;
+        this._label('10' + sup(v), q.map((c2, i) => c2 + (i === off ? -0.3 : 0)), '', ax);
+      }
+      seg(ticks, this.axCol[ax], 0.8);
+    }
+
+    /* the k = L plane, wherever k and L are actually bound */
+    const ik = names.findIndex(s => s.f === 'k'), iL = names.findIndex(s => s.f === 'L');
+    this.plane = null;
+    if (opts.plane && ik >= 0 && iL >= 0) {
+      const t0 = Math.max(lo[ik], lo[iL]), t1 = Math.min(hi[ik], hi[iL]);
+      if (t1 > t0) {
+        const other = 3 - ik - iL;
+        const corner = (t, s) => {
+          const p = [0, 0, 0];
+          p[ik] = t - lo[ik] + O[ik];
+          p[iL] = t - lo[iL] + O[iL];
+          p[other] = O[other] + s * box[other];
+          return p;
+        };
+        const A = corner(t0, 0), B = corner(t1, 0), C = corner(t1, 1), D = corner(t0, 1);
+        const g = new THREE.BufferGeometry();
+        g.setAttribute('position', new THREE.BufferAttribute(new Float32Array([
+          ...A, ...B, ...C, ...A, ...C, ...D]), 3));
+        const m = new THREE.MeshBasicMaterial({
+          color: new THREE.Color().setStyle(this.planeCol),
+          transparent: true, opacity: 0.075, side: THREE.DoubleSide, depthWrite: false,
+        });
+        const mesh = new THREE.Mesh(g, m);
+        this.frame.add(mesh);
+        this.plane = mesh;
+        line([corner(t0, 0.5), corner(t1, 0.5)], this.planeCol, 0.5);
+        this._label('k = L', corner(t1, 0.5), '');
+      }
+    }
+    this.dirty = true;
+  }
+
+  _label(text, pos, cls, ax = -1) {
+    const el = document.createElement('div');
+    el._ax = ax;
+    el.className = 'lbl ' + cls;
+    el.textContent = typeof text === 'string' ? text : text.t;
+    el._p = new THREE.Vector3(...pos);
+    this.overlay.appendChild(el);
+    this.labels.push(el);
+  }
+
+  _drawLabels() {
+    const w = this.canvas.clientWidth, h = this.canvas.clientHeight;
+    const v = new THREE.Vector3(), u = new THREE.Vector3();
+    /* an axis seen end-on (the third axis of a flat view) keeps its labels
+       off: they would all project onto one spot over the other two axes */
+    const endOn = [false, false, false];
+    if (this._axes) for (let ax = 0; ax < 3; ax++) {
+      v.copy(this._axes[ax][0]).project(this.camera);
+      u.copy(this._axes[ax][1]).project(this.camera);
+      endOn[ax] = Math.hypot((u.x - v.x) * w / 2, (u.y - v.y) * h / 2) < 40;
+    }
+    for (const el of this.labels) {
+      if (el._ax >= 0 && endOn[el._ax]) { el.hidden = true; continue; }
+      v.copy(el._p).project(this.camera);
+      if (v.z > 1) { el.hidden = true; continue; }
+      el.hidden = false;
+      /* keep labels clear of the frame edges and of the top and status bars */
+      const name = el.classList.contains('name');
+      const mx = name ? 78 : 16, my0 = name ? 62 : 14, my1 = name ? 46 : 26;
+      const x = Math.min(w - mx, Math.max(mx, (v.x * 0.5 + 0.5) * w));
+      const y = Math.min(h - my1, Math.max(my0, (-v.y * 0.5 + 0.5) * h));
+      el.style.transform = `translate(-50%,-50%) translate(${x}px,${y}px)`;
+    }
+  }
+
+  /* ── camera presets ────────────────────────────────────── */
+
+  /** Camera basis for a view direction (camera sits at dir·D looking at the origin). */
+  _basis(dir, up0) {
+    const fwd = dir.clone().negate();
+    const right = new THREE.Vector3().crossVectors(fwd, up0).normalize();
+    const up = new THREE.Vector3().crossVectors(right, fwd).normalize();
+    return { fwd, right, up };
+  }
+
+  /** Distance at which the decade box just fills the perspective frustum,
+   *  and the half-height that just fits it under orthographic projection. */
+  _fit(dir, up0) {
+    const b = this.box, aspect = this.persp.aspect || 1;
+    const tv = Math.tan(THREE.MathUtils.degToRad(this.persp.fov) / 2), th = tv * aspect;
+    const { right, up } = this._basis(dir, up0);
+    const c = new THREE.Vector3();
+    let dist = 0, hh = 0;
+    for (const sx of [-.5, .5]) for (const sy of [-.5, .5]) for (const sz of [-.5, .5]) {
+      c.set(sx * b.x, sy * b.y, sz * b.z);
+      const cz = c.dot(dir), cr = Math.abs(c.dot(right)), cu = Math.abs(c.dot(up));
+      dist = Math.max(dist, cz + cr / th, cz + cu / tv);
+      hh = Math.max(hh, cu, cr / aspect);
+    }
+    return { dist: dist * 1.1, half: hh * 1.14 };
+  }
+
+  view(kind) {
+    const dirs = {
+      iso:  new THREE.Vector3(1, 0.58, 1.18),
+      xy:   new THREE.Vector3(0, 0, 1),
+      xz:   new THREE.Vector3(0, 1, 0.0001),
+      yz:   new THREE.Vector3(1, 0, 0.0001),
+      edge: new THREE.Vector3(1, 1, 0.0001),
+    };
+    const dir = (dirs[kind] || dirs.iso).normalize();
+    const up = kind === 'xz' ? new THREE.Vector3(0, 0, -1) : new THREE.Vector3(0, 1, 0);
+    const fit = this._fit(dir, up);
+    this._orthoH = fit.half;
+    this.uniforms.uRef.value = fit.dist;
+    this.resize();
+    const to = dir.clone().multiplyScalar(this.camera.isOrthographicCamera
+      ? Math.max(fit.dist, 40) : fit.dist);
+    if (this.camera.isOrthographicCamera) { this.camera.zoom = 1; this.camera.updateProjectionMatrix(); }
+    const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    this.tween = {
+      t: 0, t0: performance.now(), dur: reduce ? 1 : 520, from: this.camera.position.clone(), to,
+      fromUp: this.camera.up.clone(), toUp: up,
+    };
+    this.controls.target.set(0, 0, 0);
+    this.dirty = true;
+  }
+
+  /* ── picking ───────────────────────────────────────────── */
+
+  _hover(e) {
+    const r = this.canvas.getBoundingClientRect();
+    this._ptr = { x: e.clientX - r.left, y: e.clientY - r.top, cx: e.clientX, cy: e.clientY };
+    this._pickDirty = true;
+  }
+
+  _doPick() {
+    this._pickDirty = false;
+    const p = this._ptr;
+    if (!p || !this._pos || !this._n) return this.onPick(null);
+    const w = this.canvas.clientWidth, h = this.canvas.clientHeight;
+    const nx = (p.x / w) * 2 - 1, ny = -(p.y / h) * 2 + 1;
+    const ortho = this.camera.isOrthographicCamera;
+    let ox, oy, oz, ux, uy, uz, slack;
+    if (ortho) {
+      const o = new THREE.Vector3(nx, ny, -1).unproject(this.camera);
+      const d = new THREE.Vector3(0, 0, -1).applyQuaternion(this.camera.quaternion);
+      ox = o.x; oy = o.y; oz = o.z; ux = d.x; uy = d.y; uz = d.z;
+      slack = (2 * this._orthoH / this.camera.zoom / h) * 9;   /* 9 px, in world units */
+    } else {
+      const q = new THREE.Vector3(nx, ny, 0.5).unproject(this.camera);
+      const o = this.camera.position;
+      const dx = q.x - o.x, dy = q.y - o.y, dz = q.z - o.z;
+      const inv = 1 / Math.hypot(dx, dy, dz);
+      ox = o.x; oy = o.y; oz = o.z; ux = dx * inv; uy = dy * inv; uz = dz * inv;
+      slack = 2 * Math.tan(THREE.MathUtils.degToRad(this.camera.fov) / 2) / h * 9;
+    }
+
+    const pos = this._pos, meta = this._meta, u = this.uniforms;
+    const nMax = u.uNMax.value, dLo = u.uD.value.x, dHi = u.uD.value.y;
+    const show = u.uShow.value;
+    let best = -1, bestScore = Infinity;
+    for (let i = 0; i < this._n; i++) {
+      const c = meta[i * 4];
+      const vis = (c > 0.5 && c < 1.5) ? show.y : (c > 1.5 ? show.z : show.x);
+      if (vis < 0.5) continue;
+      if (meta[i * 4 + 2] > nMax) break;
+      const md = meta[i * 4 + 1];
+      if (md < dLo || md > dHi) continue;
+      const ax = pos[i * 3] - ox, ay = pos[i * 3 + 1] - oy, az = pos[i * 3 + 2] - oz;
+      const t = ax * ux + ay * uy + az * uz;
+      if (t <= 0.01) continue;
+      const px = ax - ux * t, py = ay - uy * t, pz = az - uz * t;
+      const perp2 = px * px + py * py + pz * pz;
+      const lim = ortho ? slack : slack * t;
+      if (perp2 > lim * lim) continue;
+      const score = Math.sqrt(perp2) / (ortho ? 1 : t) + t * 1e-4;
+      if (score < bestScore) { bestScore = score; best = i; }
+    }
+    this.onPick(best < 0 ? null : { i: best, cx: this._ptr.cx, cy: this._ptr.cy });
+  }
+
+  /* ── loop ──────────────────────────────────────────────── */
+
+  set autoRotate(v) { this._autoRotate = v; this.controls.autoRotate = v; this.dirty = this.dirty || v; }
+
+  _loop() {
+    this._raf = requestAnimationFrame(this._loop.bind(this));
+    const now = performance.now();
+    if (this.tween) {
+      const tw = this.tween;
+      tw.t = Math.min(1, (now - tw.t0) / tw.dur);
+      const e = tw.t < 0.5 ? 4 * tw.t ** 3 : 1 - (-2 * tw.t + 2) ** 3 / 2;
+      this.camera.position.lerpVectors(tw.from, tw.to, e);
+      this.camera.up.lerpVectors(tw.fromUp, tw.toUp, e).normalize();
+      if (tw.t >= 1) { this.tween = null; this._makeControls(); }
+      this.dirty = true;
+    }
+    if (this.controls.autoRotate) this.dirty = true;
+    if (this.controls.update()) this.dirty = true;
+    this.uniforms.uOrthoAtt.value =
+      this.camera.isOrthographicCamera ? THREE.MathUtils.clamp(this.camera.zoom, 0.15, 8) : 0;
+    if (this._pickDirty) this._doPick();
+    if (!this.dirty) return;
+    this.dirty = false;
+    this.renderer.render(this.scene, this.camera);
+    this._drawLabels();
+  }
+
+  stop() { cancelAnimationFrame(this._raf); this._raf = 0; }
+  start() { if (!this._raf) { this.dirty = true; this._raf = requestAnimationFrame(this._loop.bind(this)); } }
+
+  snapshot() {
+    this.renderer.render(this.scene, this.camera);
+    return this.canvas.toDataURL('image/png');
+  }
+}
+
+/* ═══════════════ app.js ═══════════════ */
+/* app.js — wiring: catalogue → gallery (home) → dataset → scene → controls.
+ *
+ * Two views in one page.  The home view is a gallery of pre-rendered
+ * weight–level plates, all fifty on one page, with search; it needs only
+ * the catalogue.  The viewer's sidebar lists the sequences ten per page.  The viewer is the 3-D atlas; three.js is imported the first
+ * time a sequence is opened, so the gallery works even before (or without)
+ * the 3-D engine.
+ *
+ * Routing is by bare-token hash, the only kind the host passes on:
+ *     #home                              gallery
+ *     #<id>[.<xyz>[.<view>[.<mode>[.one]]]]  viewer, e.g. #primes.kLd.iso.solid
+ */
+
+const DATA = 'data';
+const THUMBS = 'thumbs';
+const $ = (s) => document.querySelector(s);
+const fmt = new Intl.NumberFormat('en-US');
+const pct = (x) => (100 * x).toFixed(2) + '%';
+const VIEWS = ['iso', 'xy', 'xz', 'yz', 'edge'];
+/* On your own server the page is the top-level document: the address bar carries the
+   whole view and downloads work.  Inside claude.ai it is framed, and neither holds. */
+const STANDALONE = (() => { try { return window.self === window.top; } catch { return false; } })();
+const SHARE_LABEL = STANDALONE ? 'copy link' : 'copy view tag';
+const MODES = ['solid', 'density'];
+
+const state = {
+  id: null, x: 'k', y: 'L', z: 'd', view: 'iso', mode: 'solid',
+  show: { weight: true, level: true, tie: true }, hiOne: false,
+  reveal: 1, dLo: 0, dHi: 1,
+};
+const home = { q: '', hits: [] };
+
+let all = [], view = [], rec = null, ds = null, viz = null, list = null, abort = null;
+let viewerReady = null;               // Promise, set on the first visit to the viewer
+
+/* console hook — `decompwlj.ds`, `.rec`, `.viz`, `.state` for poking around */
+globalThis.decompwlj = {
+  get all() { return all; }, get rec() { return rec; }, get ds() { return ds; },
+  get viz() { return viz; }, get state() { return state; }, get home() { return home; },
+  select: (id) => select(id), open: (id) => { location.hash = id; },
+};
+
+/* ── tokens ────────────────────────────────────────────────── */
+
+function viewToken() {
+  return [state.id, state.x + state.y + state.z, state.view, state.mode]
+    .concat(state.hiOne ? ['one'] : []).join('.');
+}
+function parseToken(tok) {
+  const p = tok.split('.').filter(Boolean), t = { id: p[0] };
+  if (p[1] && p[1].length === 3 && [...p[1]].every(c => c in FIELDS)) t.axes = p[1];
+  if (p[2] && VIEWS.includes(p[2])) t.view = p[2];
+  if (p[3] && MODES.includes(p[3])) t.mode = p[3];
+  if (p.includes('one')) t.one = true;
+  return t;
+}
+function replaceHash(tok) { try { history.replaceState(null, '', '#' + tok); } catch {} }
+function writeHash() { if (!$('#app').hidden) replaceHash(viewToken()); }
+
+/* ── boot and routing ──────────────────────────────────────── */
+
+async function boot() {
+  try {
+    all = await loadCatalog(`${DATA}/catalog.csv`, () => {});
+  } catch (e) {
+    return fail(location.protocol === 'file:'
+      ? 'Open this page through a web server, not as a file: browsers block fetch() on file:// URLs.'
+      : `Could not read the sequence catalogue (${e.message}).`);
+  }
+  if (!all.length) return fail('The catalogue is empty.');
+  view = all;
+
+  bindHome();
+  addEventListener('hashchange', route);
+  addEventListener('keydown', onKey);
+  await route();
+  $('#boot').classList.add('gone');
+}
+
+async function route() {
+  let tok = '';
+  try { tok = decodeURIComponent(location.hash.slice(1)); } catch {}
+  if (!tok || tok === 'home' || tok.startsWith('home.')) return showHome();
+  const t = parseToken(tok);
+  if (!all.some(r => r.id === t.id)) return showHome();
+  return showViewer(t);
+}
+
+function fail(msg) {
+  const b = $('#boot');
+  b.classList.remove('gone');
+  b.classList.add('err');
+  $('#bootMsg').textContent = msg;
+  $('#bootHome').hidden = false;
+}
+function clearFail() {
+  const b = $('#boot');
+  if (!b.classList.contains('err')) return;
+  b.classList.remove('err'); b.classList.add('gone');
+  $('#bootHome').hidden = true;
+}
+
+/* ── home: the gallery ─────────────────────────────────────── */
+
+const PM = 0.03 / 1.06, PX = 1.03 / 1.06;           /* plate margin, as rendered into the PNGs */
+const PLATE_SVG =
+  `<svg viewBox="0 0 1 1" preserveAspectRatio="none" aria-hidden="true">` +
+  `<rect x="${PM}" y="${PM}" width="${PX - PM}" height="${PX - PM}"/>` +
+  `<line class="ed" x1="${PM}" y1="${PM}" x2="${PX}" y2="${PX}"/>` +
+  `<line class="dg" x1="${PM}" y1="${PX}" x2="0.5" y2="0.5"/></svg>`;
+
+function bindHome() {
+  const box = $('#homeSearch');
+  box.addEventListener('input', () => {
+    home.q = box.value;
+    renderHome();
+  });
+  $('#toHome').addEventListener('click', () => { location.hash = homeToken(); });
+}
+
+function homeToken() { return 'home'; }
+
+function showHome() {
+  clearFail();
+  if (viz) viz.stop();
+  $('#tip').hidden = true;
+  $('#app').hidden = true;
+  $('#home').hidden = false;
+  document.title = 'decompwlj 3D';
+  renderHome();
+}
+
+function renderHome() {
+  home.hits = filterCatalog(all, home.q);
+  const n = home.hits.length;
+  $('#homeCount').textContent = home.q.trim()
+    ? `${fmt.format(n)} of ${fmt.format(all.length)} sequences`
+    : `${fmt.format(all.length)} sequences`;
+  $('#grid').replaceChildren(...home.hits.map(card));
+  const empty = $('#empty');
+  empty.hidden = n > 0;
+  if (!n) empty.textContent = `No sequence matches “${home.q.trim()}”. Search by name (primes, squares), A-number (A000040) or family (sieve, digit rule).`;
+}
+
+function card(r) {
+  const a = document.createElement('a');
+  a.className = 'card';
+  a.href = '#' + r.id;
+  a.setAttribute('role', 'listitem');
+  a.innerHTML =
+    `<div class="plate">${PLATE_SVG}<img alt="" loading="lazy" decoding="async" width="480" height="480">` +
+    `<span class="axl k" aria-hidden="true">k</span><span class="axl L" aria-hidden="true">L</span></div>` +
+    `<div class="nm"></div><div class="sub2"><span class="an"></span><span class="fam"></span></div>` +
+    `<div class="r2"><span class="lvl-bar"><i></i></span><span class="pct"></span></div>`;
+  const img = a.querySelector('img');
+  img.src = `${THUMBS}/${r.id}.png`;
+  img.alt = `Weight–level plate of ${r.name}`;
+  a.querySelector('.nm').textContent = r.name;
+  a.querySelector('.an').textContent = r.anumber;
+  a.querySelector('.fam').textContent = r.family;
+  a.querySelector('.lvl-bar > i').style.width = (r.levelShare * 100).toFixed(2) + '%';
+  a.querySelector('.pct').textContent = (r.levelShare * 100).toFixed(1) + '% lvl';
+  a.title = `${r.name} (${r.anumber}) — ${fmt.format(r.terms)} terms, ${(r.levelShare * 100).toFixed(2)} % level-classified. Open in 3-D.`;
+  return a;
+}
+
+/* ── viewer ────────────────────────────────────────────────── */
+
+function ensureViewer() {
+  if (viewerReady) return viewerReady;
+  viewerReady = (async () => {
+    THREE = await import('three');
+    ({ OrbitControls } = await import('three/addons/controls/OrbitControls.js'));
+    viz = new Viz($('#gl'), $('#overlay'));
+    viz.applyTheme();
+    viz.onPick = showTip;
+    list = new PagedList($('#catRows'), $('#catPager'), (id) => {
+      location.hash = id;
+      if (matchMedia('(max-width: 720px)').matches) $('#app').classList.remove('show-cat');
+    });
+    for (const sel of ['#axX', '#axY', '#axZ']) {
+      const el = $(sel);
+      for (const [key, f] of Object.entries(FIELDS)) {
+        const o = document.createElement('option');
+        o.value = key; o.textContent = f.label;
+        el.appendChild(o);
+      }
+    }
+    list.setItems(view);
+    $('#searchCount').textContent = fmt.format(all.length);
+    $('#search').placeholder = `Search ${fmt.format(all.length)} sequences…`;
+    bindUI();
+  })();
+  viewerReady.catch(() => { viewerReady = null; });
+  return viewerReady;
+}
+
+async function showViewer(t) {
+  clearFail();
+  $('#home').hidden = true;
+  $('#app').hidden = false;
+  const first = !viz;
+  if (first) {
+    /* a deep link may carry the whole view */
+    if (t.axes) { state.x = t.axes[0]; state.y = t.axes[1]; state.z = t.axes[2]; }
+    if (t.view) state.view = t.view;
+    if (t.mode) state.mode = t.mode;
+    if (t.one) state.hiOne = true;
+    $('#loadState').textContent = 'loading the 3-D engine…';
+  }
+  try {
+    await ensureViewer();
+  } catch (e) {
+    return fail(`The 3-D engine (three.js r169, from cdn.jsdelivr.net) did not load: ${e.message}. ` +
+                `The gallery still works; check the connection or any content blocker, then reload.`);
+  }
+  if (!first) applyToken(t);
+  viz.start();
+  viz.resize();
+  document.title = `${all.find(r => r.id === t.id).name} · decompwlj 3D`;
+  if (rec && rec.id === t.id) { writeHash(); return; }
+  await select(t.id);
+}
+
+/* a token arriving while the viewer is already set up: follow its axes, view and mode */
+function applyToken(t) {
+  if (t.axes && t.axes !== state.x + state.y + state.z) {
+    [state.x, state.y, state.z] = t.axes;
+    $('#axX').value = state.x; $('#axY').value = state.y; $('#axZ').value = state.z;
+    if (ds) { rebuildFrame(); upload(); applyFilters(); }
+  }
+  if (t.view && t.view !== state.view) document.querySelector(`[data-view="${t.view}"]`).click();
+  if (t.mode && t.mode !== state.mode) document.querySelector(`[data-mode="${t.mode}"]`).click();
+}
+
+/* ── selecting and loading a sequence ──────────────────────── */
+
+async function select(id) {
+  const r = all.find(s => s.id === id);
+  if (!r || (rec && rec.id === id)) return;
+  if (abort) abort.abort();
+  abort = new AbortController();
+  const signal = abort.signal;
+
+  rec = r; state.id = id;
+  list.select(id);
+  writeHash();
+
+  $('#seqName').textContent = r.name;
+  $('#seqSub').textContent = `${r.anumber} · ${r.family} · n = ${fmt.format(r.n0)} … ${fmt.format(r.n0 + r.terms - 1)}`;
+  $('#note').textContent = r.note || '';
+  $('#oeisLink').href = `https://oeis.org/${r.anumber}`;
+  $('#oeisLink').textContent = `OEIS ${r.anumber}`;
+  $('#loadState').textContent = 'loading…';
+  $('#progressBar').style.opacity = '1';
+  $('#progressBar').style.width = '2%';
+  $('#tip').hidden = true;
+  if (!$('#app').hidden) document.title = `${r.name} · decompwlj 3D`;
+
+  ds = new Dataset(r, DATA);
+  rebuildFrame();
+  viz.view(state.view);
+
+  try {
+    await ds.load((d, frac) => {
+      if (signal.aborted) return;
+      $('#progressBar').style.width = (frac * 100).toFixed(1) + '%';
+      $('#loadState').textContent = frac < 1 ? `${fmt.format(d.count)} pts…` : '';
+      upload();
+      refreshStats();
+    }, signal);
+  } catch (e) {
+    if (e.name === 'AbortError' || signal.aborted) return;
+    $('#loadState').textContent = 'load failed';
+    return fail(`Could not read the data for ${r.name}: ${e.message}`);
+  }
+  if (signal.aborted) return;
+
+  $('#progressBar').style.opacity = '0';
+  $('#loadState').textContent = '';
+  applyFilters();
+}
+
+/* ── frame + upload ────────────────────────────────────────── */
+
+/** Axis bounds come from the catalogue, not the loaded rows, so the box
+ *  is fixed before the first chunk lands and nothing shifts while loading. */
+function bounds(f) {
+  const L10 = (v) => Math.log10(Math.max(1, v));
+  switch (f) {
+    case 'k': return [0, L10(rec.kmax)];
+    case 'L': return [0, L10(rec.Lmax)];
+    case 'd': return [L10(rec.dmin), L10(rec.dmax)];
+    case 'a': return [L10(rec.amin), L10(rec.amax)];
+    case 'l': return [0, L10(rec.amax)];
+    case 'n': return [L10(rec.n0), L10(rec.n0 + rec.terms - 1)];
+  }
+  return [0, 1];
+}
+
+let frame = null;
+
+function rebuildFrame() {
+  const fs = [state.x, state.y, state.z];
+  const lo = [], hi = [];
+  for (const f of fs) {
+    const [a, b] = bounds(f);
+    lo.push(Math.floor(a));
+    hi.push(Math.max(Math.floor(a) + 1, Math.ceil(b)));
+  }
+  const box = [0, 1, 2].map(i => hi[i] - lo[i]);
+  frame = { fs, lo, hi, box };
+  viz.buildFrame(
+    fs.map(f => ({ f, t: FIELDS[f].label })),
+    lo, hi, box,
+    { box: $('#showBox').checked, plane: $('#showPlane').checked }
+  );
+  const [dl, dh] = bounds('d');
+  $('#fDLo').value = 0; $('#fDHi').value = 1;
+  state.dLo = 0; state.dHi = 1;
+  viz.uniforms.uD.value.set(dl - 0.001, dh + 0.001);
+  $('#fDOut').textContent = 'all';
+  $('#stRange').textContent =
+    `a ≤ ${fmt.format(rec.amax)} · k ≤ ${fmt.format(rec.kmax)} · L ≤ ${fmt.format(rec.Lmax)} · d ≤ ${fmt.format(rec.dmax)}`;
+}
+
+function upload() {
+  if (!ds || !frame) return;
+  viz.setPoints(ds, ds.field(frame.fs[0]), ds.field(frame.fs[1]), ds.field(frame.fs[2]), frame.lo, frame.box);
+}
+
+/* ── filters and read-outs ─────────────────────────────────── */
+
+function applyFilters() {
+  if (!ds) return;
+  const u = viz.uniforms;
+  u.uShow.value.set(state.show.weight ? 1 : 0, state.show.level ? 1 : 0, state.show.tie ? 1 : 0);
+  u.uNMax.value = Math.round(state.reveal * ds.count);
+  u.uHiOne.value = state.hiOne ? 1 : 0;
+  const [dl, dh] = bounds('d');
+  const span = dh - dl || 1;
+  u.uD.value.set(dl + state.dLo * span - 0.001, dl + state.dHi * span + 0.001);
+  viz.dirty = true;
+  refreshStats();
+}
+
+let statTimer = 0;
+function refreshStats() {
+  clearTimeout(statTimer);
+  statTimer = setTimeout(() => {
+    if (!ds) return;
+    const u = viz.uniforms;
+    const s = ds.stats(u.uD.value.x, u.uD.value.y, u.uNMax.value);
+    $('#lgWeight').textContent = fmt.format(s.weight);
+    $('#lgLevel').textContent = fmt.format(s.level);
+    $('#lgTie').textContent = fmt.format(s.tie);
+    $('#lgOne').textContent = fmt.format(s.one);
+    $('#stDots').textContent = `${fmt.format(s.shown)} dots` +
+      (ds.complete ? '' : ` of ${fmt.format(rec.terms)} terms loading`);
+
+    const dl = document.createDocumentFragment();
+    const put = (k, v, cls) => {
+      const dt = document.createElement('dt'); dt.textContent = k;
+      const dd = document.createElement('dd'); dd.textContent = v; if (cls) dd.className = cls;
+      dl.append(dt, dd);
+    };
+    put('terms', fmt.format(rec.terms));
+    put('decomposable', fmt.format(rec.decomposable));
+    put('non-decomposable', fmt.format(rec.terms - rec.decomposable));
+    put('level  k > L', `${fmt.format(rec.level)}  ${pct(rec.level / rec.decomposable)}`, 'c-level');
+    put('weight  k ≤ L', `${fmt.format(rec.weight)}  ${pct(rec.weight / rec.decomposable)}`, 'c-weight');
+    put('ties  k = L', fmt.format(rec.ties));
+    put('level line L = 1', fmt.format(rec.level_one));
+    if (Number.isFinite(rec.forced)) put('forced  ℓ ≤ d²', `${fmt.format(rec.forced)}  ${pct(rec.forced / rec.decomposable)}`);
+    $('#stats').replaceChildren(dl);
+  }, 40);
+}
+
+/* ── point read-out ────────────────────────────────────────── */
+
+function showTip(hit) {
+  const tip = $('#tip');
+  if (!hit || !ds) { tip.hidden = true; return; }
+  const p = ds.point(hit.i);
+  const cname = p.cls === 1 ? 'level' : p.cls === 2 ? 'tie' : 'weight';
+  const cclass = p.cls === 1 ? 'cl' : p.cls === 2 ? 'ct' : 'cw';
+  tip.innerHTML =
+    `n = <b>${fmt.format(p.n)}</b>   <span class="${cclass}">${cname}${p.one ? ' · L = 1' : ''}</span>\n` +
+    `a = ${fmt.format(p.a)}\n` +
+    `k = ${fmt.format(p.k)}\n` +
+    `L = ${fmt.format(p.L)}\n` +
+    `d = ${fmt.format(p.d)}\n` +
+    `ℓ = ${fmt.format(p.l)} = k·L\n` +
+    `${fmt.format(p.k)}·${fmt.format(p.L)} + ${fmt.format(p.d)} = ${fmt.format(p.k * p.L + p.d)}`;
+  tip.hidden = false;
+  const r = $('#stage').getBoundingClientRect();
+  const w = tip.offsetWidth, h = tip.offsetHeight;
+  let x = hit.cx - r.left + 16, y = hit.cy - r.top + 16;
+  if (x + w > r.width - 8) x = hit.cx - r.left - w - 16;
+  if (y + h > r.height - 8) y = hit.cy - r.top - h - 16;
+  tip.style.left = Math.max(8, x) + 'px';
+  tip.style.top = Math.max(8, y) + 'px';
+}
+
+/* ── theme: follows the viewer's setting; the button overrides it ── */
+
+function effectiveTheme() {
+  const t = document.documentElement.dataset.theme;
+  if (t === 'light' || t === 'dark') return t;
+  return matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+}
+function syncTheme() {
+  $('#themeBtn').textContent = effectiveTheme() === 'light' ? 'dark theme' : 'light theme';
+  if (viz) viz.applyTheme();
+}
+function toggleTheme() {
+  document.documentElement.dataset.theme = effectiveTheme() === 'light' ? 'dark' : 'light';
+  syncTheme();
+}
+
+/* ── snapshot ──────────────────────────────────────────────── */
+
+function openSnapshot() {
+  /*@standalone*/if (STANDALONE) {                     /* a real download */
+    const a = document.createElement('a');
+    a.href = viz.snapshot();
+    a.download = `decompwlj_${rec.id}_${state.x}${state.y}${state.z}_${state.view}.png`;
+    document.body.appendChild(a); a.click(); a.remove();
+    return;
+  }/*@end*/
+  $('#snapImg').src = viz.snapshot();
+  $('#snapImg').alt = `Snapshot: ${rec.name}, axes ${state.x}, ${state.y}, ${state.z}, ${state.view} view`;
+  $('#snapModal').hidden = false;
+  $('#snapClose').focus();
+}
+function closeSnapshot() {
+  $('#snapModal').hidden = true;
+  $('#snapImg').removeAttribute('src');
+  $('#snap').focus();
+}
+
+/* ── keyboard ──────────────────────────────────────────────── */
+
+function onKey(e) {
+  if (!$('#snapModal').hidden) { if (e.key === 'Escape') closeSnapshot(); return; }
+  if (e.metaKey || e.ctrlKey || e.altKey) return;
+  const inField = e.target.matches('input, select, textarea');
+  const k = e.key.toLowerCase();
+
+  if (!$('#home').hidden) {                                   /* gallery */
+    if (inField) { if (e.key === 'Escape') e.target.blur(); return; }
+    if (e.key === '/') { e.preventDefault(); $('#homeSearch').focus(); }
+    else if (k === 't') toggleTheme();
+    return;
+  }
+  if (!viz || inField) return;                                /* viewer */
+  if (k === 'g' || e.key === 'Escape') location.hash = homeToken();
+  else if (k === 'c') toggle('cat');
+  else if (k === 'p') toggle('panel');
+  else if (k === 't') toggleTheme();
+  else if (k === ' ') { e.preventDefault(); $('#play').click(); }
+  else if ('12345'.includes(k) && k.length === 1) document.querySelectorAll('[data-view]')[+k - 1].click();
+  else if (k === 'arrowdown' || k === 'arrowup') {
+    e.preventDefault();
+    const i = view.findIndex(r => r.id === state.id);
+    const j = Math.max(0, Math.min(view.length - 1, i + (k === 'arrowdown' ? 1 : -1)));
+    if (view[j] && view[j].id !== state.id) location.hash = view[j].id;
+  }
+}
+
+/* ── viewer UI ─────────────────────────────────────────────── */
+
+function bindUI() {
+  $('#search').addEventListener('input', (e) => {
+    view = filterCatalog(all, e.target.value);
+    list.setItems(view);
+    if (view.some(r => r.id === state.id)) list.select(state.id);
+    $('#searchCount').textContent = fmt.format(view.length);
+  });
+
+  for (const [sel, key] of [['#axX', 'x'], ['#axY', 'y'], ['#axZ', 'z']]) {
+    const el = $(sel);
+    el.value = state[key];
+    el.addEventListener('change', () => {
+      state[key] = el.value;
+      if (ds) { rebuildFrame(); upload(); applyFilters(); }
+      writeHash();
+    });
+  }
+
+  document.querySelectorAll('[data-view]').forEach(b => b.addEventListener('click', () => {
+    document.querySelectorAll('[data-view]').forEach(o => o.classList.toggle('on', o === b));
+    state.view = b.dataset.view;
+    /* a flat view is only a true plate without foreshortening */
+    setProjection(state.view === 'iso' ? 'persp' : 'ortho');
+    viz.view(state.view);
+    writeHash();
+  }));
+
+  document.querySelectorAll('[data-proj]').forEach(b => b.addEventListener('click', () => {
+    setProjection(b.dataset.proj);
+    viz.view(state.view);
+  }));
+
+  document.querySelectorAll('[data-mode]').forEach(b => b.addEventListener('click', () => {
+    document.querySelectorAll('[data-mode]').forEach(o => o.classList.toggle('on', o === b));
+    setMode(b.dataset.mode);
+  }));
+
+  document.querySelectorAll('.lg').forEach(b => b.addEventListener('click', () => {
+    const c = b.dataset.class;
+    if (c === 'one') { state.hiOne = !state.hiOne; $('#hiOne').checked = state.hiOne; }
+    else state.show[c] = !state.show[c];
+    b.classList.toggle('off', c === 'one' ? !state.hiOne : !state.show[c]);
+    applyFilters(); writeHash();
+  }));
+
+  const slider = (sel, out, fn, fmtOut) => {
+    const el = $(sel);
+    el.addEventListener('input', () => {
+      fn(parseFloat(el.value));
+      if (out) $(out).textContent = fmtOut ? fmtOut(parseFloat(el.value)) : el.value;
+    });
+  };
+  slider('#ptSize', '#ptSizeOut', v => { viz.uniforms.uSize.value = v; viz.dirty = true; });
+  slider('#ptOpacity', '#ptOpacityOut', v => { viz.uniforms.uOpacity.value = v; viz.dirty = true; });
+  slider('#fReveal', '#fRevealOut', v => { state.reveal = v; applyFilters(); },
+         v => v >= 1 ? 'all' : fmt.format(Math.round(v * (ds ? ds.count : 0))));
+
+  const dOut = () => {
+    const [dl, dh] = bounds('d'); const span = dh - dl || 1;
+    const a = Math.round(10 ** (dl + state.dLo * span)), b = Math.round(10 ** (dl + state.dHi * span));
+    $('#fDOut').textContent = (state.dLo <= 0 && state.dHi >= 1) ? 'all' : `${fmt.format(a)} … ${fmt.format(b)}`;
+  };
+  $('#fDLo').addEventListener('input', () => {
+    state.dLo = Math.min(parseFloat($('#fDLo').value), state.dHi);
+    $('#fDLo').value = state.dLo; applyFilters(); dOut();
+  });
+  $('#fDHi').addEventListener('input', () => {
+    state.dHi = Math.max(parseFloat($('#fDHi').value), state.dLo);
+    $('#fDHi').value = state.dHi; applyFilters(); dOut();
+  });
+  $('#resetFilters').addEventListener('click', () => {
+    state.reveal = 1; state.dLo = 0; state.dHi = 1;
+    state.show = { weight: true, level: true, tie: true };
+    $('#fReveal').value = 1; $('#fRevealOut').textContent = 'all';
+    $('#fDLo').value = 0; $('#fDHi').value = 1; $('#fDOut').textContent = 'all';
+    document.querySelectorAll('.lg').forEach(b => b.classList.toggle('off', b.dataset.class === 'one' ? !state.hiOne : false));
+    applyFilters();
+  });
+
+  $('#showPlane').addEventListener('change', rebuildAndUpload);
+  $('#showBox').addEventListener('change', rebuildAndUpload);
+  $('#attenuate').addEventListener('change', (e) => { viz.uniforms.uAtten.value = e.target.checked ? 1 : 0; viz.dirty = true; });
+  $('#hiOne').addEventListener('change', (e) => {
+    state.hiOne = e.target.checked;
+    document.querySelector('.lg[data-class="one"]').classList.toggle('off', !state.hiOne);
+    applyFilters(); writeHash();
+  });
+  $('#spin').addEventListener('change', (e) => { viz.autoRotate = e.target.checked; });
+
+  let playing = 0;
+  $('#play').addEventListener('click', () => {
+    if (!ds) return;
+    if (playing) { cancelAnimationFrame(playing); playing = 0; $('#play').textContent = '▶ sweep along the sequence'; return; }
+    $('#play').textContent = '❚❚ pause';
+    let t = state.reveal >= 1 ? 0 : state.reveal, last = performance.now();
+    const step = (now) => {
+      t += (now - last) / 9000; last = now;
+      if (t >= 1) { t = 1; }
+      state.reveal = t;
+      $('#fReveal').value = t;
+      $('#fRevealOut').textContent = t >= 1 ? 'all' : fmt.format(Math.round(t * ds.count));
+      applyFilters();
+      if (t >= 1) { playing = 0; $('#play').textContent = '▶ sweep along the sequence'; return; }
+      playing = requestAnimationFrame(step);
+    };
+    playing = requestAnimationFrame(step);
+  });
+
+  $('#snap').addEventListener('click', openSnapshot);
+  $('#snapClose').addEventListener('click', closeSnapshot);
+  $('#snapModal').addEventListener('click', (e) => { if (e.target === $('#snapModal')) closeSnapshot(); });
+
+  $('#share').textContent = SHARE_LABEL;
+  if (STANDALONE) { $('#share').title = 'Copies the link to this exact view.'; $('#snap').textContent = 'save PNG'; }
+  $('#share').addEventListener('click', () => {
+    const text = STANDALONE ? location.href : '#' + viewToken();
+    const btn = $('#share');
+    const show = (t) => { btn.textContent = t; setTimeout(() => { btn.textContent = SHARE_LABEL; }, 2200); };
+    try {
+      navigator.clipboard.writeText(text).then(() => show(STANDALONE ? 'link copied' : 'copied ' + text), () => show(text));
+    } catch { show(text); }
+  });
+
+  $('#themeBtn').addEventListener('click', toggleTheme);
+  $('#catToggle').addEventListener('click', () => toggle('cat'));
+  $('#catShow').addEventListener('click', () => toggle('cat'));
+  $('#panelToggle').addEventListener('click', () => toggle('panel'));
+
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden || $('#app').hidden) viz.stop(); else viz.start();
+  });
+
+  setMode(state.mode);
+  document.querySelectorAll('[data-view]').forEach(o => o.classList.toggle('on', o.dataset.view === state.view));
+  document.querySelectorAll('[data-mode]').forEach(o => o.classList.toggle('on', o.dataset.mode === state.mode));
+  if (state.view !== 'iso') setProjection('ortho');
+  $('#hiOne').checked = state.hiOne;
+  document.querySelector('.lg[data-class="one"]').classList.toggle('off', !state.hiOne);
+  syncTheme();
+}
+
+function rebuildAndUpload() { if (ds) { rebuildFrame(); upload(); applyFilters(); } }
+
+function setProjection(kind) {
+  state.proj = kind;
+  document.querySelectorAll('[data-proj]').forEach(o => o.classList.toggle('on', o.dataset.proj === kind));
+  viz.setProjection(kind);
+}
+
+function setMode(mode) {
+  state.mode = mode;
+  const m = viz.material;
+  if (mode === 'density') {
+    m.blending = THREE.AdditiveBlending; m.depthWrite = false;
+    viz.uniforms.uOpacity.value = Math.min(0.3, parseFloat($('#ptOpacity').value));
+  } else {
+    m.blending = THREE.NormalBlending; m.depthWrite = true;
+    viz.uniforms.uOpacity.value = parseFloat($('#ptOpacity').value);
+  }
+  $('#ptOpacityOut').textContent = viz.uniforms.uOpacity.value.toFixed(2);
+  m.needsUpdate = true;
+  viz.dirty = true;
+  writeHash();
+}
+
+function toggle(what) {
+  const app = $('#app');
+  /* matchMedia, not innerWidth — they disagree under mobile emulation and zoom */
+  if (what === 'cat' && matchMedia('(max-width: 720px)').matches) { app.classList.toggle('show-cat'); return; }
+  if (what === 'panel' && matchMedia('(max-width: 1080px)').matches) { app.classList.toggle('show-panel'); return; }
+  app.classList.toggle(what === 'cat' ? 'no-cat' : 'no-panel');
+  requestAnimationFrame(() => viz.resize());
+  setTimeout(() => viz.resize(), 320);
+}
+
+/* theme changes made by the host, or by the OS, reach the WebGL scene too */
+new MutationObserver(syncTheme).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+try { matchMedia('(prefers-color-scheme: light)').addEventListener('change', syncTheme); } catch {}
+
+boot().catch(e => fail(e.message || String(e)));
+
+</script>
+<script>
+setTimeout(function () {
+  if (window.__dwljStarted) return;
+  var b = document.getElementById('boot'), m = document.getElementById('bootMsg');
+  if (!b || !m) return;
+  b.classList.add('err');
+  m.textContent = location.protocol === 'file:'
+    ? 'Open this page through a web server, not as a file: browsers block ES modules and fetch() on file:// URLs.'
+    : 'The page script did not start. Reload the page; if it persists, a content blocker may be stopping scripts.';
+}, 15000);
+</script>
+<noscript><p style="padding:2rem;font:15px system-ui">This atlas needs JavaScript and WebGL.</p></noscript>
+</body>
+</html>
