@@ -1,0 +1,5 @@
+# decompwlj 3D: everything may be crawled.
+User-agent: *
+Allow: /
+
+Sitemap: https://decompwlj.net/sitemap.xml

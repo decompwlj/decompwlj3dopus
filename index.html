@@ -4,8 +4,20 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%230b0e14'/%3E%3Ccircle cx='10' cy='21' r='3' fill='%234c8dff'/%3E%3Ccircle cx='19' cy='13' r='3' fill='%23ff8c42'/%3E%3Ccircle cx='25' cy='7' r='2' fill='%23ffe45c'/%3E%3C/svg%3E">
-<title>decompwlj 3D</title>
-<meta name="description" content="Gallery and interactive 3-D atlas of the decomposition into weight × level + jump for 2000 integer sequences, 10⁵ terms each. three.js / WebGL.">
+<title>decompwlj 3D · weight × level + jump for 2000 integer sequences</title>
+<meta name="description" content="Gallery and interactive 3-D atlas of the decomposition into weight × level + jump, a(n) = k·L + d, for 2000 integer sequences from the OEIS, 10⁵ terms each.">
+<link rel="canonical" href="https://decompwlj.net/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="decompwlj 3D">
+<meta property="og:title" content="decompwlj 3D · weight × level + jump for 2000 integer sequences">
+<meta property="og:description" content="Gallery and interactive 3-D atlas of the decomposition into weight × level + jump, a(n) = k·L + d, for 2000 integer sequences from the OEIS, 10⁵ terms each.">
+<meta property="og:url" content="https://decompwlj.net/">
+<meta property="og:image" content="https://decompwlj.net/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="sitemap" type="application/xml" href="sitemap.xml">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"WebSite","name":"decompwlj 3D","url":"https://decompwlj.net/","description":"Interactive 3-D atlas of the decomposition into weight × level + jump for 2000 integer sequences from the OEIS."}</script>
 <style>
 /* the base rules the claude.ai wrapper used to supply */
 [hidden] { display: none !important; }
@@ -530,9 +542,11 @@ input[type=range] { width: 100%; accent-color: var(--accent); height: 18px; }
           10⁵ terms per sequence. Open a plate to explore it in three dimensions; the A-number under it opens the sequence on the OEIS.</p>
       </div>
       <nav class="home-links" aria-label="References">
+        <a href="seq/">All sequences</a>
         <a href="https://decompwlj.com" target="_blank" rel="noopener">decompwlj.com</a>
         <a href="https://arxiv.org/abs/0711.0865" target="_blank" rel="noopener">arXiv:0711.0865</a>
       </nav>
+      <noscript><p>The gallery and the 3-D viewer need JavaScript. The <a href="seq/">list of all 2000 sequences</a> works without it.</p></noscript>
     </header>
     <div class="home-tools">
       <div class="home-search"><input id="homeSearch" type="search" placeholder="Search by name, A-number or family" autocomplete="off" spellcheck="false" aria-label="Search sequences"></div>
@@ -1813,13 +1827,14 @@ function toHomeTop() {
   $('#homeSearch').focus({ preventScroll: true });
 }
 
+const HOME_TITLE = document.title;
 function showHome() {
   clearFail();
   if (viz) viz.stop();
   $('#tip').hidden = true;
   $('#app').hidden = true;
   $('#home').hidden = false;
-  document.title = 'decompwlj 3D';
+  document.title = HOME_TITLE;
   renderHome();
 }
 
