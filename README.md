@@ -218,8 +218,13 @@ needs it.
 - **Gallery keys:** `/` focuses the search; `Home` (or the **Top** button that appears while
   scrolling) returns to the top; `R` opens a random sequence (within the selected family and
   search); `T` switches the theme.
+- **Compare** (panel on the right): pick a second sequence by A-number or name, or **random**.
+  **overlay** draws both clouds in one scene, the second in violet and green; **side by side**
+  shows two views turned by one camera (stacked on a tall screen). Both share one box, so their
+  scales match. **swap** exchanges the two, **clear** ends the comparison. The link carries it:
+  `#primes.kLd.iso.solid.vs-A001359` (overlay) or `….vs-A001359.split` (side by side).
 - **Viewer keys:** `G` or `Esc` returns to the gallery; `↑`/`↓` moves to the neighbouring
-  sequence; `R` opens a random one; `1`–`5` switch views; `C` and `P` toggle the side panels; `T`
+  sequence; `R` opens a random one; `1`–`5` switch views; `V` switches a comparison between overlay and side by side; `C` and `P` toggle the side panels; `T`
   switches the theme; `Space` sweeps along n.
 
 ## Data format
