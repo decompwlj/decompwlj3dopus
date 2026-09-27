@@ -28,6 +28,7 @@ code, database, build step or third-party request, so it runs on any static host
   - [GitHub Pages](#github-pages)
   - [A custom domain with HTTPS](#a-custom-domain-with-https)
   - [Any other static host](#any-other-static-host)
+  - [Search engines and link previews](#search-engines-and-link-previews)
   - [Updating a deployment](#updating-a-deployment)
 - [Requirements](#requirements)
 - [Repository layout](#repository-layout)
@@ -137,6 +138,42 @@ Ready-made examples are in [`deploy/`](deploy/): `apache-vhost.conf` covers a su
 virtual host, and `nginx.conf` a subfolder or a server block. Long cache lifetimes for `data/`,
 `thumbs/` and `vendor/` are safe. Chunk files do not change when other sequences are added.
 
+### Search engines and link previews
+
+The gallery and viewer run from one page and a URL fragment (`#A000040`), which search engines do
+not index. `tools/seo.py` therefore writes plain HTML pages that they can index, all from
+`data/catalog.csv`:
+
+| Path | Contents |
+|---|---|
+| `seq/A000040/` | One page per sequence: OEIS name, plate, counts, note, links to the 3-D viewer, the OEIS and the neighbouring sequences |
+| `seq/` | The list of all sequences, by A-number |
+| `family/<family>/` | The sequences of one family |
+| `404.html` | Not-found page; short URLs such as `/A000040` redirect to `/seq/A000040/` |
+| `sitemap.xml`, `robots.txt` | Every page for the crawlers (with the plates as images); everything may be crawled |
+| `og.png` | The 1200 × 630 preview shown when a link is shared |
+
+Every page carries a canonical URL, a description, Open Graph tags and schema.org data
+(`Dataset` and `BreadcrumbList`). The base URL comes from `CNAME`; a site without a custom domain
+passes it: `python3 seo.py --base https://<user>.github.io/<repo>`. The 404 page's links assume the
+site is at the root of its domain.
+
+To get the site indexed:
+
+1. **Google Search Console** (search.google.com/search-console): add a *Domain* property for the
+   domain and verify it with the TXT record it gives, added at your DNS provider (for OVH:
+   *Web Cloud → Domain names → DNS zone → Add an entry → TXT*). Then open **Sitemaps** and submit
+   `https://<domain>/sitemap.xml`.
+2. **Bing Webmaster Tools** (bing.com/webmasters): sign in and import the site from Search
+   Console, or verify it the same way and submit the sitemap. Bing also feeds DuckDuckGo and
+   Yahoo.
+3. On GitHub, fill in the repository's **About** box (gear icon on the repository page): a
+   description, the website URL and topics such as `oeis`, `integer-sequences`, `number-theory`,
+   `prime-numbers`, `mathematics`, `visualization`, `threejs` and `webgl`. Under **Settings →
+   General → Social preview**, upload `og.png`.
+
+Indexing takes days to weeks. Search Console's **Pages** report shows progress.
+
 ### Updating a deployment
 
 Replace the files and ask visitors to reload (Ctrl+F5, or Cmd+Shift+R on a Mac) if their browser
@@ -165,11 +202,16 @@ needs it.
 | `tools/` | Data generator, OEIS metadata and verification scripts (not needed at runtime) |
 | `docs/SEQUENCES.md` | All 2000 sequences by family, and how the data was verified |
 | `CNAME`, `.nojekyll` | GitHub Pages settings: custom domain; serve files as they are |
-| `js/`, `css/` | Earlier modular sources, kept for reference; the page does not load them |
+| `seq/`, `family/`, `404.html` | Static pages for search engines, written by `tools/seo.py` |
+| `sitemap.xml`, `robots.txt`, `og.png` | Sitemap, crawler rules and link preview image |
+| `css/pages.css` | The static pages' stylesheet |
+| `js/`, `css/app.css` | Earlier modular sources, kept for reference; the page does not load them |
 
 ## Using the site
 
 - `…/` or `…/#home` opens the gallery. `…/#primes` or `…/#A000040` opens a sequence.
+- `…/seq/A000040/` is the sequence's own page (also reached from `…/A000040`), `…/seq/` lists
+  all sequences, and `…/family/primes/` lists one family.
 - The full fragment `#primes.kLd.iso.solid.one` also sets the view (`iso`, `xy`, `xz`, `yz`,
   `edge`), the point mode (`solid`, `density`) and the L = 1 highlight. **Copy link** in the viewer
   copies it.
@@ -219,6 +261,7 @@ python3 names.py raw                # OEIS names into the catalogue (from oeis.j
 python3 audit.py raw                # independent verification of every row and of the OEIS terms
 python3 compact.py raw ../data      # the gzip chunks the site loads
 python3 thumbs.py  raw ../thumbs    # the gallery previews
+python3 seo.py                      # the static pages, sitemap.xml and robots.txt
 ```
 
 To **add a sequence**:
