@@ -42,6 +42,8 @@ img { max-width: 100%; }
   --c-level:   #ff8c42;
   --c-tie:     #ffe45c;
   --c-one:     #55e0c0;
+  --c-weight-b: #b388ff;  /* the second sequence, overlaid */
+  --c-level-b:  #3fd694;
 
   --ax-x:      #e04b4b;   /* weight axis  */
   --ax-y:      #3fbf5a;   /* level axis   */
@@ -74,6 +76,8 @@ img { max-width: 100%; }
     --c-level:   #e2661a;
     --c-tie:     #b8860b;
     --c-one:     #0f9c86;
+    --c-weight-b: #7b4bd6;
+    --c-level-b:  #11915a;
     --ax-x:      #c22f2f;
     --ax-y:      #1e8f38;
     --ax-z:      #b4860a;
@@ -97,6 +101,8 @@ img { max-width: 100%; }
   --c-level:   #e2661a;
   --c-tie:     #b8860b;
   --c-one:     #0f9c86;
+  --c-weight-b: #7b4bd6;
+  --c-level-b:  #11915a;
   --ax-x:      #c22f2f;
   --ax-y:      #1e8f38;
   --ax-z:      #b4860a;
@@ -269,7 +275,32 @@ html, body {
   white-space: pre; color: var(--fg); font-variant-numeric: tabular-nums;
 }
 .tip b { color: var(--accent); font-weight: 600; }
+.tip .ca { color: var(--fg-2); } .tip .cb { color: var(--c-level-b); }
 .tip .cw { color: var(--c-weight); } .tip .cl { color: var(--c-level); } .tip .ct { color: var(--c-tie); }
+
+/* comparison: captions over the two viewports, the line between them, the picker */
+.cmp-cap {
+  position: absolute; z-index: 2; max-width: calc(50% - 32px); pointer-events: none;
+  font: 600 12px var(--sans); color: var(--fg); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  background: color-mix(in oklab, var(--bg-2) 80%, transparent); border: 1px solid var(--line);
+  border-radius: 6px; padding: 3px 8px;
+}
+.cmp-cap small { font: 11px var(--mono); color: var(--fg-3); margin-right: 6px; }
+#splitLine { position: absolute; z-index: 2; background: var(--line-2); pointer-events: none; }
+.lg-h { font: 600 10.5px var(--mono); color: var(--fg-2); padding: 4px 8px 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 240px; }
+#lgB { display: flex; flex-direction: column; gap: 1px; border-top: 1px solid var(--line); margin-top: 3px; padding-top: 2px; }
+#lgB[hidden] { display: none; }
+.sub .vs { color: var(--fg-2); }
+.sub .vs a { color: var(--c-level-b); text-decoration: none; }
+.cmp-pick { margin-bottom: 8px; }
+#cmpInput {
+  width: 100%; padding: 7px 10px; font: 12px var(--sans); color: var(--fg);
+  background: var(--bg-3); border: 1px solid var(--line); border-radius: 6px; outline: none;
+}
+#cmpInput:focus { border-color: var(--accent); }
+.cmp-info { margin: 8px 0 4px; }
+.cmp-info .fullname a { font-family: var(--mono); color: var(--accent); text-decoration: none; margin-right: 4px; }
+.chip:disabled { opacity: .45; cursor: default; }
 
 #progress { position: absolute; left: 0; right: 0; top: 0; height: 2px; z-index: 6; background: transparent; }
 #progressBar { height: 100%; width: 0; background: var(--accent); transition: width .18s linear, opacity .4s; }
@@ -345,6 +376,7 @@ input[type=range] { width: 100%; accent-color: var(--accent); height: 18px; }
 .stats dt { color: var(--fg-3); }
 .stats dd { margin: 0; text-align: right; color: var(--fg); }
 .stats dd.c-level { color: var(--c-level); } .stats dd.c-weight { color: var(--c-weight); }
+.stats dd.c-level-b { color: var(--c-level-b); } .stats dd.c-weight-b { color: var(--c-weight-b); }
 
 .note { margin: 10px 0 0; font-size: 11.5px; line-height: 1.55; color: var(--fg-2); }
 .def { margin: 0 0 8px; font-size: 11.5px; line-height: 1.75; color: var(--fg-2); }
@@ -600,13 +632,16 @@ input[type=range] { width: 100%; accent-color: var(--accent); height: 18px; }
     <canvas id="gl"></canvas>
 
     <div id="overlay" aria-hidden="true"></div>
+    <div id="splitLine" hidden></div>
+    <div id="capA" class="cmp-cap" hidden></div>
+    <div id="capB" class="cmp-cap" hidden></div>
 
     <div id="topbar">
       <button id="toHome" class="icon-btn ghost" title="All sequences (G)" aria-label="Back to all sequences"><svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor" aria-hidden="true"><rect x="1" y="1" width="6" height="6" rx="1.2"/><rect x="9" y="1" width="6" height="6" rx="1.2"/><rect x="1" y="9" width="6" height="6" rx="1.2"/><rect x="9" y="9" width="6" height="6" rx="1.2"/></svg></button>
       <button id="catShow" class="icon-btn ghost" title="Show catalogue (C)" aria-label="Show catalogue">&#9776;</button>
       <div class="title-block">
         <h1 id="seqName">—</h1>
-        <div id="seqSub" class="sub"><a class="oeis" target="_blank" rel="noopener" title="Open this sequence on the OEIS"></a><span id="seqSubRest"></span></div>
+        <div id="seqSub" class="sub"><a class="oeis" target="_blank" rel="noopener" title="Open this sequence on the OEIS"></a><span id="seqSubRest"></span><span id="seqVs" class="vs"></span></div>
       </div>
       <div class="spacer"></div>
       <div id="loadState" class="load-state"></div>
@@ -614,10 +649,16 @@ input[type=range] { width: 100%; accent-color: var(--accent); height: 18px; }
     </div>
 
     <div id="legend">
+      <div id="lgHA" class="lg-h" hidden></div>
       <button class="lg" data-class="weight"><i style="--c:var(--c-weight)"></i><span>weight <em>k ≤ L</em></span><b id="lgWeight">—</b></button>
       <button class="lg" data-class="level"><i style="--c:var(--c-level)"></i><span>level <em>k &gt; L</em></span><b id="lgLevel">—</b></button>
       <button class="lg" data-class="tie"><i style="--c:var(--c-tie)"></i><span>tie <em>k = L</em></span><b id="lgTie">—</b></button>
       <button class="lg" data-class="one"><i style="--c:var(--c-one)"></i><span>level line <em>L = 1</em></span><b id="lgOne">—</b></button>
+      <div id="lgB" hidden>
+        <div id="lgHB" class="lg-h"></div>
+        <button class="lg" data-class="weight"><i style="--c:var(--c-weight-b)"></i><span>weight <em>k ≤ L</em></span><b id="lgWeightB">—</b></button>
+        <button class="lg" data-class="level"><i style="--c:var(--c-level-b)"></i><span>level <em>k &gt; L</em></span><b id="lgLevelB">—</b></button>
+      </div>
     </div>
 
     <div id="tip" class="tip" hidden></div>
@@ -671,6 +712,27 @@ input[type=range] { width: 100%; accent-color: var(--accent); height: 18px; }
       <div class="btn-row">
         <button id="play" class="chip" title="sweep along the sequence (Space)">▶ play</button>
         <button id="resetFilters" class="chip">reset</button>
+      </div>
+    </section>
+
+    <section class="grp" id="cmpGrp">
+      <h2>Compare <small>with a second sequence</small></h2>
+      <div class="cmp-pick">
+        <input id="cmpInput" type="search" list="cmpList" placeholder="A-number or name…" autocomplete="off" spellcheck="false" aria-label="Sequence to compare with">
+        <datalist id="cmpList"></datalist>
+      </div>
+      <div class="seg" role="group" aria-label="Comparison layout">
+        <button class="chip on" data-cmp="overlay" title="both clouds in one scene, the second in its own colours">overlay</button>
+        <button class="chip" data-cmp="split" title="two views side by side, turned by one camera (V)">side by side</button>
+      </div>
+      <div id="cmpInfo" class="cmp-info" hidden>
+        <p class="fullname"><a id="cmpAn" target="_blank" rel="noopener" title="Open on the OEIS"></a><span id="cmpName"></span></p>
+        <dl id="cmpStats" class="stats"></dl>
+      </div>
+      <div class="btn-row">
+        <button id="cmpRandom" class="chip" title="compare with a random sequence">random</button>
+        <button id="cmpSwap" class="chip" disabled title="make the second sequence the main one">swap</button>
+        <button id="cmpClear" class="chip" disabled title="back to one sequence">clear</button>
       </div>
     </section>
 
@@ -1291,6 +1353,27 @@ class Viz {
     this.points.frustumCulled = false;
     this.scene.add(this.points);
 
+    /* the comparison cloud: its own geometry, reveal limit and colours; every
+       other uniform is the same object as the first cloud's, so sliders and
+       filters reach both */
+    this.cmp = 'none';                    // 'none' | 'overlay' | 'split'
+    this.uniforms2 = Object.assign({}, this.uniforms, {
+      uNMax:   { value: 1e9 },
+      cWeight: { value: new THREE.Color(0xb388ff) },
+      cLevel:  { value: new THREE.Color(0x3fd694) },
+    });
+    this.material2 = new THREE.ShaderMaterial({
+      uniforms: this.uniforms2, vertexShader: VERT, fragmentShader: FRAG,
+      transparent: true, depthWrite: true, depthTest: true,
+    });
+    this.geometry2 = new THREE.BufferGeometry();
+    this.points2 = new THREE.Points(this.geometry2, this.material2);
+    this.points2.frustumCulled = false;
+    this.points2.visible = false;
+    this.scene.add(this.points2);
+    this._n2 = 0;
+    this.onLayout = () => {};
+
     this.frame = new THREE.Group();
     this.scene.add(this.frame);
 
@@ -1343,6 +1426,8 @@ class Viz {
     this.uniforms.cLevel.value.setStyle(c('--c-level'));
     this.uniforms.cTie.value.setStyle(c('--c-tie'));
     this.uniforms.cOne.value.setStyle(c('--c-one'));
+    this._colB = [c('--c-weight-b'), c('--c-level-b')];
+    this._palette2();
     this.axCol = [c('--ax-x'), c('--ax-y'), c('--ax-z')];
     this.gridCol = c('--line-2');
     this.planeCol = c('--fg-3');
@@ -1350,10 +1435,55 @@ class Viz {
     this.dirty = true;
   }
 
+  /* ── comparison ────────────────────────────────────────── */
+
+  /** 'none', 'overlay' (both clouds in one scene) or 'split' (one camera,
+   *  two viewports: side by side unless the stage is clearly taller than wide). */
+  setCompare(mode) {
+    this.cmp = mode;
+    if (mode === 'none') this.clearPoints2();
+    this._palette2();
+    this.resize();
+    if (this._frameArgs) this.buildFrame(...this._frameArgs);
+    this.dirty = true;
+  }
+
+  /* overlaid, the second cloud needs colours of its own; split, it keeps the usual ones */
+  _palette2() {
+    const u = this.uniforms, u2 = this.uniforms2;
+    if (this.cmp === 'overlay' && this._colB) {
+      u2.cWeight.value.setStyle(this._colB[0]);
+      u2.cLevel.value.setStyle(this._colB[1]);
+    } else {
+      u2.cWeight.value.copy(u.cWeight.value);
+      u2.cLevel.value.copy(u.cLevel.value);
+    }
+  }
+
+  clearPoints2() {
+    this.geometry2.dispose();
+    this.geometry2 = new THREE.BufferGeometry();
+    this.points2.geometry = this.geometry2;
+    this._pos2 = this._meta2 = null;
+    this._n2 = 0;
+    this.dirty = true;
+  }
+
+  /** The viewports, in CSS pixels from the stage's top-left corner. */
+  cells() {
+    const el = this.canvas.parentElement;
+    const w = el.clientWidth || 1, h = el.clientHeight || 1;
+    if (this.cmp !== 'split') return [{ x: 0, y: 0, w, h }];
+    if (w >= 0.75 * h) { const a = Math.floor(w / 2); return [{ x: 0, y: 0, w: a, h }, { x: a, y: 0, w: w - a, h }]; }
+    const a = Math.floor(h / 2);
+    return [{ x: 0, y: 0, w, h: a }, { x: 0, y: a, w, h: h - a }];
+  }
+
   resize() {
     const el = this.canvas.parentElement;
     const w = el.clientWidth || 1, h = el.clientHeight || 1;
-    const aspect = w / h;
+    const cell = this.cells()[0];
+    const aspect = cell.w / cell.h;
     this.persp.aspect = aspect;
     this.persp.updateProjectionMatrix();
     const H = this._orthoH;
@@ -1362,17 +1492,18 @@ class Viz {
     this.ortho.updateProjectionMatrix();
     this.renderer.setSize(w, h, false);
     this.uniforms.uDpr.value = this.renderer.getPixelRatio();
-    const tight = w < 720;
+    const tight = cell.w < 720;
     if (this._tight !== undefined && tight !== this._tight && this._frameArgs) this.buildFrame(...this._frameArgs);
     this._tight = tight;
     this.dirty = true;
+    this.onLayout(this.cells());
   }
 
   /* ── geometry upload ───────────────────────────────────── */
 
   /** Bind the point cloud.  `fields` are three Float32Arrays already in
    *  log₁₀; `lo` their per-axis decade floor; `box` the decade span. */
-  setPoints(dataset, fx, fy, fz, lo, box) {
+  setPoints(dataset, fx, fy, fz, lo, box, second = false) {
     const n = dataset.count;
     const pos = new Float32Array(n * 3);
     const meta = new Float32Array(n * 4);
@@ -1388,15 +1519,18 @@ class Viz {
       meta[i * 4 + 2] = i;
       meta[i * 4 + 3] = one[i];
     }
-    this.geometry.dispose();
-    this.geometry = new THREE.BufferGeometry();
-    this.geometry.setAttribute('position', new THREE.BufferAttribute(pos, 3));
-    this.geometry.setAttribute('meta', new THREE.BufferAttribute(meta, 4));
-    this.points.geometry = this.geometry;
-    this.points.frustumCulled = false;
-    this._pos = pos;
-    this._meta = meta;
-    this._n = n;
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+    g.setAttribute('meta', new THREE.BufferAttribute(meta, 4));
+    if (second) {
+      this.geometry2.dispose();
+      this.geometry2 = g; this.points2.geometry = g;
+      this._pos2 = pos; this._meta2 = meta; this._n2 = n;
+    } else {
+      this.geometry.dispose();
+      this.geometry = g; this.points.geometry = g;
+      this._pos = pos; this._meta = meta; this._n = n;
+    }
     this.dirty = true;
   }
 
@@ -1409,7 +1543,7 @@ class Viz {
       o.geometry && o.geometry.dispose();
       o.material && o.material.dispose();
     }
-    for (const l of this.labels) l.remove();
+    for (const l of this.labels) { l.remove(); if (l._twin) l._twin.remove(); }
     this.labels = [];
 
     this.lo = lo; this.box = new THREE.Vector3(...box);
@@ -1510,10 +1644,15 @@ class Viz {
     el._p = new THREE.Vector3(...pos);
     this.overlay.appendChild(el);
     this.labels.push(el);
+    if (this.cmp === 'split') {                    /* the second viewport labels its frame too */
+      el._twin = el.cloneNode(true);
+      this.overlay.appendChild(el._twin);
+    }
   }
 
   _drawLabels() {
-    const w = this.canvas.clientWidth, h = this.canvas.clientHeight;
+    const cells = this.cells();
+    const w = cells[0].w, h = cells[0].h;
     const v = new THREE.Vector3(), u = new THREE.Vector3();
     /* an axis seen end-on (the third axis of a flat view) keeps its labels
        off: they would all project onto one spot over the other two axes */
@@ -1524,16 +1663,23 @@ class Viz {
       endOn[ax] = Math.hypot((u.x - v.x) * w / 2, (u.y - v.y) * h / 2) < 40;
     }
     for (const el of this.labels) {
-      if (el._ax >= 0 && endOn[el._ax]) { el.hidden = true; continue; }
-      v.copy(el._p).project(this.camera);
-      if (v.z > 1) { el.hidden = true; continue; }
-      el.hidden = false;
+      const twin = el._twin;
+      const hide = (el._ax >= 0 && endOn[el._ax]) || v.copy(el._p).project(this.camera).z > 1;
+      el.hidden = hide;
+      if (twin) twin.hidden = hide;
+      if (hide) continue;
       /* keep labels clear of the frame edges and of the top and status bars */
       const name = el.classList.contains('name');
-      const mx = name ? 78 : 16, my0 = name ? 62 : 14, my1 = name ? 46 : 26;
+      /* split, a caption sits under the top bar: labels keep below it */
+      const mx = name ? 78 : 16, my0 = (name ? 62 : 14) + (cells[1] ? 30 : 0), my1 = name ? 46 : 26;
       const x = Math.min(w - mx, Math.max(mx, (v.x * 0.5 + 0.5) * w));
       const y = Math.min(h - my1, Math.max(my0, (-v.y * 0.5 + 0.5) * h));
       el.style.transform = `translate(-50%,-50%) translate(${x}px,${y}px)`;
+      if (twin && cells[1]) {
+        /* the lower cell has no top bar over it: its labels may sit higher */
+        const y2 = cells[1].y ? Math.min(h - my1, Math.max(name ? 56 : 44, (-v.y * 0.5 + 0.5) * h)) : y;
+        twin.style.transform = `translate(-50%,-50%) translate(${x + cells[1].x}px,${y2 + cells[1].y}px)`;
+      }
     }
   }
 
@@ -1602,8 +1748,12 @@ class Viz {
     this._pickDirty = false;
     const p = this._ptr;
     if (!p || !this._pos || !this._n) return this.onPick(null);
-    const w = this.canvas.clientWidth, h = this.canvas.clientHeight;
-    const nx = (p.x / w) * 2 - 1, ny = -(p.y / h) * 2 + 1;
+    /* which viewport the pointer is over, and which clouds it can pick from */
+    const cells = this.cells();
+    let cell = cells[0], sets = this.cmp === 'overlay' && this._n2 ? [0, 1] : [0];
+    if (cells[1] && p.x >= cells[1].x && p.y >= cells[1].y) { cell = cells[1]; sets = this._n2 ? [1] : []; }
+    const w = cell.w, h = cell.h;
+    const nx = ((p.x - cell.x) / w) * 2 - 1, ny = -((p.y - cell.y) / h) * 2 + 1;
     const ortho = this.camera.isOrthographicCamera;
     let ox, oy, oz, ux, uy, uz, slack;
     if (ortho) {
@@ -1620,11 +1770,15 @@ class Viz {
       slack = 2 * Math.tan(THREE.MathUtils.degToRad(this.camera.fov) / 2) / h * 9;
     }
 
-    const pos = this._pos, meta = this._meta, u = this.uniforms;
-    const nMax = u.uNMax.value, dLo = u.uD.value.x, dHi = u.uD.value.y;
+    const u = this.uniforms;
+    const dLo = u.uD.value.x, dHi = u.uD.value.y;
     const show = u.uShow.value;
-    let best = -1, bestScore = Infinity;
-    for (let i = 0; i < this._n; i++) {
+    let best = -1, bestSet = 0, bestScore = Infinity;
+    for (const set of sets) {
+    const pos = set ? this._pos2 : this._pos, meta = set ? this._meta2 : this._meta;
+    const n = set ? this._n2 : this._n;
+    const nMax = (set ? this.uniforms2 : u).uNMax.value;
+    for (let i = 0; i < n; i++) {
       const c = meta[i * 4];
       const vis = (c > 0.5 && c < 1.5) ? show.y : (c > 1.5 ? show.z : show.x);
       if (vis < 0.5) continue;
@@ -1639,9 +1793,10 @@ class Viz {
       const lim = ortho ? slack : slack * t;
       if (perp2 > lim * lim) continue;
       const score = Math.sqrt(perp2) / (ortho ? 1 : t) + t * 1e-4;
-      if (score < bestScore) { bestScore = score; best = i; }
+      if (score < bestScore) { bestScore = score; best = i; bestSet = set; }
     }
-    this.onPick(best < 0 ? null : { i: best, cx: this._ptr.cx, cy: this._ptr.cy });
+    }
+    this.onPick(best < 0 ? null : { i: best, set: bestSet, cx: this._ptr.cx, cy: this._ptr.cy });
   }
 
   /* ── loop ──────────────────────────────────────────────── */
@@ -1667,15 +1822,39 @@ class Viz {
     if (this._pickDirty) this._doPick();
     if (!this.dirty) return;
     this.dirty = false;
-    this.renderer.render(this.scene, this.camera);
+    this._render();
     this._drawLabels();
+  }
+
+  _render() {
+    const r = this.renderer;
+    if (this.cmp !== 'split') {
+      this.points2.visible = this.cmp === 'overlay';
+      r.render(this.scene, this.camera);
+      return;
+    }
+    /* one camera, two viewports: the first cloud in the first, the second in the second.
+       three.js counts viewport y from the bottom. */
+    const cells = this.cells(), H = this.canvas.parentElement.clientHeight || 1;
+    r.setScissorTest(true);
+    cells.forEach((c, s) => {
+      const y = H - c.y - c.h;
+      r.setViewport(c.x, y, c.w, c.h);
+      r.setScissor(c.x, y, c.w, c.h);
+      this.points.visible = s === 0;
+      this.points2.visible = s === 1;
+      r.render(this.scene, this.camera);
+    });
+    r.setScissorTest(false);
+    r.setViewport(0, 0, this.canvas.parentElement.clientWidth || 1, H);
+    this.points.visible = true;
   }
 
   stop() { cancelAnimationFrame(this._raf); this._raf = 0; }
   start() { if (!this._raf) { this.dirty = true; this._raf = requestAnimationFrame(this._loop.bind(this)); } }
 
   snapshot() {
-    this.renderer.render(this.scene, this.camera);
+    this._render();
     return this.canvas.toDataURL('image/png');
   }
 }
@@ -1710,16 +1889,19 @@ const state = {
   id: null, x: 'k', y: 'L', z: 'd', view: 'iso', mode: 'solid',
   show: { weight: true, level: true, tie: true }, hiOne: false,
   reveal: 1, dLo: 0, dHi: 1,
+  cmp: null, split: false,              // the sequence compared with, and its layout
 };
 const home = { q: '', fam: '', hits: [] };
 
 let all = [], view = [], rec = null, ds = null, viz = null, list = null, abort = null;
 let viewerReady = null;               // Promise, set on the first visit to the viewer
+let recB = null, dsB = null, abortB = null;   // the comparison sequence
 
 /* console hook — `decompwlj.ds`, `.rec`, `.viz`, `.state` for poking around */
 globalThis.decompwlj = {
   get all() { return all; }, get rec() { return rec; }, get ds() { return ds; },
   get viz() { return viz; }, get state() { return state; }, get home() { return home; },
+  get recB() { return recB; }, get dsB() { return dsB; },
   select: (id) => select(id), open: (id) => { location.hash = id; },
 };
 
@@ -1727,10 +1909,15 @@ globalThis.decompwlj = {
 
 function viewToken() {
   return [state.id, state.x + state.y + state.z, state.view, state.mode]
-    .concat(state.hiOne ? ['one'] : []).join('.');
+    .concat(state.hiOne ? ['one'] : [])
+    .concat(state.cmp ? ['vs-' + state.cmp].concat(state.split ? ['split'] : []) : []).join('.');
 }
+/* #primes.kLd.iso.solid.vs-twinprimes.split compares with a second sequence,
+   side by side; the vs- part also takes an A-number */
 function parseToken(tok) {
   const p = tok.split('.').filter(Boolean), t = { id: p[0] };
+  const vs = p.find(x => /^vs-/i.test(x));
+  if (vs) { t.vs = vs.slice(3); t.split = p.includes('split'); }
   if (p[1] && p[1].length === 3 && [...p[1]].every(c => c in FIELDS)) t.axes = p[1];
   if (p[2] && VIEWS.includes(p[2])) t.view = p[2];
   if (p[3] && MODES.includes(p[3])) t.mode = p[3];
@@ -1835,6 +2022,7 @@ function showHome() {
   $('#app').hidden = true;
   $('#home').hidden = false;
   document.title = HOME_TITLE;
+  if (state.cmp) clearCompare();          /* a comparison ends with a visit to the gallery */
   renderHome();
 }
 
@@ -1947,6 +2135,10 @@ function ensureViewer() {
     viz = new Viz($('#gl'), $('#overlay'));
     viz.applyTheme();
     viz.onPick = showTip;
+    viz.onLayout = layoutCompare;
+    const opts = document.createDocumentFragment();
+    for (const r of all) { const o = document.createElement('option'); o.value = `${r.anumber} ${r.name}`; opts.append(o); }
+    $('#cmpList').replaceChildren(opts);
     list = new PagedList($('#catRows'), $('#catPager'), (id) => {
       location.hash = id;
       if (matchMedia('(max-width: 720px)').matches) $('#app').classList.remove('show-cat');
@@ -1982,8 +2174,15 @@ async function showViewer(t) {
   viz.start();
   viz.resize();
   document.title = `${all.find(r => r.id === t.id).name} · decompwlj 3D`;
-  if (rec && rec.id === t.id) { writeHash(); return; }
-  await select(t.id);
+  const same = rec && rec.id === t.id;
+  const loading = same ? null : select(t.id);     /* sets rec at once, then loads */
+  if (t.vs !== undefined) {
+    const b = findSeq(t.vs);
+    if (b && b.id !== state.cmp) setCompare(b.id, t.split);
+    else if (b) setSplit(t.split);
+  }
+  if (same) writeHash();
+  await loading;
 }
 
 /* a token arriving while the viewer is already set up: follow its view and mode.
@@ -2024,6 +2223,7 @@ async function select(id) {
   ds = new Dataset(r, DATA);
   rebuildFrame();
   viz.view(state.view);
+  if (recB) { uploadB(); syncCompareUI(); }
 
   try {
     await ds.load((d, frac) => {
@@ -2045,11 +2245,12 @@ async function select(id) {
   applyFilters();
 }
 
+
 /* ── frame + upload ────────────────────────────────────────── */
 
 /** Axis bounds come from the catalogue, not the loaded rows, so the box
  *  is fixed before the first chunk lands and nothing shifts while loading. */
-function bounds(f) {
+function boundsOf(rec, f) {
   const L10 = (v) => Math.log10(Math.max(1, v));
   switch (f) {
     case 'k': return [0, L10(rec.kmax)];
@@ -2060,6 +2261,13 @@ function bounds(f) {
     case 'n': return [L10(rec.n0), L10(rec.n0 + rec.terms - 1)];
   }
   return [0, 1];
+}
+/* while comparing, one box holds both sequences, so the two clouds share their scales */
+function bounds(f) {
+  const b = boundsOf(rec, f);
+  if (!recB) return b;
+  const c = boundsOf(recB, f);
+  return [Math.min(b[0], c[0]), Math.max(b[1], c[1])];
 }
 
 let frame = null;
@@ -2091,6 +2299,11 @@ function rebuildFrame() {
 function upload() {
   if (!ds || !frame) return;
   viz.setPoints(ds, ds.field(frame.fs[0]), ds.field(frame.fs[1]), ds.field(frame.fs[2]), frame.lo, frame.box);
+  uploadB();
+}
+function uploadB() {
+  if (!dsB || !frame || !dsB.count) return;
+  viz.setPoints(dsB, dsB.field(frame.fs[0]), dsB.field(frame.fs[1]), dsB.field(frame.fs[2]), frame.lo, frame.box, true);
 }
 
 /* ── filters and read-outs ─────────────────────────────────── */
@@ -2100,6 +2313,7 @@ function applyFilters() {
   const u = viz.uniforms;
   u.uShow.value.set(state.show.weight ? 1 : 0, state.show.level ? 1 : 0, state.show.tie ? 1 : 0);
   u.uNMax.value = Math.round(state.reveal * ds.count);
+  viz.uniforms2.uNMax.value = dsB ? Math.round(state.reveal * dsB.count) : 1e9;
   u.uHiOne.value = state.hiOne ? 1 : 0;
   const [dl, dh] = bounds('d');
   const span = dh - dl || 1;
@@ -2137,6 +2351,13 @@ function refreshStats() {
     put('level line L = 1', fmt.format(rec.level_one));
     if (Number.isFinite(rec.forced)) put('forced  ℓ ≤ d²', `${fmt.format(rec.forced)}  ${pct(rec.forced / rec.decomposable)}`);
     $('#stats').replaceChildren(dl);
+    if (dsB) {
+      const t = dsB.stats(u.uD.value.x, u.uD.value.y, viz.uniforms2.uNMax.value);
+      $('#lgWeightB').textContent = fmt.format(t.weight);
+      $('#lgLevelB').textContent = fmt.format(t.level);
+      $('#stDots').textContent = `${fmt.format(s.shown)} + ${fmt.format(t.shown)} dots` +
+        (ds.complete && dsB.complete ? '' : ' loading');
+    }
   }, 40);
 }
 
@@ -2144,11 +2365,13 @@ function refreshStats() {
 
 function showTip(hit) {
   const tip = $('#tip');
-  if (!hit || !ds) { tip.hidden = true; return; }
-  const p = ds.point(hit.i);
+  const src = hit && hit.set ? dsB : ds;
+  if (!hit || !src) { tip.hidden = true; return; }
+  const p = src.point(hit.i);
   const cname = p.cls === 1 ? 'level' : p.cls === 2 ? 'tie' : 'weight';
   const cclass = p.cls === 1 ? 'cl' : p.cls === 2 ? 'ct' : 'cw';
-  tip.innerHTML =
+  const who = recB ? `<span class="${hit.set ? 'cb' : 'ca'}">${src.rec.anumber}</span>\n` : '';
+  tip.innerHTML = who +
     `n = <b>${fmt.format(p.n)}</b>   <span class="${cclass}">${cname}${p.one ? ' · L = 1' : ''}</span>\n` +
     `a = ${fmt.format(p.a)}\n` +
     `k = ${fmt.format(p.k)}\n` +
@@ -2188,7 +2411,7 @@ function openSnapshot() {
   /*@standalone*/if (STANDALONE) {                     /* a real download */
     const a = document.createElement('a');
     a.href = viz.snapshot();
-    a.download = `decompwlj_${rec.id}_${state.x}${state.y}${state.z}_${state.view}.png`;
+    a.download = `decompwlj_${rec.id}${recB ? '_vs_' + recB.id : ''}_${state.view}.png`;
     document.body.appendChild(a); a.click(); a.remove();
     return;
   }/*@end*/
@@ -2225,6 +2448,7 @@ function onKey(e) {
   else if (k === 'p') toggle('panel');
   else if (k === 't') toggleTheme();
   else if (k === 'r') openRandom(view.length ? view : all);
+  else if (k === 'v' && state.cmp) { setSplit(!state.split); writeHash(); }
   else if (k === ' ') { e.preventDefault(); $('#play').click(); }
   else if ('12345'.includes(k) && k.length === 1) document.querySelectorAll('[data-view]')[+k - 1].click();
   else if (k === 'arrowdown' || k === 'arrowup') {
@@ -2266,7 +2490,8 @@ function bindUI() {
     const c = b.dataset.class;
     if (c === 'one') { state.hiOne = !state.hiOne; $('#hiOne').checked = state.hiOne; syncTog($('#hiOne')); }
     else state.show[c] = !state.show[c];
-    b.classList.toggle('off', c === 'one' ? !state.hiOne : !state.show[c]);
+    document.querySelectorAll(`.lg[data-class="${c}"]`)
+      .forEach(o => o.classList.toggle('off', c === 'one' ? !state.hiOne : !state.show[c]));
     applyFilters(); writeHash();
   }));
 
@@ -2347,6 +2572,35 @@ function bindUI() {
     } catch { show(text); }
   });
 
+  /* comparison */
+  const pick = $('#cmpInput');
+  pick.addEventListener('change', () => {
+    const r = findSeq(pick.value);
+    if (!r) return;
+    pick.value = '';
+    pick.blur();
+    setCompare(r.id, state.split);
+  });
+  pick.addEventListener('keydown', (e) => {
+    if (e.key !== 'Enter') return;
+    const r = findSeq(pick.value) || filterCatalog(all, pick.value)[0];
+    if (r) { pick.value = ''; pick.blur(); setCompare(r.id, state.split); }
+  });
+  document.querySelectorAll('[data-cmp]').forEach(b => b.addEventListener('click', () => {
+    setSplit(b.dataset.cmp === 'split'); writeHash();
+  }));
+  $('#cmpRandom').addEventListener('click', () => {
+    const pool = all.filter(r => r.id !== state.id);
+    setCompare(pool[Math.floor(Math.random() * pool.length)].id, state.split);
+  });
+  $('#cmpSwap').addEventListener('click', () => {
+    if (!state.cmp) return;
+    const a = state.id;
+    state.id = state.cmp; state.cmp = a;      /* the hash change reloads both */
+    location.hash = viewToken();
+  });
+  $('#cmpClear').addEventListener('click', () => { clearCompare(); writeHash(); });
+
   $('#themeBtn').addEventListener('click', toggleTheme);
   $('#catToggle').addEventListener('click', () => toggle('cat'));
   $('#catShow').addEventListener('click', () => toggle('cat'));
@@ -2365,6 +2619,122 @@ function bindUI() {
   syncTheme();
 }
 
+/* ── comparing two sequences ───────────────────────────────── */
+
+/** A sequence by id, A-number, or the "A000040 The prime numbers" text of the picker. */
+function findSeq(q) {
+  q = String(q || '').trim().toLowerCase();
+  if (!q) return null;
+  const an = q.match(/^a\d{6}\b/);
+  if (an) return all.find(r => r.anumber.toLowerCase() === an[0]) || null;
+  return all.find(r => r.id === q) || all.find(r => r.name.toLowerCase() === q) || null;
+}
+
+async function setCompare(id, split) {
+  const r = all.find(s => s.id === id);
+  if (!r || !rec) return;
+  if (abortB) abortB.abort();
+  abortB = new AbortController();
+  const signal = abortB.signal;
+  recB = r; state.cmp = r.id; state.split = !!split;
+  viz.clearPoints2();
+  viz.setCompare(state.split ? 'split' : 'overlay');
+  dsB = new Dataset(r, DATA);
+  rebuildFrame();
+  upload();
+  applyFilters();
+  viz.view(state.view);
+  syncCompareUI();
+  writeHash();
+  try {
+    await dsB.load((d) => {
+      if (signal.aborted || dsB !== d) return;
+      uploadB();
+      applyFilters();
+    }, signal);
+  } catch (e) {
+    if (e.name === 'AbortError' || signal.aborted) return;
+    $('#loadState').textContent = `could not load ${r.anumber}`;
+    return;
+  }
+  if (!signal.aborted) applyFilters();
+}
+
+function clearCompare() {
+  if (abortB) abortB.abort();
+  abortB = null; recB = null; dsB = null; state.cmp = null; state.split = false;
+  if (!viz) return;
+  viz.setCompare('none');
+  if (ds) { rebuildFrame(); upload(); applyFilters(); viz.view(state.view); }
+  syncCompareUI();
+}
+
+function setSplit(on) {
+  state.split = !!on;
+  document.querySelectorAll('[data-cmp]').forEach(o => o.classList.toggle('on', (o.dataset.cmp === 'split') === state.split));
+  if (!state.cmp) return;
+  viz.setCompare(state.split ? 'split' : 'overlay');
+  viz.view(state.view);
+  syncCompareUI();
+}
+
+function syncCompareUI() {
+  const on = !!recB;
+  document.querySelectorAll('[data-cmp]').forEach(o => o.classList.toggle('on', (o.dataset.cmp === 'split') === state.split));
+  $('#cmpSwap').disabled = $('#cmpClear').disabled = !on;
+  $('#cmpInfo').hidden = !on;
+  $('#lgHA').hidden = $('#lgB').hidden = !on || state.split;
+  const vs = $('#seqVs');
+  vs.replaceChildren();
+  if (on) {
+    vs.append(' · vs ');
+    const a = document.createElement('a');
+    a.href = oeisUrl(recB); a.target = '_blank'; a.rel = 'noopener';
+    a.textContent = recB.anumber; a.title = recB.name;
+    vs.append(a);
+    $('#cmpAn').href = oeisUrl(recB); $('#cmpAn').textContent = recB.anumber;
+    $('#cmpName').textContent = recB.name;
+    $('#lgHA').textContent = `${rec.anumber} ${rec.name}`;
+    $('#lgHB').textContent = `${recB.anumber} ${recB.name}`;
+    const dl = document.createDocumentFragment();
+    const put = (k, v, cls) => {
+      const dt = document.createElement('dt'); dt.textContent = k;
+      const dd = document.createElement('dd'); dd.textContent = v; if (cls) dd.className = cls;
+      dl.append(dt, dd);
+    };
+    const lv = (x) => x.decomposable ? x.level / x.decomposable : 0;
+    put('terms', fmt.format(recB.terms));
+    put('level  k > L', `${fmt.format(recB.level)}  ${pct(lv(recB))}`, state.split ? 'c-level' : 'c-level-b');
+    put('weight  k ≤ L', `${fmt.format(recB.weight)}  ${pct(recB.decomposable ? recB.weight / recB.decomposable : 0)}`, state.split ? 'c-weight' : 'c-weight-b');
+    put('ties  k = L', fmt.format(recB.ties));
+    put('level line L = 1', fmt.format(recB.level_one));
+    const dlt = (lv(recB) - lv(rec)) * 100;
+    put('level share vs main', `${dlt >= 0 ? '+' : '−'}${Math.abs(dlt).toFixed(2)} points`);
+    $('#cmpStats').replaceChildren(dl);
+    document.title = `${rec.name} vs ${recB.anumber} · decompwlj 3D`;
+  } else if (rec && !$('#app').hidden) document.title = `${rec.name} · decompwlj 3D`;
+  layoutCompare(viz ? viz.cells() : []);
+}
+
+/* captions over the two viewports and the line between them */
+function layoutCompare(cells) {
+  const split = !!recB && state.split && cells.length === 2;
+  $('#splitLine').hidden = $('#capA').hidden = $('#capB').hidden = !split;
+  if (!split) return;
+  const [a, b] = cells, line = $('#splitLine');
+  if (b.x) Object.assign(line.style, { left: b.x + 'px', top: '0', width: '1px', height: '100%' });
+  else Object.assign(line.style, { left: '0', top: b.y + 'px', width: '100%', height: '1px' });
+  const cap = (el, r, c, top) => {
+    el.innerHTML = '';
+    const sm = document.createElement('small'); sm.textContent = r.anumber;
+    el.append(sm, r.name);
+    el.title = `${r.anumber} ${r.name}`;
+    Object.assign(el.style, { left: (c.x + 12) + 'px', top: (c.y + top) + 'px', maxWidth: (c.w - 24) + 'px' });
+  };
+  cap($('#capA'), rec, a, 62);
+  cap($('#capB'), recB, b, b.y ? 10 : 62);
+}
+
 function syncTog(input) { input.closest('.chip').classList.toggle('on', input.checked); }
 
 function rebuildAndUpload() { if (ds) { rebuildFrame(); upload(); applyFilters(); } }
@@ -2377,7 +2747,10 @@ function setProjection(kind) {
 
 function setMode(mode) {
   state.mode = mode;
-  const m = viz.material;
+  const m = viz.material, m2 = viz.material2;
+  m2.blending = mode === 'density' ? THREE.AdditiveBlending : THREE.NormalBlending;
+  m2.depthWrite = mode !== 'density';
+  m2.needsUpdate = true;
   if (mode === 'density') {
     m.blending = THREE.AdditiveBlending; m.depthWrite = false;
     viz.uniforms.uOpacity.value = Math.min(0.3, parseFloat($('#ptOpacity').value));
