@@ -150,7 +150,7 @@ for i, r in enumerate(rows):
 <p class="meta"><a class="an" href="https://oeis.org/{A}" rel="noopener">{A}</a> on the OEIS · family <a href="{up}family/{slug(fam)}/">{e(fam)}</a>{f' · also known as {e(r["alias"])}' if r['alias'] else ''}</p>
 <div class="seq">
   <figure>
-    <div class="plate">{PLATE_SVG}<img src="{up}thumbs/{r['id']}.png" width="480" height="480" alt="Weight–level plate of {e(name)}"><span class="axl k" aria-hidden="true">k</span><span class="axl L" aria-hidden="true">L</span></div>
+    <div class="plate">{PLATE_SVG}<img src="{up}thumbs/{r['id']}.webp" width="480" height="480" alt="Weight–level plate of {e(name)}"><span class="axl k" aria-hidden="true">k</span><span class="axl L" aria-hidden="true">L</span></div>
     <figcaption>Weight k across, level L up, both on log scales: blue in the weight class (k ≤ L), orange in the level class (k &gt; L). The dashed diagonal is k = L.</figcaption>
   </figure>
   <div>
@@ -166,12 +166,12 @@ for i, r in enumerate(rows):
            'description': desc if len(desc) >= 50 else desc + ' Decomposition into weight × level + jump.',
            'url': f'{BASE}/seq/{A}/', 'identifier': A, 'isBasedOn': f'https://oeis.org/{A}',
            'keywords': ['integer sequence', 'OEIS', A, fam, 'weight', 'level', 'jump', 'decomposition'],
-           'image': f'{BASE}/thumbs/{r["id"]}.png',
+           'image': f'{BASE}/thumbs/{r["id"]}.webp',
            'includedInDataCatalog': {'@type': 'DataCatalog', 'name': SITE, 'url': f'{BASE}/'},
            'distribution': [{'@type': 'DataDownload', 'encodingFormat': 'application/gzip',
-                             'contentUrl': f'{BASE}/data/seq/{r["id"]}/chunk-{c:03d}.csv.gz'} for c in range(int(r['chunks']))]},
+                             'contentUrl': f'{BASE}/data/seq/{r["id"]}/chunk-{c:03d}.bin.gz'} for c in range(int(r['chunks']))]},
           crumbs_ld([('All sequences', f'{BASE}/seq/'), (fam, f'{BASE}/family/{slug(fam)}/'), (A, f'{BASE}/seq/{A}/')])]
-    write(f'seq/{A}/index.html', page(up, f'seq/{A}/', title, desc, body, image=f'{BASE}/thumbs/{r["id"]}.png', ld=ld))
+    write(f'seq/{A}/index.html', page(up, f'seq/{A}/', title, desc, body, image=f'{BASE}/thumbs/{r["id"]}.webp', ld=ld))
 
 # ── lists: all sequences, and one per family ─────────────────────────────────
 def chips(up, current=None):
@@ -246,7 +246,7 @@ a sequence also opens by its A-number, as in <a href="/seq/A000040/">/seq/A00004
 # ── sitemap and robots ──────────────────────────────────────────────────────
 urls = [(f'{BASE}/', f'{BASE}/og.png'), (f'{BASE}/seq/', None)]
 urls += [(f'{BASE}/family/{slug(f)}/', None) for f in fam_order]
-urls += [(f'{BASE}/seq/{r["anumber"]}/', f'{BASE}/thumbs/{r["id"]}.png') for r in rows]
+urls += [(f'{BASE}/seq/{r["anumber"]}/', f'{BASE}/thumbs/{r["id"]}.webp') for r in rows]
 sm = ['<?xml version="1.0" encoding="UTF-8"?>',
       '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">']
 for u, im in urls:
@@ -267,7 +267,7 @@ else:
     step = max(1, N // (cols * rws))
     pick = [rows[(j * step) % N] for j in range(cols * rws)]
     for j, r in enumerate(pick):
-        p = ROOT / 'thumbs' / f'{r["id"]}.png'
+        p = ROOT / 'thumbs' / f'{r["id"]}.webp'
         if not p.exists(): continue
         th = Image.open(p).convert('RGBA').resize((T - 6, T - 6), Image.LANCZOS)
         tile = Image.new('RGBA', (T - 6, T - 6), (17, 21, 31, 255)); tile.alpha_composite(th)
