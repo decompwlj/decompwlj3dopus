@@ -15,7 +15,7 @@ greater than d(n), and the **level** L(n) = (a(n) − d(n)) / k(n). A term is le
 k > L and weight-classified otherwise. Background: [decompwlj.com](https://decompwlj.com) and
 [arXiv:0711.0865](https://arxiv.org/abs/0711.0865).
 
-The site is plain files: one HTML page, compressed CSV data and PNG previews. There is no server
+The site is plain files: one HTML page, compressed data files and WebP previews. There is no server
 code, database, build step or third-party request, so it runs on any static host.
 
 ---
@@ -87,7 +87,7 @@ subfolder.
 Every push to `main` republishes the site. `.nojekyll` tells GitHub Pages to serve the files as
 they are, without running Jekyll.
 
-The site is about 715 MB, within GitHub Pages' limits: 1 GB per published site, with a soft
+The site is about 450 MB, within GitHub Pages' limits: 1 GB per published site, with a soft
 bandwidth limit of 100 GB per month.
 
 ### A custom domain with HTTPS
@@ -129,7 +129,7 @@ bucket with a CDN, and so on.
 Server requirements:
 
 - Serve `.js` as JavaScript. Standard MIME tables already do.
-- Serve `data/seq/**/chunk-NNN.csv.gz` as the raw gzip file (any content type), **or** with
+- Serve `data/seq/**/chunk-NNN.bin.gz` as the raw gzip file (any content type), **or** with
   `Content-Encoding: gzip`. The page handles both.
 - Do not rewrite missing files to `index.html`. A missing chunk must return 404.
 - No authentication in front of the data files.
@@ -195,8 +195,8 @@ needs it.
 |---|---|
 | `index.html` | The whole application: gallery, viewer, CSS and JavaScript (~110 kB) |
 | `data/catalog.csv` | One row per sequence: id, A-number, OEIS name, family, index range, counts, ranges, note |
-| `data/seq/<id>/chunk-000.csv.gz`, `chunk-001.csv.gz` | The sequence data, 50,000 terms per chunk, gzip-compressed |
-| `thumbs/<id>.png` | Gallery previews (480 × 480, transparent) |
+| `data/seq/<id>/chunk-000.bin.gz`, `chunk-001.bin.gz` | The sequence data, 50,000 terms per chunk, compact binary, gzip-compressed |
+| `thumbs/<id>.webp` | Gallery previews (480 × 480, transparent, lossless WebP) |
 | `vendor/` | three.js r169 and OrbitControls, unmodified (MIT licence included) |
 | `deploy/` | Example Apache and nginx configurations |
 | `tools/` | Data generator, OEIS metadata and verification scripts (not needed at runtime) |
@@ -241,16 +241,26 @@ needs it.
 | `amin` … `dmax` | Ranges of a, k, L and d |
 | `note` | The text shown under the statistics |
 
-Each chunk is gzip-compressed text: a header line `#a0=<first term>`, a line `d,k`, then one `d,k`
-row per term. Every term is present, decomposable or not (k = 0 when it does not decompose), so row
-i is index n = n0 + i.
+Each chunk is a small binary file, gzip-compressed. Every number is an unsigned LEB128 varint
+(7 bits per byte, low bits first):
 
-The page rebuilds a(n) as a running sum of the gaps and L = (a − d)/k. It rejects a chunk if a
-division is not exact, if k ≤ d, or if a chunk does not continue the previous one. All values are
-below 2⁵³, so JavaScript numbers hold them exactly.
+| Part | Contents |
+|---|---|
+| `dwj1` | 4-byte format tag |
+| `n`, `a0` | Number of rows in the chunk, first term |
+| `d[0]` … `d[n−1]` | The jumps |
+| `s[0]` … `s[n−1]` | The smaller factor of a − d = k·L: `0` if the term does not decompose, `2k` if k ≤ L, `2L + 1` if L < k |
 
-A sequence costs from under 1 kB to 1.2 MB to download (median 0.25 MB). The gallery previews
-total 35 MB, but only the visible ones are fetched.
+Every term is present, decomposable or not, so row i is index n = n0 + i. The page rebuilds a(n)
+as a running sum of the jumps, and the factor not stored as (a − d) divided by the stored one.
+Storing the smaller factor, at most √(a − d), makes the files about 40 % smaller than storing k.
+The page rejects a chunk if a division is not exact, if k ≤ d, if the stored factor is not the
+smaller one, or if a chunk does not continue the previous one. All values are below 2⁵³, so
+JavaScript numbers hold them exactly. `tools/compact.py` has an `encode()` and a `decode()` for
+reading the files from Python.
+
+A sequence costs from under 1 kB to 0.6 MB to download (median 0.16 MB). The gallery previews
+total 13 MB, but only the visible ones are fetched.
 
 ## Rebuilding the data
 

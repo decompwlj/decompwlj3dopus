@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""thumbs.py — the gallery plates, one 480 px transparent PNG per sequence.
+"""thumbs.py — the gallery plates, one 480 px transparent WebP (lossless) per sequence.
 
     python3 thumbs.py <raw_dir> <thumbs_dir>          e.g.  python3 thumbs.py raw ../thumbs
 
@@ -32,5 +32,5 @@ for rec in csv.DictReader(open(src / 'catalog.csv')):
     rgb = np.zeros((S, S, 3))
     for ch in range(3):
         rgb[..., ch] = np.where(alpha > 0, (LV[ch] * al + W[ch] * aw * (1 - al)) / np.maximum(alpha, 1e-9), 0)
-    Image.fromarray(np.dstack([rgb, alpha * 255]).round().astype(np.uint8), 'RGBA').save(out / f"{rec['id']}.png", optimize=True)
+    Image.fromarray(np.dstack([rgb, alpha * 255]).round().astype(np.uint8), 'RGBA').save(out / f"{rec['id']}.webp", 'WEBP', lossless=True, quality=100, method=6, exact=True)
 print('plates written to', out)

@@ -804,7 +804,7 @@ window.__dwljStarted = true;
  *                   column is prose.  Fed incrementally so a large catalogue
  *                   can be shown while it is still downloading.
  *
- * fetchBytes() also accepts a gzipped body (a .csv.gz twin served without
+ * fetchBytes() also accepts a gzipped body (a .gz file served without
  * Content-Encoding) and inflates it with DecompressionStream; a body the
  * server declared as gzip has already been inflated by fetch().
  */
@@ -1071,15 +1071,17 @@ class PagedList {
 /* ═══════════════ data.js ═══════════════ */
 /* data.js — loading one sequence.
  *
- * A sequence lives in data/seq/<id>/chunk-NNN.csv.gz (gzip), each chunk `chunk_rows`
+ * A sequence lives in data/seq/<id>/chunk-NNN.bin.gz (gzip), each chunk `chunk_rows`
  * rows, every term present whether it decomposes or not, so row i of the
- * concatenation is always sequence index n = n0 + i.  Two chunk formats:
+ * concatenation is always sequence index n = n0 + i.  Three chunk formats:
  *
- *   "a,d,k,L" rows          the generator's own output (the Apache build)
- *   "#a0=<a>", then "d,k"   the hosted build: a is rebuilt as a running sum
- *                           of d from a0, and L = (a - d) / k, checked exact
+ *   'dwj1' binary           the published data (tools/compact.py): the jumps d,
+ *                           then the smaller of k and L with a bit saying which;
+ *                           a is a running sum of d, the other factor a division
+ *   "#a0=<a>", then "d,k"   the earlier text form, still read
+ *   "a,d,k,L" rows          the generator's own output
  *
- * The compact form keeps twenty sequences under the host's size limit.
+ * Every division is checked exact, and k > d.
  *
  * Chunks are fetched with bounded concurrency and parsed straight into the
  * right slice of pre-allocated columns, so they may land in any order.  The
@@ -1090,7 +1092,7 @@ class PagedList {
 
 const LOG10 = Math.LN10;
 const CONCURRENCY = 4;
-const CHUNK_EXT = '.csv.gz';               /* gzip files; fetchBytes() inflates them */
+const CHUNK_EXT = '.bin.gz';               /* gzip files; fetchBytes() inflates them */
 
 const FIELDS = {
   k: { label: 'log₁₀ k  (weight)', short: 'k' },
@@ -1100,6 +1102,9 @@ const FIELDS = {
   l: { label: 'log₁₀ ℓ  (k·L)',    short: 'l' },
   n: { label: 'log₁₀ n  (index)',  short: 'n' },
 };
+
+/** 'dwj1': the binary chunk format */
+const isBinaryChunk = (b) => b.length > 4 && b[0] === 0x64 && b[1] === 0x77 && b[2] === 0x6a && b[3] === 0x31;
 
 class Dataset {
   constructor(rec, baseUrl) {
@@ -1137,8 +1142,8 @@ class Dataset {
         const bytes = await fetchBytes(url, signal);
         const at = c * chunk_rows;
         const want = Math.min(chunk_rows, terms - at);
-        const got = bytes[0] === 35 /* '#' */
-          ? this._readCompact(bytes, at, url)
+        const got = isBinaryChunk(bytes) ? this._readBinary(bytes, at, url)
+          : bytes[0] === 35 /* '#' */ ? this._readCompact(bytes, at, url)
           : parseIntRows(bytes, [this.a, this.d, this.k, this.L], at);
         if (got !== want)
           throw new Error(`${url}: ${got} rows, expected ${want}`);
@@ -1160,6 +1165,42 @@ class Dataset {
     this._convert(terms);
     this.complete = true;
     onGrow(this, 1);
+  }
+
+  /** The binary chunk (tools/compact.py): 'dwj1', n, a0, then n jumps d, then n
+   *  values s, all LEB128 varints.  s = 0: no decomposition; s = 2k: k ≤ L;
+   *  s = 2L + 1: L < k.  The other factor is (a − d) divided by the stored one.
+   *  Returns rows read. */
+  _readBinary(bytes, at, url) {
+    let i = 4;
+    const rd = () => {                     /* arithmetic, not bit operators: values reach 2^53 */
+      let v = 0, m = 1, c;
+      do {
+        if (i >= bytes.length) throw new Error(`${url}: truncated`);
+        c = bytes[i++]; v += (c & 127) * m; m *= 128;
+      } while (c & 128);
+      return v;
+    };
+    const n = rd();
+    let a = rd();
+    if (at + n > this.a.length) throw new Error(`${url}: ${n} rows do not fit`);
+    for (let r = at; r < at + n; r++) this.d[r] = rd();
+    for (let r = at; r < at + n; r++) {
+      const d = this.d[r], s = rd();
+      this.a[r] = a;
+      if (s === 0) { this.k[r] = 0; this.L[r] = 0; }
+      else {
+        const half = Math.floor(s / 2), q = (a - d) / half;
+        const k = s % 2 ? q : half, L = s % 2 ? half : q;
+        /* q·half === a − d holds only for the exact quotient: both are integers below 2^53 */
+        if (!Number.isInteger(q) || q * half !== a - d || k <= d || (s % 2 ? L >= k : k > L))
+          throw new Error(`${url}: row ${r} does not fit a = ${a}, d = ${d}`);
+        this.k[r] = k; this.L[r] = L;
+      }
+      a += d;
+    }
+    if (i !== bytes.length) throw new Error(`${url}: trailing bytes`);
+    return n;
   }
 
   /** "#a0=<a>" then "d,k" rows: rebuild a and L.  Returns rows read. */
@@ -2111,7 +2152,7 @@ function card(r) {
     `<div class="nm"></div></a><div class="sub2"><a class="an" target="_blank" rel="noopener"></a><span class="fam"></span></div>` +
     `<div class="r2"><span class="lvl-bar"><i></i></span><span class="pct"></span></div>`;
   const img = a.querySelector('img');
-  img.src = `${THUMBS}/${r.id}.png`;
+  img.src = `${THUMBS}/${r.id}.webp`;
   img.alt = `Weight–level plate of ${r.name}`;
   a.querySelector('.nm').textContent = r.name;
   const an = a.querySelector('.an');
