@@ -219,7 +219,7 @@ needs it.
   scrolling) returns to the top; `R` opens a random sequence (within the selected family and
   search); `T` switches the theme.
 - **CSV:** the **CSV** button on a gallery card, or **download CSV** in the viewer, saves
-  `decompwlj_<A-number>.csv` with one row per term: `n;Anumber;weight;level;jump`, where Anumber
+  `decompwlj_<A-number>.csv` with one row per term: `n;a;weight;level;jump`, where a
   is the term a(n) and weight and level are empty when the term does not decompose. The file is
   rebuilt in the browser from the data chunks; nothing extra is stored on the server.
 - **Compare** (panel on the right): pick a second sequence by A-number or name, or **random**.

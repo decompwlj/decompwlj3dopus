@@ -750,7 +750,7 @@ input[type=range] { width: 100%; accent-color: var(--accent); height: 18px; }
       <div class="btn-row">
         <a id="oeisLink" class="chip" target="_blank" rel="noopener">OEIS</a>
         <button id="snap" class="chip">snapshot</button>
-        <button id="csvBtn" class="chip" title="n;Anumber;weight;level;jump, one row per term; rebuilt from the data on demand">download CSV</button>
+        <button id="csvBtn" class="chip" title="n;a;weight;level;jump, one row per term; rebuilt from the data on demand">download CSV</button>
         <button id="share" class="chip" title="Copies a tag such as #primes.kLd.iso.solid. Add it to the end of this page's link to open the same view.">copy view tag</button>
       </div>
     </section>
@@ -2170,7 +2170,7 @@ function card(r) {
   a.querySelector('.pct').textContent = (r.levelShare * 100).toFixed(1) + '% lvl';
   a.querySelector('.open').title = `${r.name} (${r.anumber}) — ${fmt.format(r.terms)} terms, ${(r.levelShare * 100).toFixed(2)} % level-classified. Open in 3-D.`;
   const csv = a.querySelector('.csv');
-  csv.title = `Download ${r.anumber} as CSV: n;Anumber;weight;level;jump, one row per term`;
+  csv.title = `Download ${r.anumber} as CSV: n;a;weight;level;jump, one row per term`;
   csv.addEventListener('click', () => downloadCSV(r, csv));
   return a;
 }
@@ -2461,7 +2461,7 @@ function toggleTheme() {
 
 /* ── CSV download: rebuilt from the data chunks, never stored ─ */
 
-/** n;Anumber;weight;level;jump for every term: Anumber is the term a(n); weight and
+/** n;a;weight;level;jump for every term: a is the term a(n); weight and
  *  level are empty where a(n) does not decompose.  Uses the viewer's copy when it
  *  holds this sequence, otherwise loads the chunks. */
 async function downloadCSV(r, btn) {
@@ -2470,7 +2470,7 @@ async function downloadCSV(r, btn) {
   try {
     let d = (ds && ds.rec.id === r.id && ds.complete) ? ds : null;
     if (!d) { d = new Dataset(r, DATA); await d.load(() => {}); }
-    const parts = ['n;Anumber;weight;level;jump\n'];
+    const parts = ['n;a;weight;level;jump\n'];
     let buf = '';
     for (let i = 0; i < r.terms; i++) {
       const k = d.k[i];
