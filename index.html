@@ -2083,6 +2083,7 @@ function showHome() {
   $('#home').hidden = false;
   document.title = HOME_TITLE;
   if (state.cmp) clearCompare();          /* a comparison ends with a visit to the gallery */
+  disarmIntro();
   renderHome();
 }
 
@@ -2179,6 +2180,7 @@ function card(r) {
   a.querySelector('.fam').textContent = r.family;
   a.querySelector('.lvl-bar > i').style.width = (r.levelShare * 100).toFixed(2) + '%';
   a.querySelector('.pct').textContent = (r.levelShare * 100).toFixed(1) + '% lvl';
+  a.querySelector('.open').addEventListener('click', () => { introFlat = true; });
   a.querySelector('.open').title = `${r.name} (${r.anumber}) — ${fmt.format(r.terms)} terms, ${(r.levelShare * 100).toFixed(2)} % level-classified. Open in 3-D.`;
   return a;
 }
@@ -2212,6 +2214,27 @@ function ensureViewer() {
   return viewerReady;
 }
 
+/* Opened from a gallery card, a sequence first shows the flat k–L view, the same picture
+   as the card; the first movement of the pointer over the plot (or a touch) turns it into
+   the 3-D view.  Links that carry a view, and moves inside the viewer, keep their own. */
+let introFlat = false, introArm = null;
+function disarmIntro() { if (introArm) { introArm(); introArm = null; } }
+function startIntro() {
+  disarmIntro();
+  if (state.view !== 'xy') document.querySelector('[data-view="xy"]').click();
+  const gl = $('#gl'), t0 = performance.now();
+  let x0 = null, y0 = null;
+  const to3d = () => { disarmIntro(); if (state.view === 'xy') document.querySelector('[data-view="iso"]').click(); };
+  const onMove = (e) => {
+    if (performance.now() - t0 < 350) return;            /* the click that opened the viewer */
+    if (x0 === null) { x0 = e.clientX; y0 = e.clientY; return; }
+    if (Math.hypot(e.clientX - x0, e.clientY - y0) >= 6) to3d();
+  };
+  gl.addEventListener('pointermove', onMove);
+  gl.addEventListener('pointerdown', to3d);
+  introArm = () => { gl.removeEventListener('pointermove', onMove); gl.removeEventListener('pointerdown', to3d); };
+}
+
 async function showViewer(t) {
   clearFail();
   $('#home').hidden = true;
@@ -2231,6 +2254,7 @@ async function showViewer(t) {
                 `The gallery still works; check the connection or any content blocker, then reload.`);
   }
   if (!first) applyToken(t);
+  if (introFlat) { introFlat = false; startIntro(); }
   viz.start();
   viz.resize();
   document.title = `${all.find(r => r.id === t.id).name} · decompwlj 3D`;
@@ -2541,7 +2565,7 @@ function onKey(e) {
   else if (k === 'r') openRandom(view.length ? view : all);
   else if (k === 'v' && state.cmp) { setSplit(!state.split); writeHash(); }
   else if (k === ' ') { e.preventDefault(); $('#play').click(); }
-  else if ('12345'.includes(k) && k.length === 1) document.querySelectorAll('[data-view]')[+k - 1].click();
+  else if ('12345'.includes(k) && k.length === 1) { disarmIntro(); document.querySelectorAll('[data-view]')[+k - 1].click(); }
   else if (k === 'arrowdown' || k === 'arrowup') {
     e.preventDefault();
     const i = view.findIndex(r => r.id === state.id);
@@ -2560,7 +2584,8 @@ function bindUI() {
     $('#searchCount').textContent = String(view.length);
   });
 
-  document.querySelectorAll('[data-view]').forEach(b => b.addEventListener('click', () => {
+  document.querySelectorAll('[data-view]').forEach(b => b.addEventListener('click', (e) => {
+    if (e.isTrusted) disarmIntro();
     document.querySelectorAll('[data-view]').forEach(o => o.classList.toggle('on', o === b));
     state.view = b.dataset.view;
     /* a flat view is only a true plate without foreshortening */
