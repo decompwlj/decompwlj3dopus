@@ -1,5 +1,5 @@
 /* decompwlj 3D, written by tools/seo.py: the "Download CSV" button of a sequence page.
-   Rebuilds n;a;weight;level;jump from the data chunks (the dwj1 format of tools/compact.py),
+   Rebuilds n;a;weight;level;jump from the data chunks (the dwj2 format of tools/compact.py),
    checking every division as the viewer does; nothing is stored. */
 (function () {
   var btn = document.getElementById('csv');
@@ -12,11 +12,12 @@
     return Promise.resolve(bytes);
   }
   function rows(b, url, out) {
-    if (!(b[0] === 0x64 && b[1] === 0x77 && b[2] === 0x6a && b[3] === 0x31)) throw new Error(url + ': not a dwj1 chunk');
-    var i = 4;
+    if (!(b[0] === 0x64 && b[1] === 0x77 && b[2] === 0x6a && (b[3] === 0x31 || b[3] === 0x32))) throw new Error(url + ': not a dwj1/dwj2 chunk');
+    var m = b[3] === 0x32 ? b[4] : 0, i = b[3] === 0x32 ? 5 : 4;
+    function unzz(z) { return z % 2 === 0 ? z / 2 : -(z + 1) / 2; }
     function rd() { var v = 0, m = 1, c; do { if (i >= b.length) throw new Error(url + ': truncated'); c = b[i++]; v += (c & 127) * m; m *= 128; } while (c & 128); return v; }
     var n = rd(), a = rd(), d = new Array(n);
-    for (var r = 0; r < n; r++) d[r] = rd();
+    for (var r = 0, p = 0, pp = 0; r < n; r++) { var v = rd(); d[r] = m === 0 ? v : m === 1 ? p + unzz(v) : 2 * p - pp + unzz(v); pp = p; p = d[r]; }
     for (r = 0; r < n; r++) {
       var s = rd(), k = 0, L = 0;
       if (s) {

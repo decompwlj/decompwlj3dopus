@@ -61,6 +61,9 @@
  *   29 Sep 2026  thirty-five hundred: five hundred from the original decompwlj.com
  *                list, written out one by one (digit and binary rules, prime
  *                conditions, divisor functions, forms, Beatty sequences, recurrences).
+ *   30 Sep 2026  four thousand: five hundred more from the verified pools, mostly
+ *                polynomials and primes in residue classes; the data files now code
+ *                the jumps as differences where that is smaller (dwj2).
  *
  * Build:  cc -O2 -o decompwlj_gen decompwlj_gen.c -lm
  * Run:    ./decompwlj_gen <outdir>            all sequences
@@ -6062,6 +6065,512 @@ N_FILTER(gen_o277590, 1, o_strip_mod(n, 10, 3))                                 
 N_FILTER(gen_o277591, 1, o_strip_mod(n, 10, 4))                                                            /* F:residue class */
 N_FILTER(gen_o277593, 1, o_strip_mod(n, 10, 6))                                                            /* F:residue class */
 static void gen_o279607(u64 *t, long cnt) { o_beatty(t, cnt, 1.359140914229522617680143735676331249L, 0, 1); }   /* F:Beatty */
+
+/* ---------------------------- the five hundred added 30 Sep 2026 (3501-4000) */
+/* Mostly polynomials, primes in residue classes and quadratic forms from the verified
+   pools, with the last primes of the form f(k) and primes p with f(p) prime; each
+   checked against its OEIS terms. */
+
+static void gen_a027604(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 0; t[i] = (u64)((((((N*N*N) + ((N + (i128)1)*(N + (i128)1)*(N + (i128)1))) + ((N + (i128)2)*(N + (i128)2)*(N + (i128)2))) + ((N + (i128)3)*(N + (i128)3)*(N + (i128)3))) + ((N + (i128)4)*(N + (i128)4)*(N + (i128)4)))); } }  /* n^3+(n+1)^3+(n+2)^3+(n+3)^3+(n+4)^3 */
+static void gen_a063492(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)((((((i128)2 * N) - (i128)1) * ((((i128)11 * (N*N)) - ((i128)11 * N)) + (i128)6)) / (i128)6)); } }  /* (2*n-1)*(11*n^2-11*n+6)/6 */
+static void gen_a063493(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)((((((i128)2 * N) - (i128)1) * ((((i128)13 * (N*N)) - ((i128)13 * N)) + (i128)6)) / (i128)6)); } }  /* (2*n-1)*(13*n^2-13*n+6)/6 */
+static void gen_a063495(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)((((((i128)2 * N) - (i128)1) * ((((i128)5 * (N*N)) - ((i128)5 * N)) + (i128)2)) / (i128)2)); } }  /* (2*n-1)*(5*n^2-5*n+2)/2 */
+static void gen_a069072(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 0; t[i] = (u64)((((((i128)2 * N) + (i128)1) * (((i128)2 * N) + (i128)2)) * (((i128)2 * N) + (i128)3))); } }  /* (2*n+1)*(2*n+2)*(2*n+3) */
+static void gen_a130862(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)(((((N - (i128)1) * (N + (i128)2)) * (((i128)2 * N) + (i128)11)) / (i128)2)); } }  /* (n-1)*(n+2)*(2*n+11)/2 */
+static void gen_a130884(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 0; t[i] = (u64)((((((i128)3 * (N*N*N)) + ((i128)2 * (N*N))) + N) + (i128)1)); } }  /* 3*n^3+2*n^2+n+1 */
+static void gen_a130885(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)((((((i128)3 * (N*N*N)) - ((i128)2 * (N*N))) + N) - (i128)1)); } }  /* 3*n^3-2*n^2+n-1 */
+static void gen_a131464(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)((((((i128)4 * (N*N*N)) - ((i128)3 * (N*N))) + ((i128)2 * N)) - (i128)1)); } }  /* 4*n^3-3*n^2+2*n-1 */
+static void gen_a132112(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 0; t[i] = (u64)((((N * (N + (i128)1)) * (((i128)11 * N) + (i128)1)) / (i128)6)); } }  /* n*(n+1)*(11*n+1)/6 */
+static void gen_a132124(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 0; t[i] = (u64)((((N * (N + (i128)1)) * (((i128)8 * N) + (i128)1)) / (i128)6)); } }  /* n*(n+1)*(8*n+1)/6 */
+static void gen_a132127(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)(((((N*N*N) + ((i128)3 * N)) - (i128)2) / (i128)2)); } }  /* (n^3+3*n-2)/2 */
+static void gen_a135712(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 0; t[i] = (u64)(((((((i128)4 * (N*N*N)) + ((i128)11 * (N*N))) + ((i128)9 * N)) + (i128)2) / (i128)2)); } }  /* (4*n^3+11*n^2+9*n+2)/2 */
+static void gen_a135713(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 0; t[i] = (u64)((((N * (N + (i128)1)) * (((i128)4 * N) + (i128)1)) / (i128)2)); } }  /* n*(n+1)*(4*n+1)/2 */
+static void gen_a139757(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 0; t[i] = (u64)(((N + (i128)1) * ((((i128)2 * N) + (i128)1)*(((i128)2 * N) + (i128)1)))); } }  /* (n+1)*(2*n+1)^2 */
+static void gen_a143058(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 0; t[i] = (u64)((((((N*N*N) + ((i128)18 * (N*N))) + ((i128)17 * N)) + (i128)6) / (i128)6)); } }  /* (n^3+18*n^2+17*n+6)/6 */
+static void gen_a145069(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 0; t[i] = (u64)(((N * (((N*N) + ((i128)3 * N)) + (i128)5)) / (i128)3)); } }  /* n*(n^2+3*n+5)/3 */
+static void gen_a147296(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 0; t[i] = (u64)((N * (((i128)9 * N) + (i128)2))); } }  /* n*(9*n+2) */
+static void gen_a147874(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)(((((i128)5 * N) - (i128)7) * (N - (i128)1))); } }  /* (5*n-7)*(n-1) */
+static void gen_a152161(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 0; t[i] = (u64)(((((i128)100 * (N*N)) + ((i128)100 * N)) + (i128)21)); } }  /* 100*n^2+100*n+21 */
+static void gen_a152579(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 0; t[i] = (u64)(((((i128)10 * N) + (i128)3) * (((i128)10 * N) + (i128)17))); } }  /* (10*n+3)*(10*n+17) */
+static void gen_a152811(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)(((i128)2 * (((N*N) + ((i128)2 * N)) - (i128)2))); } }  /* 2*(n^2+2*n-2) */
+static void gen_a152813(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 0; t[i] = (u64)(((((i128)2 * (N*N)) + ((i128)10 * N)) + (i128)3)); } }  /* 2*n^2+10*n+3 */
+static void gen_a152950(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)(((i128)3 + ((N * (N - (i128)1)) / (i128)2))); } }  /* 3+n*(n-1)/2 */
+static void gen_a153037(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 0; t[i] = (u64)(((((i128)2 * (N*N)) + ((i128)16 * N)) + (i128)23)); } }  /* 2*n^2+16*n+23 */
+static void gen_a153127(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 0; t[i] = (u64)(((((i128)2 * N) + (i128)1) * (((i128)5 * N) + (i128)6))); } }  /* (2*n+1)*(5*n+6) */
+static void gen_a153169(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)(((((i128)4 * (N*N)) + ((i128)12 * N)) + (i128)3)); } }  /* 4*n^2+12*n+3 */
+static void gen_a153642(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)(((((i128)4 * (N*N)) + ((i128)24 * N)) + (i128)8)); } }  /* 4*n^2+24*n+8 */
+static void gen_a153644(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)(((((i128)4 * (N*N)) + ((i128)28 * N)) + (i128)10)); } }  /* 4*n^2+28*n+10 */
+static void gen_a153976(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 0; t[i] = (u64)(((N*N*N) + ((N + (i128)2)*(N + (i128)2)*(N + (i128)2)))); } }  /* n^3+(n+2)^3 */
+static void gen_a154105(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 0; t[i] = (u64)(((((i128)12 * (N*N)) + ((i128)18 * N)) + (i128)7)); } }  /* 12*n^2+18*n+7 */
+static void gen_a154106(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 0; t[i] = (u64)(((((i128)12 * (N*N)) + ((i128)22 * N)) + (i128)11)); } }  /* 12*n^2+22*n+11 */
+static void gen_a154254(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 0; t[i] = (u64)(((((i128)9 * (N*N)) - ((i128)8 * N)) + (i128)2)); } }  /* 9*n^2-8*n+2 */
+static void gen_a154277(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 0; t[i] = (u64)(((((i128)81 * (N*N)) - ((i128)72 * N)) + (i128)17)); } }  /* 81*n^2-72*n+17 */
+static void gen_a154357(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 0; t[i] = (u64)(((((i128)25 * (N*N)) - ((i128)14 * N)) + (i128)2)); } }  /* 25*n^2-14*n+2 */
+static void gen_a154359(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 0; t[i] = (u64)(((((i128)1250 * (N*N)) - ((i128)700 * N)) + (i128)99)); } }  /* 1250*n^2-700*n+99 */
+static void gen_a154374(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)(((((i128)1250 * (N*N)) - ((i128)100 * N)) + (i128)1)); } }  /* 1250*n^2-100*n+1 */
+static void gen_a154375(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)(((((i128)1250 * (N*N)) + ((i128)100 * N)) + (i128)1)); } }  /* 1250*n^2+100*n+1 */
+static void gen_a154376(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)((((i128)25 * (N*N)) - ((i128)2 * N))); } }  /* 25*n^2-2*n */
+static void gen_a154377(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)((((i128)25 * (N*N)) + ((i128)2 * N))); } }  /* 25*n^2+2*n */
+static void gen_a154514(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)(((((i128)648 * (N*N)) - ((i128)72 * N)) + (i128)1)); } }  /* 648*n^2-72*n+1 */
+static void gen_a154515(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)(((((i128)648 * (N*N)) + ((i128)72 * N)) + (i128)1)); } }  /* 648*n^2+72*n+1 */
+static void gen_a154516(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)((((i128)9 * (N*N)) - N)); } }  /* 9*n^2-n */
+static void gen_a154517(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)((((i128)9 * (N*N)) + N)); } }  /* 9*n^2+n */
+static void gen_a154560(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 0; t[i] = (u64)((((((N + (i128)3)*(N + (i128)3)) * N) / (i128)2) + (i128)1)); } }  /* (n+3)^2*n/2+1 */
+static void gen_a154575(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)(((((i128)2 * (N*N)) + ((i128)12 * N)) + (i128)4)); } }  /* 2*n^2+12*n+4 */
+static void gen_a154576(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)(((((i128)2 * (N*N)) + ((i128)14 * N)) + (i128)5)); } }  /* 2*n^2+14*n+5 */
+static void gen_a154590(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)(((((i128)2 * (N*N)) + ((i128)16 * N)) + (i128)6)); } }  /* 2*n^2+16*n+6 */
+static void gen_a154591(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)(((((i128)2 * (N*N)) + ((i128)18 * N)) + (i128)7)); } }  /* 2*n^2+18*n+7 */
+static void gen_a154599(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)(((((i128)2 * (N*N)) + ((i128)20 * N)) + (i128)8)); } }  /* 2*n^2+20*n+8 */
+static void gen_a154600(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)(((((i128)2 * (N*N)) + ((i128)22 * N)) + (i128)9)); } }  /* 2*n^2+22*n+9 */
+static void gen_a155212(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 0; t[i] = (u64)(((((N*N) + ((i128)9 * N)) + (i128)4) / (i128)2)); } }  /* (n^2+9*n+4)/2 */
+static void gen_a155461(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 0; t[i] = (u64)((((N*N) + ((i128)52 * N)) + (i128)30)); } }  /* n^2+52*n+30 */
+static void gen_a155753(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)(((((N*N*N) - N) + (i128)9) / (i128)3)); } }  /* (n^3-n+9)/3 */
+static void gen_a155757(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)(((((N*N*N) - N) + (i128)15) / (i128)3)); } }  /* (n^3-n+15)/3 */
+static void gen_a155965(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 0; t[i] = (u64)((N * ((N*N) + (i128)4))); } }  /* n*(n^2+4) */
+static void gen_a155966(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 0; t[i] = (u64)((((i128)2 * (N*N)) + (i128)8)); } }  /* 2*n^2+8 */
+static void gen_a156635(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)((((i128)144 * (N*N)) - N)); } }  /* 144*n^2-n */
+static void gen_a156676(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 0; t[i] = (u64)(((((i128)81 * (N*N)) - ((i128)44 * N)) + (i128)6)); } }  /* 81*n^2-44*n+6 */
+static void gen_a156711(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)(((((i128)144 * (N*N)) - ((i128)161 * N)) + (i128)45)); } }  /* 144*n^2-161*n+45 */
+static void gen_a156719(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)(((((i128)144 * (N*N)) - ((i128)127 * N)) + (i128)28)); } }  /* 144*n^2-127*n+28 */
+static void gen_a156721(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)(((((i128)57122 * (N*N)) - ((i128)47320 * N)) + (i128)9801)); } }  /* 57122*n^2-47320*n+9801 */
+static void gen_a156735(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 0; t[i] = (u64)(((((i128)57122 * (N*N)) + ((i128)47320 * N)) + (i128)9801)); } }  /* 57122*n^2+47320*n+9801 */
+static void gen_a156774(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 0; t[i] = (u64)(((((i128)6561 * (N*N)) - ((i128)3564 * N)) + (i128)485)); } }  /* 6561*n^2-3564*n+485 */
+static void gen_a156812(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 0; t[i] = (u64)(((((i128)225 * (N*N)) - ((i128)199 * N)) + (i128)44)); } }  /* 225*n^2-199*n+44 */
+static void gen_a156813(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)((((i128)225 * (N*N)) - N)); } }  /* 225*n^2-n */
+static void gen_a156814(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)((((i128)225 * (N*N)) + N)); } }  /* 225*n^2+n */
+static void gen_a156841(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 0; t[i] = (u64)(((((i128)529 * (N*N)) - ((i128)312 * N)) + (i128)46)); } }  /* 529*n^2-312*n+46 */
+static void gen_a156842(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)(((((i128)529 * (N*N)) - ((i128)746 * N)) + (i128)263)); } }  /* 529*n^2-746*n+263 */
+static void gen_a156843(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 0; t[i] = (u64)(((((i128)279841 * (N*N)) - ((i128)165048 * N)) + (i128)24335)); } }  /* 279841*n^2-165048*n+24335 */
+static void gen_a156844(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)(((((i128)279841 * (N*N)) - ((i128)394634 * N)) + (i128)139128)); } }  /* 279841*n^2-394634*n+139128 */
+static void gen_a156853(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)(((((i128)2025 * (N*N)) - ((i128)649 * N)) + (i128)52)); } }  /* 2025*n^2-649*n+52 */
+static void gen_a156854(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)(((((i128)2025 * (N*N)) - ((i128)3401 * N)) + (i128)1428)); } }  /* 2025*n^2-3401*n+1428 */
+static void gen_a156855(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)((((i128)2025 * (N*N)) - N)); } }  /* 2025*n^2-n */
+static void gen_a156856(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)((((i128)2025 * (N*N)) + N)); } }  /* 2025*n^2+n */
+static void gen_a157010(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)(((((i128)1681 * (N*N)) - ((i128)756 * N)) + (i128)85)); } }  /* 1681*n^2-756*n+85 */
+static void gen_a157040(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)((((i128)121 * (N*N)) - ((i128)2 * N))); } }  /* 121*n^2-2*n */
+static void gen_a157110(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)(((((i128)1681 * (N*N)) - ((i128)2606 * N)) + (i128)1010)); } }  /* 1681*n^2-2606*n+1010 */
+static void gen_a157262(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)(((((i128)36 * (N*N)) - ((i128)55 * N)) + (i128)21)); } }  /* 36*n^2-55*n+21 */
+static void gen_a157264(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)(((((i128)10368 * (N*N)) - ((i128)15840 * N)) + (i128)6049)); } }  /* 10368*n^2-15840*n+6049 */
+static void gen_a157265(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)(((((i128)36 * (N*N)) - ((i128)17 * N)) + (i128)2)); } }  /* 36*n^2-17*n+2 */
+static void gen_a157267(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)(((((i128)10368 * (N*N)) - ((i128)4896 * N)) + (i128)577)); } }  /* 10368*n^2-4896*n+577 */
+static void gen_a157286(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)((((i128)36 * (N*N)) - N)); } }  /* 36*n^2-n */
+static void gen_a157288(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)(((((i128)10368 * (N*N)) - ((i128)288 * N)) + (i128)1)); } }  /* 10368*n^2-288*n+1 */
+static void gen_a157324(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)((((i128)36 * (N*N)) + N)); } }  /* 36*n^2+n */
+static void gen_a157326(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)(((((i128)10368 * (N*N)) + ((i128)288 * N)) + (i128)1)); } }  /* 10368*n^2+288*n+1 */
+static void gen_a157331(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)(((((i128)128 * (N*N)) - ((i128)32 * N)) + (i128)1)); } }  /* 128*n^2-32*n+1 */
+static void gen_a157337(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)(((((i128)128 * (N*N)) + ((i128)32 * N)) + (i128)1)); } }  /* 128*n^2+32*n+1 */
+static void gen_a157362(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)((((i128)49 * (N*N)) - ((i128)2 * N))); } }  /* 49*n^2-2*n */
+static void gen_a157364(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)(((((i128)4802 * (N*N)) - ((i128)196 * N)) + (i128)1)); } }  /* 4802*n^2-196*n+1 */
+static void gen_a157365(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)((((i128)49 * (N*N)) + ((i128)2 * N))); } }  /* 49*n^2+2*n */
+static void gen_a157367(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)(((((i128)4802 * (N*N)) + ((i128)196 * N)) + (i128)1)); } }  /* 4802*n^2+196*n+1 */
+static void gen_a157368(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)(((((i128)49 * (N*N)) - ((i128)78 * N)) + (i128)31)); } }  /* 49*n^2-78*n+31 */
+static void gen_a157370(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)(((((i128)2401 * (N*N)) - ((i128)3822 * N)) + (i128)1520)); } }  /* 2401*n^2-3822*n+1520 */
+static void gen_a157373(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)(((((i128)49 * (N*N)) - ((i128)20 * N)) + (i128)2)); } }  /* 49*n^2-20*n+2 */
+static void gen_a157375(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)(((((i128)2401 * (N*N)) - ((i128)980 * N)) + (i128)99)); } }  /* 2401*n^2-980*n+99 */
+static void gen_a157376(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)(((((i128)6561 * (N*N)) - ((i128)7732 * N)) + (i128)2278)); } }  /* 6561*n^2-7732*n+2278 */
+static void gen_a157440(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)(((((i128)121 * (N*N)) - ((i128)204 * N)) + (i128)86)); } }  /* 121*n^2-204*n+86 */
+static void gen_a157442(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)(((((i128)14641 * (N*N)) - ((i128)24684 * N)) + (i128)10405)); } }  /* 14641*n^2-24684*n+10405 */
+static void gen_a157443(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)(((((i128)121 * (N*N)) - ((i128)38 * N)) + (i128)3)); } }  /* 121*n^2-38*n+3 */
+static void gen_a157445(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)(((((i128)14641 * (N*N)) - ((i128)4598 * N)) + (i128)362)); } }  /* 14641*n^2-4598*n+362 */
+static void gen_a157446(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)((((i128)16 * (N*N)) - N)); } }  /* 16*n^2-n */
+static void gen_a157448(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)(((((i128)2048 * (N*N)) - ((i128)128 * N)) + (i128)1)); } }  /* 2048*n^2-128*n+1 */
+static void gen_a157474(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)((((i128)16 * (N*N)) + N)); } }  /* 16*n^2+n */
+static void gen_a157476(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)(((((i128)2048 * (N*N)) + ((i128)128 * N)) + (i128)1)); } }  /* 2048*n^2+128*n+1 */
+static void gen_a157506(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)(((((i128)13122 * (N*N)) + ((i128)324 * N)) + (i128)1)); } }  /* 13122*n^2+324*n+1 */
+static void gen_a157507(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)((((i128)81 * (N*N)) - ((i128)2 * N))); } }  /* 81*n^2-2*n */
+static void gen_a157509(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)(((((i128)13122 * (N*N)) - ((i128)324 * N)) + (i128)1)); } }  /* 13122*n^2-324*n+1 */
+static void gen_a157511(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)(((((i128)5000 * (N*N)) + ((i128)200 * N)) + (i128)1)); } }  /* 5000*n^2+200*n+1 */
+static void gen_a157514(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)((((i128)25 * (N*N)) - N)); } }  /* 25*n^2-n */
+static void gen_a157516(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)(((((i128)5000 * (N*N)) - ((i128)200 * N)) + (i128)1)); } }  /* 5000*n^2-200*n+1 */
+static void gen_a157610(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)(((((i128)29282 * (N*N)) - ((i128)484 * N)) + (i128)1)); } }  /* 29282*n^2-484*n+1 */
+static void gen_a157614(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)(((((i128)29282 * (N*N)) + ((i128)484 * N)) + (i128)1)); } }  /* 29282*n^2+484*n+1 */
+static void gen_a157618(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)(((((i128)625 * (N*N)) - ((i128)886 * N)) + (i128)314)); } }  /* 625*n^2-886*n+314 */
+static void gen_a157620(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)(((((i128)781250 * (N*N)) - ((i128)1107500 * N)) + (i128)392499)); } }  /* 781250*n^2-1107500*n+392499 */
+static void gen_a157621(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)(((((i128)625 * (N*N)) - ((i128)364 * N)) + (i128)53)); } }  /* 625*n^2-364*n+53 */
+static void gen_a157623(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)(((((i128)781250 * (N*N)) - ((i128)455000 * N)) + (i128)66249)); } }  /* 781250*n^2-455000*n+66249 */
+static void gen_a157626(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)(((((i128)100 * (N*N)) - ((i128)151 * N)) + (i128)57)); } }  /* 100*n^2-151*n+57 */
+static void gen_a157628(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)(((((i128)80000 * (N*N)) - ((i128)120800 * N)) + (i128)45601)); } }  /* 80000*n^2-120800*n+45601 */
+static void gen_a157651(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)(((((i128)100 * (N*N)) - ((i128)49 * N)) + (i128)6)); } }  /* 100*n^2-49*n+6 */
+static void gen_a157653(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)(((((i128)80000 * (N*N)) - ((i128)39200 * N)) + (i128)4801)); } }  /* 80000*n^2-39200*n+4801 */
+static void gen_a157659(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)((((i128)100 * (N*N)) - N)); } }  /* 100*n^2-n */
+static void gen_a157661(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)(((((i128)80000 * (N*N)) - ((i128)800 * N)) + (i128)1)); } }  /* 80000*n^2-800*n+1 */
+static void gen_a157664(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)(((((i128)80000 * (N*N)) + ((i128)800 * N)) + (i128)1)); } }  /* 80000*n^2+800*n+1 */
+static void gen_a157665(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)(((((i128)729 * (N*N)) - ((i128)1016 * N)) + (i128)354)); } }  /* 729*n^2-1016*n+354 */
+static void gen_a157667(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)(((((i128)531441 * (N*N)) - ((i128)740664 * N)) + (i128)258065)); } }  /* 531441*n^2-740664*n+258065 */
+static void gen_a157668(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)(((((i128)729 * (N*N)) - ((i128)442 * N)) + (i128)67)); } }  /* 729*n^2-442*n+67 */
+static void gen_a157670(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)(((((i128)531441 * (N*N)) - ((i128)322218 * N)) + (i128)48842)); } }  /* 531441*n^2-322218*n+48842 */
+static void gen_a157730(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)(((((i128)441 * (N*N)) - ((i128)488 * N)) + (i128)135)); } }  /* 441*n^2-488*n+135 */
+static void gen_a157732(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)(((((i128)388962 * (N*N)) - ((i128)430416 * N)) + (i128)119071)); } }  /* 388962*n^2-430416*n+119071 */
+static void gen_a157734(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)(((((i128)441 * (N*N)) - ((i128)394 * N)) + (i128)88)); } }  /* 441*n^2-394*n+88 */
+static void gen_a157736(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)(((((i128)388962 * (N*N)) - ((i128)347508 * N)) + (i128)77617)); } }  /* 388962*n^2-347508*n+77617 */
+static void gen_a157737(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)((((i128)441 * (N*N)) - ((i128)2 * N))); } }  /* 441*n^2-2*n */
+static void gen_a157739(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)(((((i128)388962 * (N*N)) - ((i128)1764 * N)) + (i128)1)); } }  /* 388962*n^2-1764*n+1 */
+static void gen_a157741(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)(((((i128)388962 * (N*N)) + ((i128)1764 * N)) + (i128)1)); } }  /* 388962*n^2+1764*n+1 */
+static void gen_a157757(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)(((((i128)2809 * (N*N)) - ((i128)4618 * N)) + (i128)1898)); } }  /* 2809*n^2-4618*n+1898 */
+static void gen_a157760(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)(((((i128)2809 * (N*N)) - ((i128)1000 * N)) + (i128)89)); } }  /* 2809*n^2-1000*n+89 */
+static void gen_a157768(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)(((((i128)27225 * (N*N)) - ((i128)39202 * N)) + (i128)14112)); } }  /* 27225*n^2-39202*n+14112 */
+static void gen_a157786(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)(((((i128)27225 * (N*N)) - ((i128)15248 * N)) + (i128)2135)); } }  /* 27225*n^2-15248*n+2135 */
+static void gen_a157796(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)(((((i128)27225 * (N*N)) - ((i128)12098 * N)) + (i128)1344)); } }  /* 27225*n^2-12098*n+1344 */
+static void gen_a157802(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)(((((i128)27225 * (N*N)) - ((i128)51302 * N)) + (i128)24168)); } }  /* 27225*n^2-51302*n+24168 */
+static void gen_a157814(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)((((i128)27225 * (N*N)) - ((i128)2 * N))); } }  /* 27225*n^2-2*n */
+static void gen_a157820(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)((((i128)27225 * (N*N)) + ((i128)2 * N))); } }  /* 27225*n^2+2*n */
+static void gen_a157824(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)(((((i128)3600 * (N*N)) - ((i128)6751 * N)) + (i128)3165)); } }  /* 3600*n^2-6751*n+3165 */
+static void gen_a157838(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)(((((i128)3600 * (N*N)) - ((i128)6049 * N)) + (i128)2541)); } }  /* 3600*n^2-6049*n+2541 */
+static void gen_a157842(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)(((((i128)3600 * (N*N)) - ((i128)5599 * N)) + (i128)2177)); } }  /* 3600*n^2-5599*n+2177 */
+static void gen_a157853(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)(((((i128)3600 * (N*N)) - ((i128)1601 * N)) + (i128)178)); } }  /* 3600*n^2-1601*n+178 */
+static void gen_a157857(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)((((i128)3600 * (N*N)) - N)); } }  /* 3600*n^2-n */
+static void gen_a157861(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)((((i128)3600 * (N*N)) + N)); } }  /* 3600*n^2+n */
+static void gen_a157872(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)((((i128)9 * (N*N)) - (i128)3)); } }  /* 9*n^2-3 */
+static void gen_a157888(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)((((i128)81 * (N*N)) + (i128)9)); } }  /* 81*n^2+9 */
+static void gen_a157889(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)((((i128)18 * (N*N)) + (i128)1)); } }  /* 18*n^2+1 */
+static void gen_a157909(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)((((i128)81 * (N*N)) - (i128)9)); } }  /* 81*n^2-9 */
+static void gen_a157910(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)((((i128)18 * (N*N)) - (i128)1)); } }  /* 18*n^2-1 */
+static void gen_a157912(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)((((i128)64 * (N*N)) + (i128)16)); } }  /* 64*n^2+16 */
+static void gen_a157913(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)((((i128)64 * (N*N)) - (i128)16)); } }  /* 64*n^2-16 */
+static void gen_a157914(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)((((i128)8 * (N*N)) - (i128)1)); } }  /* 8*n^2-1 */
+static void gen_a157915(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)((((i128)625 * (N*N)) + (i128)25)); } }  /* 625*n^2+25 */
+static void gen_a157916(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)((((i128)50 * (N*N)) + (i128)1)); } }  /* 50*n^2+1 */
+static void gen_a157918(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)((((i128)625 * (N*N)) - (i128)25)); } }  /* 625*n^2-25 */
+static void gen_a157919(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)((((i128)50 * (N*N)) - (i128)1)); } }  /* 50*n^2-1 */
+static void gen_a157923(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)((((i128)49 * (N*N)) - N)); } }  /* 49*n^2-n */
+static void gen_a157948(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)((((i128)64 * (N*N)) - N)); } }  /* 64*n^2-n */
+static void gen_a157953(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)((((i128)81 * (N*N)) - N)); } }  /* 81*n^2-n */
+static void gen_a157960(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)((((i128)121 * (N*N)) - N)); } }  /* 121*n^2-n */
+static void gen_a157998(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)((((i128)169 * (N*N)) - N)); } }  /* 169*n^2-n */
+static void gen_a158003(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)((((i128)196 * (N*N)) - N)); } }  /* 196*n^2-n */
+static void gen_a158010(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)((((i128)256 * (N*N)) - N)); } }  /* 256*n^2-n */
+static void gen_a158056(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)((((i128)16 * (N*N)) + ((i128)2 * N))); } }  /* 16*n^2+2*n */
+static void gen_a158058(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)((((i128)16 * (N*N)) - ((i128)2 * N))); } }  /* 16*n^2-2*n */
+static void gen_a158062(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)((((i128)36 * (N*N)) - ((i128)2 * N))); } }  /* 36*n^2-2*n */
+static void gen_a158064(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)((((i128)36 * (N*N)) + ((i128)2 * N))); } }  /* 36*n^2+2*n */
+static void gen_a158067(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)((((i128)64 * (N*N)) - ((i128)2 * N))); } }  /* 64*n^2-2*n */
+static void gen_a158070(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 0; t[i] = (u64)((((i128)64 * (N*N)) + ((i128)2 * N))); } }  /* 64*n^2+2*n */
+static void gen_a158127(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)((((i128)100 * (N*N)) + ((i128)2 * N))); } }  /* 100*n^2+2*n */
+static void gen_a158129(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 0; t[i] = (u64)((((i128)100 * (N*N)) - ((i128)2 * N))); } }  /* 100*n^2-2*n */
+static void gen_a158132(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)((((i128)144 * (N*N)) + ((i128)2 * N))); } }  /* 144*n^2+2*n */
+static void gen_a158135(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)((((i128)144 * (N*N)) - ((i128)2 * N))); } }  /* 144*n^2-2*n */
+static void gen_a158186(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 0; t[i] = (u64)(((((i128)10 * (N*N)) - ((i128)7 * N)) + (i128)1)); } }  /* 10*n^2-7*n+1 */
+static void gen_a158187(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 0; t[i] = (u64)((((i128)10 * (N*N)) + (i128)1)); } }  /* 10*n^2+1 */
+static void gen_a158218(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)((((i128)169 * (N*N)) - ((i128)2 * N))); } }  /* 169*n^2-2*n */
+static void gen_a158220(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)((((i128)169 * (N*N)) + ((i128)2 * N))); } }  /* 169*n^2+2*n */
+static void gen_a158222(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)((((i128)196 * (N*N)) + ((i128)2 * N))); } }  /* 196*n^2+2*n */
+static void gen_a158224(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)((((i128)196 * (N*N)) - ((i128)2 * N))); } }  /* 196*n^2-2*n */
+static void gen_a158226(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)((((i128)225 * (N*N)) - ((i128)2 * N))); } }  /* 225*n^2-2*n */
+static void gen_a158228(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)((((i128)225 * (N*N)) + ((i128)2 * N))); } }  /* 225*n^2+2*n */
+static void gen_a158230(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)((((i128)256 * (N*N)) + ((i128)2 * N))); } }  /* 256*n^2+2*n */
+static void gen_a158249(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)((((i128)256 * (N*N)) - ((i128)2 * N))); } }  /* 256*n^2-2*n */
+static void gen_a158252(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)((((i128)289 * (N*N)) - ((i128)2 * N))); } }  /* 289*n^2-2*n */
+static void gen_a158254(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)((((i128)289 * (N*N)) + ((i128)2 * N))); } }  /* 289*n^2+2*n */
+static void gen_a158271(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)((((i128)324 * (N*N)) + ((i128)2 * N))); } }  /* 324*n^2+2*n */
+static void gen_a158305(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)((((i128)324 * (N*N)) - ((i128)2 * N))); } }  /* 324*n^2-2*n */
+static void gen_a158307(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)((((i128)361 * (N*N)) - ((i128)2 * N))); } }  /* 361*n^2-2*n */
+static void gen_a158309(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)((((i128)361 * (N*N)) + ((i128)2 * N))); } }  /* 361*n^2+2*n */
+static void gen_a158312(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)((((i128)400 * (N*N)) + ((i128)2 * N))); } }  /* 400*n^2+2*n */
+static void gen_a158316(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)((((i128)400 * (N*N)) - ((i128)2 * N))); } }  /* 400*n^2-2*n */
+static void gen_a158321(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)((((i128)441 * (N*N)) + ((i128)2 * N))); } }  /* 441*n^2+2*n */
+static void gen_a158325(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)((((i128)484 * (N*N)) + ((i128)2 * N))); } }  /* 484*n^2+2*n */
+static void gen_a158329(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)((((i128)484 * (N*N)) - ((i128)2 * N))); } }  /* 484*n^2-2*n */
+static void gen_a158364(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)((((i128)529 * (N*N)) - ((i128)2 * N))); } }  /* 529*n^2-2*n */
+static void gen_a158367(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)((((i128)529 * (N*N)) + ((i128)2 * N))); } }  /* 529*n^2+2*n */
+static void gen_a158369(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)((((i128)576 * (N*N)) + ((i128)2 * N))); } }  /* 576*n^2+2*n */
+static void gen_a158371(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)((((i128)576 * (N*N)) - ((i128)2 * N))); } }  /* 576*n^2-2*n */
+static void gen_a158373(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)((((i128)625 * (N*N)) - ((i128)2 * N))); } }  /* 625*n^2-2*n */
+static void gen_a158382(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)((((i128)625 * (N*N)) + ((i128)2 * N))); } }  /* 625*n^2+2*n */
+static void gen_a158385(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)((((i128)676 * (N*N)) + ((i128)2 * N))); } }  /* 676*n^2+2*n */
+static void gen_a158392(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)((((i128)676 * (N*N)) - ((i128)2 * N))); } }  /* 676*n^2-2*n */
+static void gen_a158394(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)((((i128)729 * (N*N)) - ((i128)2 * N))); } }  /* 729*n^2-2*n */
+static void gen_a158396(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)((((i128)729 * (N*N)) + ((i128)2 * N))); } }  /* 729*n^2+2*n */
+static void gen_a158398(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)((((i128)784 * (N*N)) - ((i128)2 * N))); } }  /* 784*n^2-2*n */
+static void gen_a158401(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)((((i128)841 * (N*N)) - ((i128)2 * N))); } }  /* 841*n^2-2*n */
+static void gen_a158403(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)((((i128)841 * (N*N)) + ((i128)2 * N))); } }  /* 841*n^2+2*n */
+static void gen_a158406(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)((((i128)900 * (N*N)) + ((i128)2 * N))); } }  /* 900*n^2+2*n */
+static void gen_a158408(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)((((i128)900 * (N*N)) - ((i128)2 * N))); } }  /* 900*n^2-2*n */
+static void gen_a158410(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)((((i128)961 * (N*N)) - ((i128)2 * N))); } }  /* 961*n^2-2*n */
+static void gen_a158413(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)((((i128)961 * (N*N)) + ((i128)2 * N))); } }  /* 961*n^2+2*n */
+static void gen_a158420(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)((((i128)1024 * (N*N)) - ((i128)2 * N))); } }  /* 1024*n^2-2*n */
+static void gen_a158443(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)((((i128)16 * (N*N)) - (i128)4)); } }  /* 16*n^2-4 */
+static void gen_a158444(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)((((i128)16 * (N*N)) + (i128)4)); } }  /* 16*n^2+4 */
+static void gen_a158445(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)((((i128)25 * (N*N)) + (i128)5)); } }  /* 25*n^2+5 */
+static void gen_a158446(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)((((i128)25 * (N*N)) - (i128)5)); } }  /* 25*n^2-5 */
+static void gen_a158447(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)((((i128)10 * (N*N)) - (i128)1)); } }  /* 10*n^2-1 */
+static void gen_a158462(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)((((i128)36 * (N*N)) - (i128)6)); } }  /* 36*n^2-6 */
+static void gen_a158479(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)((((i128)36 * (N*N)) + (i128)6)); } }  /* 36*n^2+6 */
+static void gen_a158480(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 0; t[i] = (u64)((((i128)12 * (N*N)) + (i128)1)); } }  /* 12*n^2+1 */
+static void gen_a158481(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)((((i128)49 * (N*N)) + (i128)7)); } }  /* 49*n^2+7 */
+static void gen_a158482(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)((((i128)14 * (N*N)) + (i128)1)); } }  /* 14*n^2+1 */
+static void gen_a158484(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)((((i128)49 * (N*N)) - (i128)7)); } }  /* 49*n^2-7 */
+static void gen_a158485(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)((((i128)14 * (N*N)) - (i128)1)); } }  /* 14*n^2-1 */
+static void gen_a158487(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)((((i128)64 * (N*N)) - (i128)8)); } }  /* 64*n^2-8 */
+static void gen_a158488(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)((((i128)64 * (N*N)) + (i128)8)); } }  /* 64*n^2+8 */
+static void gen_a158490(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)((((i128)100 * (N*N)) - (i128)10)); } }  /* 100*n^2-10 */
+static void gen_a158491(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)((((i128)20 * (N*N)) - (i128)1)); } }  /* 20*n^2-1 */
+static void gen_a158492(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 0; t[i] = (u64)((((i128)100 * (N*N)) + (i128)10)); } }  /* 100*n^2+10 */
+static void gen_a158493(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 0; t[i] = (u64)((((i128)20 * (N*N)) + (i128)1)); } }  /* 20*n^2+1 */
+static void gen_a158536(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 0; t[i] = (u64)((((i128)121 * (N*N)) + (i128)11)); } }  /* 121*n^2+11 */
+static void gen_a158537(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 0; t[i] = (u64)((((i128)22 * (N*N)) + (i128)1)); } }  /* 22*n^2+1 */
+static void gen_a158539(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)((((i128)121 * (N*N)) - (i128)11)); } }  /* 121*n^2-11 */
+static void gen_a158540(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)((((i128)22 * (N*N)) - (i128)1)); } }  /* 22*n^2-1 */
+static void gen_a158543(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)((((i128)144 * (N*N)) - (i128)12)); } }  /* 144*n^2-12 */
+static void gen_a158544(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)((((i128)24 * (N*N)) - (i128)1)); } }  /* 24*n^2-1 */
+static void gen_a158546(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 0; t[i] = (u64)((((i128)144 * (N*N)) + (i128)12)); } }  /* 144*n^2+12 */
+static void gen_a158547(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 0; t[i] = (u64)((((i128)24 * (N*N)) + (i128)1)); } }  /* 24*n^2+1 */
+static void gen_a158548(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 0; t[i] = (u64)((((i128)169 * (N*N)) + (i128)13)); } }  /* 169*n^2+13 */
+static void gen_a158549(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 0; t[i] = (u64)((((i128)26 * (N*N)) + (i128)1)); } }  /* 26*n^2+1 */
+static void gen_a158550(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)((((i128)169 * (N*N)) - (i128)13)); } }  /* 169*n^2-13 */
+static void gen_a158551(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)((((i128)26 * (N*N)) - (i128)1)); } }  /* 26*n^2-1 */
+static void gen_a158553(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)((((i128)196 * (N*N)) - (i128)14)); } }  /* 196*n^2-14 */
+static void gen_a158554(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)((((i128)28 * (N*N)) - (i128)1)); } }  /* 28*n^2-1 */
+static void gen_a158555(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 0; t[i] = (u64)((((i128)196 * (N*N)) + (i128)14)); } }  /* 196*n^2+14 */
+static void gen_a158556(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 0; t[i] = (u64)((((i128)28 * (N*N)) + (i128)1)); } }  /* 28*n^2+1 */
+static void gen_a158557(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 0; t[i] = (u64)((((i128)225 * (N*N)) + (i128)15)); } }  /* 225*n^2+15 */
+static void gen_a158558(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 0; t[i] = (u64)((((i128)30 * (N*N)) + (i128)1)); } }  /* 30*n^2+1 */
+static void gen_a158559(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)((((i128)225 * (N*N)) - (i128)15)); } }  /* 225*n^2-15 */
+static void gen_a158560(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)((((i128)30 * (N*N)) - (i128)1)); } }  /* 30*n^2-1 */
+static void gen_a158562(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)((((i128)256 * (N*N)) - (i128)16)); } }  /* 256*n^2-16 */
+static void gen_a158563(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)((((i128)32 * (N*N)) - (i128)1)); } }  /* 32*n^2-1 */
+static void gen_a158574(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 0; t[i] = (u64)((((i128)256 * (N*N)) + (i128)16)); } }  /* 256*n^2+16 */
+static void gen_a158575(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 0; t[i] = (u64)((((i128)32 * (N*N)) + (i128)1)); } }  /* 32*n^2+1 */
+static void gen_a158585(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 0; t[i] = (u64)((((i128)289 * (N*N)) + (i128)17)); } }  /* 289*n^2+17 */
+static void gen_a158586(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 0; t[i] = (u64)((((i128)34 * (N*N)) + (i128)1)); } }  /* 34*n^2+1 */
+static void gen_a158587(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)((((i128)289 * (N*N)) - (i128)17)); } }  /* 289*n^2-17 */
+static void gen_a158588(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)((((i128)34 * (N*N)) - (i128)1)); } }  /* 34*n^2-1 */
+static void gen_a158589(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)((((i128)324 * (N*N)) - (i128)18)); } }  /* 324*n^2-18 */
+static void gen_a158590(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 0; t[i] = (u64)((((i128)324 * (N*N)) + (i128)18)); } }  /* 324*n^2+18 */
+static void gen_a158591(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 0; t[i] = (u64)((((i128)36 * (N*N)) + (i128)1)); } }  /* 36*n^2+1 */
+static void gen_a158592(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 0; t[i] = (u64)((((i128)361 * (N*N)) + (i128)19)); } }  /* 361*n^2+19 */
+static void gen_a158593(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 0; t[i] = (u64)((((i128)38 * (N*N)) + (i128)1)); } }  /* 38*n^2+1 */
+static void gen_a158595(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)((((i128)361 * (N*N)) - (i128)19)); } }  /* 361*n^2-19 */
+static void gen_a158596(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)((((i128)38 * (N*N)) - (i128)1)); } }  /* 38*n^2-1 */
+static void gen_a158597(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)((((i128)400 * (N*N)) - (i128)20)); } }  /* 400*n^2-20 */
+static void gen_a158598(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)((((i128)40 * (N*N)) - (i128)1)); } }  /* 40*n^2-1 */
+static void gen_a158601(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 0; t[i] = (u64)((((i128)400 * (N*N)) + (i128)20)); } }  /* 400*n^2+20 */
+static void gen_a158602(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 0; t[i] = (u64)((((i128)40 * (N*N)) + (i128)1)); } }  /* 40*n^2+1 */
+static void gen_a158603(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 0; t[i] = (u64)((((i128)441 * (N*N)) + (i128)21)); } }  /* 441*n^2+21 */
+static void gen_a158604(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 0; t[i] = (u64)((((i128)42 * (N*N)) + (i128)1)); } }  /* 42*n^2+1 */
+static void gen_a158626(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)((((i128)42 * (N*N)) - (i128)1)); } }  /* 42*n^2-1 */
+static void gen_a158627(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)((((i128)484 * (N*N)) - (i128)22)); } }  /* 484*n^2-22 */
+static void gen_a158628(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)((((i128)44 * (N*N)) - (i128)1)); } }  /* 44*n^2-1 */
+static void gen_a158629(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 0; t[i] = (u64)((((i128)484 * (N*N)) + (i128)22)); } }  /* 484*n^2+22 */
+static void gen_a158630(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 0; t[i] = (u64)((((i128)44 * (N*N)) + (i128)1)); } }  /* 44*n^2+1 */
+static void gen_a158631(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 0; t[i] = (u64)((((i128)529 * (N*N)) + (i128)23)); } }  /* 529*n^2+23 */
+static void gen_a158632(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 0; t[i] = (u64)((((i128)46 * (N*N)) + (i128)1)); } }  /* 46*n^2+1 */
+static void gen_a158633(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)((((i128)529 * (N*N)) - (i128)23)); } }  /* 529*n^2-23 */
+static void gen_a158634(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)((((i128)46 * (N*N)) - (i128)1)); } }  /* 46*n^2-1 */
+static void gen_a158636(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)((((i128)576 * (N*N)) - (i128)24)); } }  /* 576*n^2-24 */
+static void gen_a158637(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 0; t[i] = (u64)((((i128)576 * (N*N)) + (i128)24)); } }  /* 576*n^2+24 */
+static void gen_a158638(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 0; t[i] = (u64)((((i128)48 * (N*N)) + (i128)1)); } }  /* 48*n^2+1 */
+static void gen_a158639(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)((((i128)676 * (N*N)) - (i128)26)); } }  /* 676*n^2-26 */
+static void gen_a158640(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)((((i128)52 * (N*N)) - (i128)1)); } }  /* 52*n^2-1 */
+static void gen_a158643(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 0; t[i] = (u64)((((i128)676 * (N*N)) + (i128)26)); } }  /* 676*n^2+26 */
+static void gen_a158644(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 0; t[i] = (u64)((((i128)52 * (N*N)) + (i128)1)); } }  /* 52*n^2+1 */
+static void gen_a158645(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 0; t[i] = (u64)((((i128)729 * (N*N)) + (i128)27)); } }  /* 729*n^2+27 */
+static void gen_a158646(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 0; t[i] = (u64)((((i128)54 * (N*N)) + (i128)1)); } }  /* 54*n^2+1 */
+static void gen_a158655(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)((((i128)729 * (N*N)) - (i128)27)); } }  /* 729*n^2-27 */
+static void gen_a158656(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)((((i128)54 * (N*N)) - (i128)1)); } }  /* 54*n^2-1 */
+static void gen_a158657(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)((((i128)784 * (N*N)) - (i128)28)); } }  /* 784*n^2-28 */
+static void gen_a158658(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)((((i128)56 * (N*N)) - (i128)1)); } }  /* 56*n^2-1 */
+static void gen_a158659(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 0; t[i] = (u64)((((i128)784 * (N*N)) + (i128)28)); } }  /* 784*n^2+28 */
+static void gen_a158660(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 0; t[i] = (u64)((((i128)56 * (N*N)) + (i128)1)); } }  /* 56*n^2+1 */
+static void gen_a158665(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 0; t[i] = (u64)((((i128)841 * (N*N)) + (i128)29)); } }  /* 841*n^2+29 */
+static void gen_a158666(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 0; t[i] = (u64)((((i128)58 * (N*N)) + (i128)1)); } }  /* 58*n^2+1 */
+static void gen_a158667(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)((((i128)841 * (N*N)) - (i128)29)); } }  /* 841*n^2-29 */
+static void gen_a158668(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)((((i128)58 * (N*N)) - (i128)1)); } }  /* 58*n^2-1 */
+static void gen_a158669(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)((((i128)900 * (N*N)) - (i128)30)); } }  /* 900*n^2-30 */
+static void gen_a158670(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)((((i128)60 * (N*N)) - (i128)1)); } }  /* 60*n^2-1 */
+static void gen_a158672(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 0; t[i] = (u64)((((i128)900 * (N*N)) + (i128)30)); } }  /* 900*n^2+30 */
+static void gen_a158673(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 0; t[i] = (u64)((((i128)60 * (N*N)) + (i128)1)); } }  /* 60*n^2+1 */
+static void gen_a158675(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 0; t[i] = (u64)((((i128)961 * (N*N)) + (i128)31)); } }  /* 961*n^2+31 */
+static void gen_a158676(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 0; t[i] = (u64)((((i128)62 * (N*N)) + (i128)1)); } }  /* 62*n^2+1 */
+static void gen_a158679(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)((((i128)961 * (N*N)) - (i128)31)); } }  /* 961*n^2-31 */
+static void gen_a158680(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)((((i128)62 * (N*N)) - (i128)1)); } }  /* 62*n^2-1 */
+static void gen_a158683(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)((((i128)1024 * (N*N)) - (i128)32)); } }  /* 1024*n^2-32 */
+static void gen_a158684(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { i128 N = (i128)i + 1; t[i] = (u64)((((i128)64 * (N*N)) - (i128)1)); } }  /* 64*n^2-1 */
+static void gen_a047292(u64 *t, long cnt) { gen_res(t, cnt, 7, 84ULL, 2); }
+static void gen_a047293(u64 *t, long cnt) { gen_res(t, cnt, 7, 85ULL, 0); }
+static void gen_a047294(u64 *t, long cnt) { gen_res(t, cnt, 7, 86ULL, 1); }
+static void gen_a047295(u64 *t, long cnt) { gen_res(t, cnt, 7, 87ULL, 0); }
+static void gen_a047296(u64 *t, long cnt) { gen_res(t, cnt, 7, 88ULL, 3); }
+static void gen_a047297(u64 *t, long cnt) { gen_res(t, cnt, 7, 89ULL, 0); }
+static void gen_a047298(u64 *t, long cnt) { gen_res(t, cnt, 7, 90ULL, 1); }
+static void gen_a047299(u64 *t, long cnt) { gen_res(t, cnt, 7, 91ULL, 0); }
+static void gen_a047300(u64 *t, long cnt) { gen_res(t, cnt, 7, 92ULL, 2); }
+static void gen_a047301(u64 *t, long cnt) { gen_res(t, cnt, 7, 93ULL, 0); }
+static void gen_a047302(u64 *t, long cnt) { gen_res(t, cnt, 7, 94ULL, 1); }
+static void gen_a047303(u64 *t, long cnt) { gen_res(t, cnt, 7, 95ULL, 0); }
+static void gen_a047305(u64 *t, long cnt) { gen_res(t, cnt, 7, 124ULL, 2); }
+static void gen_a047306(u64 *t, long cnt) { gen_res(t, cnt, 7, 125ULL, 0); }
+static void gen_a047411(u64 *t, long cnt) { gen_res(t, cnt, 8, 86ULL, 1); }
+static void gen_a047412(u64 *t, long cnt) { gen_res(t, cnt, 8, 87ULL, 0); }
+static void gen_a047413(u64 *t, long cnt) { gen_res(t, cnt, 8, 88ULL, 3); }
+static void gen_a047414(u64 *t, long cnt) { gen_res(t, cnt, 8, 89ULL, 0); }
+static void gen_a047415(u64 *t, long cnt) { gen_res(t, cnt, 8, 90ULL, 1); }
+static void gen_a047416(u64 *t, long cnt) { gen_res(t, cnt, 8, 91ULL, 0); }
+static void gen_a047417(u64 *t, long cnt) { gen_res(t, cnt, 8, 92ULL, 2); }
+static void gen_a047418(u64 *t, long cnt) { gen_res(t, cnt, 8, 93ULL, 0); }
+static void gen_a047419(u64 *t, long cnt) { gen_res(t, cnt, 8, 94ULL, 1); }
+static void gen_a047420(u64 *t, long cnt) { gen_res(t, cnt, 8, 95ULL, 0); }
+static void gen_a047422(u64 *t, long cnt) { gen_res(t, cnt, 8, 126ULL, 1); }
+static void gen_a047423(u64 *t, long cnt) { gen_res(t, cnt, 8, 124ULL, 2); }
+static void gen_a047424(u64 *t, long cnt) { gen_res(t, cnt, 8, 125ULL, 0); }
+static void gen_a047425(u64 *t, long cnt) { gen_res(t, cnt, 8, 120ULL, 3); }
+static void gen_a190719(u64 *t, long cnt) { gen_res(t, cnt, 12, 2475ULL, 0); }
+static void gen_a190785(u64 *t, long cnt) { gen_res(t, cnt, 12, 2733ULL, 0); }
+static void gen_a191275(u64 *t, long cnt) { gen_res(t, cnt, 12, 2731ULL, 0); }
+static void gen_a218155(u64 *t, long cnt) { gen_res(t, cnt, 12, 2124ULL, 2); }
+static void gen_a228137(u64 *t, long cnt) { gen_res(t, cnt, 12, 18ULL, 1); }
+static void gen_a272975(u64 *t, long cnt) { gen_res(t, cnt, 12, 129ULL, 0); }
+static void gen_a305859(u64 *t, long cnt) { gen_res(t, cnt, 12, 2058ULL, 1); }
+static void gen_a319279(u64 *t, long cnt) { gen_res(t, cnt, 12, 1161ULL, 0); }
+static void gen_a319280(u64 *t, long cnt) { gen_res(t, cnt, 12, 2193ULL, 0); }
+static void gen_a319452(u64 *t, long cnt) { gen_res(t, cnt, 12, 1097ULL, 0); }
+static void gen_a141924(u64 *t, long cnt) { gen_pres(t, cnt, 23, 1048576ULL); }
+static void gen_a141925(u64 *t, long cnt) { gen_pres(t, cnt, 23, 2097152ULL); }
+static void gen_a141926(u64 *t, long cnt) { gen_pres(t, cnt, 23, 4194304ULL); }
+static void gen_a141943(u64 *t, long cnt) { gen_pres(t, cnt, 25, 2097152ULL); }
+static void gen_a141944(u64 *t, long cnt) { gen_pres(t, cnt, 25, 4194304ULL); }
+static void gen_a141945(u64 *t, long cnt) { gen_pres(t, cnt, 25, 8388608ULL); }
+static void gen_a141946(u64 *t, long cnt) { gen_pres(t, cnt, 25, 16777216ULL); }
+static void gen_a141960(u64 *t, long cnt) { gen_pres(t, cnt, 27, 524288ULL); }
+static void gen_a141961(u64 *t, long cnt) { gen_pres(t, cnt, 27, 1048576ULL); }
+static void gen_a141962(u64 *t, long cnt) { gen_pres(t, cnt, 27, 4194304ULL); }
+static void gen_a141963(u64 *t, long cnt) { gen_pres(t, cnt, 27, 8388608ULL); }
+static void gen_a141964(u64 *t, long cnt) { gen_pres(t, cnt, 27, 33554432ULL); }
+static void gen_a141965(u64 *t, long cnt) { gen_pres(t, cnt, 27, 67108864ULL); }
+static void gen_a141989(u64 *t, long cnt) { gen_pres(t, cnt, 29, 8192ULL); }
+static void gen_a141990(u64 *t, long cnt) { gen_pres(t, cnt, 29, 16384ULL); }
+static void gen_a141991(u64 *t, long cnt) { gen_pres(t, cnt, 29, 32768ULL); }
+static void gen_a141992(u64 *t, long cnt) { gen_pres(t, cnt, 29, 65536ULL); }
+static void gen_a141993(u64 *t, long cnt) { gen_pres(t, cnt, 29, 131072ULL); }
+static void gen_a141994(u64 *t, long cnt) { gen_pres(t, cnt, 29, 262144ULL); }
+static void gen_a141995(u64 *t, long cnt) { gen_pres(t, cnt, 29, 524288ULL); }
+static void gen_a141996(u64 *t, long cnt) { gen_pres(t, cnt, 29, 1048576ULL); }
+static void gen_a141997(u64 *t, long cnt) { gen_pres(t, cnt, 29, 2097152ULL); }
+static void gen_a141998(u64 *t, long cnt) { gen_pres(t, cnt, 29, 4194304ULL); }
+static void gen_a141999(u64 *t, long cnt) { gen_pres(t, cnt, 29, 8388608ULL); }
+static void gen_a142000(u64 *t, long cnt) { gen_pres(t, cnt, 29, 16777216ULL); }
+static void gen_a142017(u64 *t, long cnt) { gen_pres(t, cnt, 31, 8192ULL); }
+static void gen_a142018(u64 *t, long cnt) { gen_pres(t, cnt, 31, 16384ULL); }
+static void gen_a142019(u64 *t, long cnt) { gen_pres(t, cnt, 31, 32768ULL); }
+static void gen_a142020(u64 *t, long cnt) { gen_pres(t, cnt, 31, 65536ULL); }
+static void gen_a142021(u64 *t, long cnt) { gen_pres(t, cnt, 31, 131072ULL); }
+static void gen_a142022(u64 *t, long cnt) { gen_pres(t, cnt, 31, 262144ULL); }
+static void gen_a142023(u64 *t, long cnt) { gen_pres(t, cnt, 31, 524288ULL); }
+static void gen_a142024(u64 *t, long cnt) { gen_pres(t, cnt, 31, 1048576ULL); }
+static void gen_a142025(u64 *t, long cnt) { gen_pres(t, cnt, 31, 2097152ULL); }
+static void gen_a142026(u64 *t, long cnt) { gen_pres(t, cnt, 31, 4194304ULL); }
+static void gen_a142027(u64 *t, long cnt) { gen_pres(t, cnt, 31, 8388608ULL); }
+static void gen_a142028(u64 *t, long cnt) { gen_pres(t, cnt, 31, 16777216ULL); }
+static void gen_a142047(u64 *t, long cnt) { gen_pres(t, cnt, 32, 536870912ULL); }
+static void gen_a142061(u64 *t, long cnt) { gen_pres(t, cnt, 33, 1048576ULL); }
+static void gen_a142062(u64 *t, long cnt) { gen_pres(t, cnt, 33, 8388608ULL); }
+static void gen_a142063(u64 *t, long cnt) { gen_pres(t, cnt, 33, 33554432ULL); }
+static void gen_a142064(u64 *t, long cnt) { gen_pres(t, cnt, 33, 67108864ULL); }
+static void gen_a142065(u64 *t, long cnt) { gen_pres(t, cnt, 33, 268435456ULL); }
+static void gen_a142066(u64 *t, long cnt) { gen_pres(t, cnt, 33, 536870912ULL); }
+static void gen_a142067(u64 *t, long cnt) { gen_pres(t, cnt, 33, 2147483648ULL); }
+static void gen_a142068(u64 *t, long cnt) { gen_pres(t, cnt, 33, 4294967296ULL); }
+static void gen_a142088(u64 *t, long cnt) { gen_pres(t, cnt, 35, 262144ULL); }
+static void gen_a142089(u64 *t, long cnt) { gen_pres(t, cnt, 35, 524288ULL); }
+static void gen_a142090(u64 *t, long cnt) { gen_pres(t, cnt, 35, 4194304ULL); }
+static void gen_a142091(u64 *t, long cnt) { gen_pres(t, cnt, 35, 8388608ULL); }
+static void gen_a142092(u64 *t, long cnt) { gen_pres(t, cnt, 35, 16777216ULL); }
+static void gen_a142093(u64 *t, long cnt) { gen_pres(t, cnt, 35, 67108864ULL); }
+static void gen_a142094(u64 *t, long cnt) { gen_pres(t, cnt, 35, 134217728ULL); }
+static void gen_a142095(u64 *t, long cnt) { gen_pres(t, cnt, 35, 536870912ULL); }
+static void gen_a142096(u64 *t, long cnt) { gen_pres(t, cnt, 35, 2147483648ULL); }
+static void gen_a142097(u64 *t, long cnt) { gen_pres(t, cnt, 35, 4294967296ULL); }
+static void gen_a142098(u64 *t, long cnt) { gen_pres(t, cnt, 35, 8589934592ULL); }
+static void gen_a142099(u64 *t, long cnt) { gen_pres(t, cnt, 35, 17179869184ULL); }
+static void gen_a142127(u64 *t, long cnt) { gen_pres(t, cnt, 37, 262144ULL); }
+static void gen_a142131(u64 *t, long cnt) { gen_pres(t, cnt, 37, 4194304ULL); }
+static void gen_a142133(u64 *t, long cnt) { gen_pres(t, cnt, 37, 16777216ULL); }
+static void gen_a142171(u64 *t, long cnt) { gen_pres(t, cnt, 39, 1048576ULL); }
+static void gen_a142172(u64 *t, long cnt) { gen_pres(t, cnt, 39, 4194304ULL); }
+static void gen_a142173(u64 *t, long cnt) { gen_pres(t, cnt, 39, 8388608ULL); }
+static void gen_a142174(u64 *t, long cnt) { gen_pres(t, cnt, 39, 33554432ULL); }
+static void gen_a142176(u64 *t, long cnt) { gen_pres(t, cnt, 39, 536870912ULL); }
+static void gen_a142177(u64 *t, long cnt) { gen_pres(t, cnt, 39, 2147483648ULL); }
+static void gen_a142178(u64 *t, long cnt) { gen_pres(t, cnt, 39, 4294967296ULL); }
+static void gen_a142179(u64 *t, long cnt) { gen_pres(t, cnt, 39, 17179869184ULL); }
+static void gen_a142180(u64 *t, long cnt) { gen_pres(t, cnt, 39, 34359738368ULL); }
+static void gen_a142181(u64 *t, long cnt) { gen_pres(t, cnt, 39, 137438953472ULL); }
+static void gen_a142182(u64 *t, long cnt) { gen_pres(t, cnt, 39, 274877906944ULL); }
+static void gen_a142195(u64 *t, long cnt) { gen_pres(t, cnt, 40, 2147483648ULL); }
+static void gen_a142196(u64 *t, long cnt) { gen_pres(t, cnt, 40, 8589934592ULL); }
+static void gen_a142197(u64 *t, long cnt) { gen_pres(t, cnt, 40, 137438953472ULL); }
+static void gen_a142198(u64 *t, long cnt) { gen_pres(t, cnt, 40, 549755813888ULL); }
+static void gen_a142299(u64 *t, long cnt) { gen_pres(t, cnt, 44, 131072ULL); }
+static void gen_a142300(u64 *t, long cnt) { gen_pres(t, cnt, 44, 524288ULL); }
+static void gen_a142301(u64 *t, long cnt) { gen_pres(t, cnt, 44, 2097152ULL); }
+static void gen_a142302(u64 *t, long cnt) { gen_pres(t, cnt, 44, 8388608ULL); }
+static void gen_a142303(u64 *t, long cnt) { gen_pres(t, cnt, 44, 33554432ULL); }
+static void gen_a142304(u64 *t, long cnt) { gen_pres(t, cnt, 44, 134217728ULL); }
+static void gen_a142305(u64 *t, long cnt) { gen_pres(t, cnt, 44, 536870912ULL); }
+static void gen_a142306(u64 *t, long cnt) { gen_pres(t, cnt, 44, 2147483648ULL); }
+static void gen_a142307(u64 *t, long cnt) { gen_pres(t, cnt, 44, 34359738368ULL); }
+static void gen_a142308(u64 *t, long cnt) { gen_pres(t, cnt, 44, 137438953472ULL); }
+static void gen_a142309(u64 *t, long cnt) { gen_pres(t, cnt, 44, 549755813888ULL); }
+static void gen_a142310(u64 *t, long cnt) { gen_pres(t, cnt, 44, 2199023255552ULL); }
+static void gen_a142312(u64 *t, long cnt) { gen_pres(t, cnt, 45, 2ULL); }
+static void gen_a142313(u64 *t, long cnt) { gen_pres(t, cnt, 45, 4ULL); }
+static void gen_a142314(u64 *t, long cnt) { gen_pres(t, cnt, 45, 16ULL); }
+static void gen_a142315(u64 *t, long cnt) { gen_pres(t, cnt, 45, 128ULL); }
+static void gen_a142316(u64 *t, long cnt) { gen_pres(t, cnt, 45, 256ULL); }
+static void gen_a142317(u64 *t, long cnt) { gen_pres(t, cnt, 45, 2048ULL); }
+static void gen_a142318(u64 *t, long cnt) { gen_pres(t, cnt, 45, 8192ULL); }
+static void gen_a142319(u64 *t, long cnt) { gen_pres(t, cnt, 45, 16384ULL); }
+static void gen_a142320(u64 *t, long cnt) { gen_pres(t, cnt, 45, 65536ULL); }
+static void gen_a142321(u64 *t, long cnt) { gen_pres(t, cnt, 45, 131072ULL); }
+static void gen_a142322(u64 *t, long cnt) { gen_pres(t, cnt, 45, 524288ULL); }
+static void gen_a142323(u64 *t, long cnt) { gen_pres(t, cnt, 45, 4194304ULL); }
+static void gen_a142398(u64 *t, long cnt) { gen_pres(t, cnt, 48, 2ULL); }
+static void gen_a142399(u64 *t, long cnt) { gen_pres(t, cnt, 48, 32ULL); }
+static void gen_a142400(u64 *t, long cnt) { gen_pres(t, cnt, 48, 128ULL); }
+static void gen_a142401(u64 *t, long cnt) { gen_pres(t, cnt, 48, 2048ULL); }
+static void gen_a142402(u64 *t, long cnt) { gen_pres(t, cnt, 48, 8192ULL); }
+static void gen_a142403(u64 *t, long cnt) { gen_pres(t, cnt, 48, 131072ULL); }
+static void gen_a142404(u64 *t, long cnt) { gen_pres(t, cnt, 48, 524288ULL); }
+static void gen_a142405(u64 *t, long cnt) { gen_pres(t, cnt, 48, 8388608ULL); }
+static void gen_a142406(u64 *t, long cnt) { gen_pres(t, cnt, 48, 33554432ULL); }
+static void gen_a142407(u64 *t, long cnt) { gen_pres(t, cnt, 48, 536870912ULL); }
+static void gen_a142408(u64 *t, long cnt) { gen_pres(t, cnt, 48, 2147483648ULL); }
+static void gen_a142409(u64 *t, long cnt) { gen_pres(t, cnt, 48, 34359738368ULL); }
+static void gen_a142414(u64 *t, long cnt) { gen_pres(t, cnt, 49, 2ULL); }
+static void gen_a142415(u64 *t, long cnt) { gen_pres(t, cnt, 49, 4ULL); }
+static void gen_a142416(u64 *t, long cnt) { gen_pres(t, cnt, 49, 8ULL); }
+static void gen_a142417(u64 *t, long cnt) { gen_pres(t, cnt, 49, 16ULL); }
+static void gen_a142418(u64 *t, long cnt) { gen_pres(t, cnt, 49, 32ULL); }
+static void gen_a142419(u64 *t, long cnt) { gen_pres(t, cnt, 49, 64ULL); }
+static void gen_a142420(u64 *t, long cnt) { gen_pres(t, cnt, 49, 256ULL); }
+static void gen_a142421(u64 *t, long cnt) { gen_pres(t, cnt, 49, 512ULL); }
+static void gen_a142422(u64 *t, long cnt) { gen_pres(t, cnt, 49, 1024ULL); }
+static void gen_a142423(u64 *t, long cnt) { gen_pres(t, cnt, 49, 2048ULL); }
+static void gen_a142424(u64 *t, long cnt) { gen_pres(t, cnt, 49, 4096ULL); }
+static void gen_a142425(u64 *t, long cnt) { gen_pres(t, cnt, 49, 8192ULL); }
+static void gen_a142476(u64 *t, long cnt) { gen_pres(t, cnt, 51, 2ULL); }
+static void gen_a142477(u64 *t, long cnt) { gen_pres(t, cnt, 51, 4ULL); }
+static void gen_a142478(u64 *t, long cnt) { gen_pres(t, cnt, 51, 16ULL); }
+static void gen_a142479(u64 *t, long cnt) { gen_pres(t, cnt, 51, 32ULL); }
+static void gen_a142480(u64 *t, long cnt) { gen_pres(t, cnt, 51, 128ULL); }
+static void gen_a142481(u64 *t, long cnt) { gen_pres(t, cnt, 51, 256ULL); }
+static void gen_a142482(u64 *t, long cnt) { gen_pres(t, cnt, 51, 1024ULL); }
+static void gen_a142483(u64 *t, long cnt) { gen_pres(t, cnt, 51, 2048ULL); }
+static void gen_a142484(u64 *t, long cnt) { gen_pres(t, cnt, 51, 8192ULL); }
+static void gen_a142485(u64 *t, long cnt) { gen_pres(t, cnt, 51, 16384ULL); }
+static void gen_a142486(u64 *t, long cnt) { gen_pres(t, cnt, 51, 65536ULL); }
+static void gen_a142487(u64 *t, long cnt) { gen_pres(t, cnt, 51, 524288ULL); }
+static void gen_a142508(u64 *t, long cnt) { gen_pres(t, cnt, 52, 2ULL); }
+static void gen_a142509(u64 *t, long cnt) { gen_pres(t, cnt, 52, 8ULL); }
+static void gen_a142510(u64 *t, long cnt) { gen_pres(t, cnt, 52, 32ULL); }
+static void gen_a142511(u64 *t, long cnt) { gen_pres(t, cnt, 52, 128ULL); }
+static void gen_a142512(u64 *t, long cnt) { gen_pres(t, cnt, 52, 512ULL); }
+static void gen_a142513(u64 *t, long cnt) { gen_pres(t, cnt, 52, 2048ULL); }
+static void gen_a142514(u64 *t, long cnt) { gen_pres(t, cnt, 52, 32768ULL); }
+static void gen_a142515(u64 *t, long cnt) { gen_pres(t, cnt, 52, 131072ULL); }
+static void gen_a142516(u64 *t, long cnt) { gen_pres(t, cnt, 52, 524288ULL); }
+static void gen_a142517(u64 *t, long cnt) { gen_pres(t, cnt, 52, 2097152ULL); }
+static void gen_a142518(u64 *t, long cnt) { gen_pres(t, cnt, 52, 8388608ULL); }
+static void gen_a142519(u64 *t, long cnt) { gen_pres(t, cnt, 52, 33554432ULL); }
 
 /* ------------------------------------------------------------------ */
 /* catalogue                                                           */
@@ -16574,6 +17083,1506 @@ static SeqDef defs[] = {
 { "a279607", "A279607", "Beatty sequence for e/2; i.e., a(n) = floor(n*e/2)", "Beatty",
   "The gaps are 1 and 2; the level share is 11.17 %; L = 1 holds 84 % of the level class.",
   100000, 1, gen_o279607 },
+{ "a027604", "A027604", "a(n) = n^3 + (n+1)^3 + (n+2)^3 + (n+3)^3 + (n+4)^3", "polynomial",
+  "Every gap is different, from 125 to 150,004,500,065; every decomposable term is forced level (l <= d^2).",
+  100000, 0, gen_a027604 },
+{ "a063492", "A063492", "a(n) = (2*n - 1)*(11*n^2 - 11*n + 6)/6", "polynomial",
+  "Every gap is different, from 13 to 110,000,000,002; every decomposable term is forced level (l <= d^2); 7 terms do not decompose.",
+  100000, 1, gen_a063492 },
+{ "a063493", "A063493", "a(n) = (2*n-1)*(13*n^2-13*n+6)/6", "polynomial",
+  "Every gap is different, from 15 to 130,000,000,002; every decomposable term is forced level (l <= d^2); 7 terms do not decompose.",
+  100000, 1, gen_a063493 },
+{ "a063495", "A063495", "a(n) = (2*n-1)*(5*n^2-5*n+2)/2", "polynomial",
+  "Every gap is different, from 17 to 150,000,000,002; every decomposable term is forced level (l <= d^2); 7 terms do not decompose.",
+  100000, 1, gen_a063495 },
+{ "a069072", "A069072", "a(n) = (2n+1)*(2n+2)*(2n+3)", "polynomial",
+  "Every gap is different, from 54 to 240,002,400,006; every decomposable term is forced level (l <= d^2); 6 terms do not decompose.",
+  100000, 0, gen_a069072 },
+{ "a130862", "A130862", "a(n) = (n-1)*(n+2)*(2*n+11)/2", "polynomial",
+  "Every gap is different, from 30 to 30,001,600,011; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a130862 },
+{ "a130884", "A130884", "a(n) = 3n^3 + 2n^2 + n + 1", "polynomial",
+  "Every gap is different, from 6 to 89,999,500,002; every decomposable term is forced level (l <= d^2); 7 terms do not decompose.",
+  100000, 0, gen_a130884 },
+{ "a130885", "A130885", "a(n) = 3n^3 - 2n^2 + n - 1", "polynomial",
+  "Every gap is different, from 16 to 90,000,500,002; every decomposable term is forced level (l <= d^2); 7 terms do not decompose.",
+  100000, 1, gen_a130885 },
+{ "a131464", "A131464", "a(n) = 4*n^3 - 3*n^2 + 2*n - 1", "polynomial",
+  "Every gap is different, from 21 to 120,000,600,003; every decomposable term is forced level (l <= d^2); 7 terms do not decompose.",
+  100000, 1, gen_a131464 },
+{ "a132112", "A132112", "a(n) = n*(n+1)*(11*n+1)/6", "polynomial",
+  "Every gap is different, from 4 to 54,999,850,000; every decomposable term is forced level (l <= d^2); 7 terms do not decompose.",
+  100000, 0, gen_a132112 },
+{ "a132124", "A132124", "a(n) = n*(n+1)*(8*n + 1)/6", "polynomial",
+  "Every gap is different, from 3 to 39,999,900,000; every decomposable term is forced level (l <= d^2); 7 terms do not decompose.",
+  100000, 0, gen_a132124 },
+{ "a132127", "A132127", "a(n) = (n^3 + 3*n - 2)/2", "polynomial",
+  "Every gap is different, from 5 to 15,000,150,002; every decomposable term is forced level (l <= d^2); 6 terms do not decompose.",
+  100000, 1, gen_a132127 },
+{ "a135712", "A135712", "a(n) = (4*n^3 + 11*n^2 + 9*n + 2)/2", "polynomial",
+  "Every gap is different, from 12 to 60,000,500,001; every decomposable term is forced level (l <= d^2); 7 terms do not decompose.",
+  100000, 0, gen_a135712 },
+{ "a135713", "A135713", "a(n) = n*(n+1)*(4*n+1)/2", "polynomial",
+  "Every gap is different, from 5 to 59,999,900,000; every decomposable term is forced level (l <= d^2); 7 terms do not decompose.",
+  100000, 0, gen_a135713 },
+{ "a139757", "A139757", "a(n) = (n+1)*(2n+1)^2", "polynomial",
+  "Every gap is different, from 17 to 120,000,400,001; every decomposable term is forced level (l <= d^2); 7 terms do not decompose.",
+  100000, 0, gen_a139757 },
+{ "a143058", "A143058", "a(n) = (n^3 + 18*n^2 + 17*n + 6)/6", "polynomial",
+  "Every gap is different, from 6 to 5,000,550,000; every decomposable term is forced level (l <= d^2).",
+  100000, 0, gen_a143058 },
+{ "a145069", "A145069", "a(n) = n*(n^2 + 3*n + 5)/3", "polynomial",
+  "Every gap is different, from 3 to 10,000,100,001; every decomposable term is forced level (l <= d^2); 6 terms do not decompose.",
+  100000, 0, gen_a145069 },
+{ "a147296", "A147296", "a(n) = n*(9*n+2)", "polynomial",
+  "Every gap is different, from 11 to 1,799,993; every decomposable term is forced level (l <= d^2).",
+  100000, 0, gen_a147296 },
+{ "a147874", "A147874", "a(n) = (5*n-7)*(n-1)", "polynomial",
+  "Every gap is different, from 3 to 999,993; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a147874 },
+{ "a152161", "A152161", "a(n) = 100*n^2 + 100*n + 21", "polynomial",
+  "Every gap is different, from 200 to 20,000,000; every decomposable term is forced level (l <= d^2).",
+  100000, 0, gen_a152161 },
+{ "a152579", "A152579", "a(n) = (10*n+3)*(10*n+17)", "polynomial",
+  "Every gap is different, from 300 to 20,000,100; every decomposable term is forced level (l <= d^2).",
+  100000, 0, gen_a152579 },
+{ "a152811", "A152811", "a(n) = 2*(n^2 + 2*n - 2)", "polynomial",
+  "Every gap is different, from 10 to 400,006; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a152811 },
+{ "a152813", "A152813", "a(n) = 2*n^2 + 10*n + 3", "polynomial",
+  "Every gap is different, from 12 to 400,008; every decomposable term is forced level (l <= d^2).",
+  100000, 0, gen_a152813 },
+{ "a152950", "A152950", "a(n) = 3 + n*(n-1)/2", "polynomial",
+  "Every gap is different, from 1 to 100,000; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a152950 },
+{ "a153037", "A153037", "a(n) = 2*n^2 + 16*n + 23", "polynomial",
+  "Every gap is different, from 18 to 400,014; every decomposable term is forced level (l <= d^2).",
+  100000, 0, gen_a153037 },
+{ "a153127", "A153127", "a(n) = (2*n + 1)*(5*n + 6)", "polynomial",
+  "Every gap is different, from 27 to 2,000,007; every decomposable term is forced level (l <= d^2).",
+  100000, 0, gen_a153127 },
+{ "a153169", "A153169", "a(n) = 4*n^2 + 12*n + 3", "polynomial",
+  "Every gap is different, from 24 to 800,016; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a153169 },
+{ "a153642", "A153642", "a(n) = 4*n^2 + 24*n + 8", "polynomial",
+  "Every gap is different, from 36 to 800,028; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a153642 },
+{ "a153644", "A153644", "a(n) = 4*n^2 + 28*n + 10", "polynomial",
+  "Every gap is different, from 40 to 800,032; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a153644 },
+{ "a153976", "A153976", "a(n) = n^3 + (n+2)^3", "polynomial",
+  "Every gap is different, from 20 to 60,000,600,008; every decomposable term is forced level (l <= d^2); 6 terms do not decompose.",
+  100000, 0, gen_a153976 },
+{ "a154105", "A154105", "a(n) = 12*n^2 + 18*n + 7", "polynomial",
+  "Every gap is different, from 30 to 2,400,006; every decomposable term is forced level (l <= d^2).",
+  100000, 0, gen_a154105 },
+{ "a154106", "A154106", "a(n) = 12*n^2 + 22*n + 11", "polynomial",
+  "Every gap is different, from 34 to 2,400,010; every decomposable term is forced level (l <= d^2).",
+  100000, 0, gen_a154106 },
+{ "a154254", "A154254", "a(n) = 9*n^2 - 8*n + 2", "polynomial",
+  "Every gap is different, from 1 to 1,799,983; every decomposable term is forced level (l <= d^2).",
+  100000, 0, gen_a154254 },
+{ "a154277", "A154277", "a(n) = 81*n^2 - 72*n + 17", "polynomial",
+  "Every gap is different, from 9 to 16,199,847; every decomposable term is forced level (l <= d^2).",
+  100000, 0, gen_a154277 },
+{ "a154357", "A154357", "a(n) = 25*n^2 - 14*n + 2", "polynomial",
+  "Every gap is different, from 11 to 4,999,961; every decomposable term is forced level (l <= d^2).",
+  100000, 0, gen_a154357 },
+{ "a154359", "A154359", "a(n) = 1250*n^2 - 700*n + 99", "polynomial",
+  "Every gap is different, from 550 to 249,998,050; every decomposable term is forced level (l <= d^2).",
+  100000, 0, gen_a154359 },
+{ "a154374", "A154374", "a(n) = 1250*n^2 - 100*n + 1", "polynomial",
+  "Every gap is different, from 3,650 to 250,001,150; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a154374 },
+{ "a154375", "A154375", "a(n) = 1250*n^2 + 100*n + 1", "polynomial",
+  "Every gap is different, from 3,850 to 250,001,350; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a154375 },
+{ "a154376", "A154376", "a(n) = 25*n^2 - 2*n", "polynomial",
+  "Every gap is different, from 73 to 5,000,023; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a154376 },
+{ "a154377", "A154377", "a(n) = 25*n^2 + 2*n", "polynomial",
+  "Every gap is different, from 77 to 5,000,027; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a154377 },
+{ "a154514", "A154514", "a(n) = 648*n^2 - 72*n + 1", "polynomial",
+  "Every gap is different, from 1,872 to 129,600,576; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a154514 },
+{ "a154515", "A154515", "a(n) = 648*n^2 + 72*n + 1", "polynomial",
+  "Every gap is different, from 2,016 to 129,600,720; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a154515 },
+{ "a154516", "A154516", "a(n) = 9n^2 - n", "polynomial",
+  "Every gap is different, from 26 to 1,800,008; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a154516 },
+{ "a154517", "A154517", "a(n) = 9*n^2 + n", "polynomial",
+  "Every gap is different, from 28 to 1,800,010; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a154517 },
+{ "a154560", "A154560", "a(n) = (n+3)^2*n/2 + 1", "polynomial",
+  "Every gap is different, from 8 to 15,000,450,002; every decomposable term is forced level (l <= d^2); 6 terms do not decompose.",
+  100000, 0, gen_a154560 },
+{ "a154575", "A154575", "a(n) = 2*n^2 + 12*n + 4", "polynomial",
+  "Every gap is different, from 18 to 400,014; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a154575 },
+{ "a154576", "A154576", "a(n) = 2*n^2 + 14*n + 5", "polynomial",
+  "Every gap is different, from 20 to 400,016; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a154576 },
+{ "a154590", "A154590", "a(n) = 2*n^2 + 16*n + 6", "polynomial",
+  "Every gap is different, from 22 to 400,018; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a154590 },
+{ "a154591", "A154591", "a(n) = 2*n^2 + 18*n + 7", "polynomial",
+  "Every gap is different, from 24 to 400,020; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a154591 },
+{ "a154599", "A154599", "a(n) = 2*n^2 + 20*n + 8", "polynomial",
+  "Every gap is different, from 26 to 400,022; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a154599 },
+{ "a154600", "A154600", "a(n) = 2*n^2 + 22*n + 9", "polynomial",
+  "Every gap is different, from 28 to 400,024; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a154600 },
+{ "a155212", "A155212", "a(n) = (n^2 + 9*n + 4)/2", "polynomial",
+  "Every gap is different, from 5 to 100,004; every decomposable term is forced level (l <= d^2).",
+  100000, 0, gen_a155212 },
+{ "a155461", "A155461", "a(n) = n^2 + 52*n + 30", "polynomial",
+  "Every gap is different, from 53 to 200,051; every decomposable term is forced level (l <= d^2).",
+  100000, 0, gen_a155461 },
+{ "a155753", "A155753", "a(n) = (n^3 - n + 9)/3", "polynomial",
+  "Every gap is different, from 2 to 10,000,100,000; every decomposable term is forced level (l <= d^2); 6 terms do not decompose.",
+  100000, 1, gen_a155753 },
+{ "a155757", "A155757", "a(n) = (n^3 - n + 15)/3", "polynomial",
+  "Every gap is different, from 2 to 10,000,100,000; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a155757 },
+{ "a155965", "A155965", "a(n) = n*(n^2+4)", "polynomial",
+  "Every gap is different, from 5 to 29,999,700,005; every decomposable term is forced level (l <= d^2); 7 terms do not decompose.",
+  100000, 0, gen_a155965 },
+{ "a155966", "A155966", "a(n) = 2*n^2 + 8", "polynomial",
+  "Every gap is different, from 2 to 399,998; every decomposable term is forced level (l <= d^2).",
+  100000, 0, gen_a155966 },
+{ "a156635", "A156635", "a(n) = 144*n^2 - n", "polynomial",
+  "Every gap is different, from 431 to 28,800,143; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a156635 },
+{ "a156676", "A156676", "a(n) = 81*n^2 - 44*n + 6", "polynomial",
+  "Every gap is different, from 37 to 16,199,875; every decomposable term is forced level (l <= d^2).",
+  100000, 0, gen_a156676 },
+{ "a156711", "A156711", "a(n) = 144*n^2 - 161*n + 45", "polynomial",
+  "Every gap is different, from 271 to 28,799,983; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a156711 },
+{ "a156719", "A156719", "a(n) = 144*n^2 - 127*n + 28", "polynomial",
+  "Every gap is different, from 305 to 28,800,017; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a156719 },
+{ "a156721", "A156721", "a(n) = 57122*n^2 - 47320*n + 9801", "polynomial",
+  "Every gap is different, from 124,046 to 11,424,409,802; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a156721 },
+{ "a156735", "A156735", "a(n) = 57122*n^2 + 47320*n + 9801", "polynomial",
+  "Every gap is different, from 104,442 to 11,424,390,198; every decomposable term is forced level (l <= d^2).",
+  100000, 0, gen_a156735 },
+{ "a156774", "A156774", "a(n) = 6561*n^2 - 3564*n + 485", "polynomial",
+  "Every gap is different, from 2,997 to 1,312,189,875; every decomposable term is forced level (l <= d^2).",
+  100000, 0, gen_a156774 },
+{ "a156812", "A156812", "a(n) = 225*n^2 - 199*n + 44", "polynomial",
+  "Every gap is different, from 26 to 44,999,576; every decomposable term is forced level (l <= d^2).",
+  100000, 0, gen_a156812 },
+{ "a156813", "A156813", "a(n) = 225*n^2 - n", "polynomial",
+  "Every gap is different, from 674 to 45,000,224; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a156813 },
+{ "a156814", "A156814", "a(n) = 225*n^2 + n", "polynomial",
+  "Every gap is different, from 676 to 45,000,226; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a156814 },
+{ "a156841", "A156841", "a(n) = 529n^2 - 312n + 46", "polynomial",
+  "Every gap is different, from 217 to 105,799,159; every decomposable term is forced level (l <= d^2).",
+  100000, 0, gen_a156841 },
+{ "a156842", "A156842", "a(n) = 529*n^2 - 746*n + 263", "polynomial",
+  "Every gap is different, from 841 to 105,799,783; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a156842 },
+{ "a156843", "A156843", "a(n) = 279841n^2 - 165048n + 24335", "polynomial",
+  "Every gap is different, from 114,793 to 55,967,755,111; every decomposable term is forced level (l <= d^2).",
+  100000, 0, gen_a156843 },
+{ "a156844", "A156844", "a(n) = 279841*n^2 - 394634*n + 139128", "polynomial",
+  "Every gap is different, from 444,889 to 55,968,085,207; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a156844 },
+{ "a156853", "A156853", "a(n) = 2025*n^2 - 649*n + 52", "polynomial",
+  "Every gap is different, from 5,426 to 405,001,376; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a156853 },
+{ "a156854", "A156854", "a(n) = 2025*n^2 - 3401*n + 1428", "polynomial",
+  "Every gap is different, from 2,674 to 404,998,624; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a156854 },
+{ "a156855", "A156855", "a(n) = 2025*n^2 - n", "polynomial",
+  "Every gap is different, from 6,074 to 405,002,024; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a156855 },
+{ "a156856", "A156856", "a(n) = 2025*n^2 + n", "polynomial",
+  "Every gap is different, from 6,076 to 405,002,026; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a156856 },
+{ "a157010", "A157010", "a(n) = 1681*n^2 - 756*n + 85", "polynomial",
+  "Every gap is different, from 4,287 to 336,200,925; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a157010 },
+{ "a157040", "A157040", "a(n) = 121*n^2 - 2*n", "polynomial",
+  "Every gap is different, from 361 to 24,200,119; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a157040 },
+{ "a157110", "A157110", "a(n) = 1681*n^2 - 2606*n + 1010", "polynomial",
+  "Every gap is different, from 2,437 to 336,199,075; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a157110 },
+{ "a157262", "A157262", "a(n) = 36*n^2 - 55*n + 21", "polynomial",
+  "Every gap is different, from 53 to 7,199,981; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a157262 },
+{ "a157264", "A157264", "a(n) = 10368*n^2 - 15840*n + 6049", "polynomial",
+  "Every gap is different, from 15,264 to 2,073,594,528; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a157264 },
+{ "a157265", "A157265", "a(n) = 36*n^2 - 17*n + 2", "polynomial",
+  "Every gap is different, from 91 to 7,200,019; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a157265 },
+{ "a157267", "A157267", "a(n) = 10368*n^2 - 4896*n + 577", "polynomial",
+  "Every gap is different, from 26,208 to 2,073,605,472; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a157267 },
+{ "a157286", "A157286", "a(n) = 36*n^2 - n", "polynomial",
+  "Every gap is different, from 107 to 7,200,035; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a157286 },
+{ "a157288", "A157288", "a(n) = 10368*n^2 - 288*n + 1", "polynomial",
+  "Every gap is different, from 30,816 to 2,073,610,080; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a157288 },
+{ "a157324", "A157324", "a(n) = 36*n^2 + n", "polynomial",
+  "Every gap is different, from 109 to 7,200,037; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a157324 },
+{ "a157326", "A157326", "a(n) = 10368*n^2 + 288*n + 1", "polynomial",
+  "Every gap is different, from 31,392 to 2,073,610,656; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a157326 },
+{ "a157331", "A157331", "a(n) = 128*n^2 - 32*n + 1", "polynomial",
+  "Every gap is different, from 352 to 25,600,096; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a157331 },
+{ "a157337", "A157337", "a(n) = 128*n^2 + 32*n + 1", "polynomial",
+  "Every gap is different, from 416 to 25,600,160; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a157337 },
+{ "a157362", "A157362", "a(n) = 49*n^2 - 2*n", "polynomial",
+  "Every gap is different, from 145 to 9,800,047; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a157362 },
+{ "a157364", "A157364", "a(n) = 4802*n^2 - 196*n + 1", "polynomial",
+  "Every gap is different, from 14,210 to 960,404,606; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a157364 },
+{ "a157365", "A157365", "a(n) = 49*n^2 + 2*n", "polynomial",
+  "Every gap is different, from 149 to 9,800,051; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a157365 },
+{ "a157367", "A157367", "a(n) = 4802*n^2 + 196*n + 1", "polynomial",
+  "Every gap is different, from 14,602 to 960,404,998; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a157367 },
+{ "a157368", "A157368", "a(n) = 49*n^2 - 78*n + 31", "polynomial",
+  "Every gap is different, from 69 to 9,799,971; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a157368 },
+{ "a157370", "A157370", "a(n) = 2401*n^2 - 3822*n + 1520", "polynomial",
+  "Every gap is different, from 3,381 to 480,198,579; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a157370 },
+{ "a157373", "A157373", "a(n) = 49*n^2 - 20*n + 2", "polynomial",
+  "Every gap is different, from 127 to 9,800,029; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a157373 },
+{ "a157375", "A157375", "a(n) = 2401*n^2 - 980*n + 99", "polynomial",
+  "Every gap is different, from 6,223 to 480,201,421; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a157375 },
+{ "a157376", "A157376", "a(n) = 6561*n^2 - 7732*n + 2278", "polynomial",
+  "Every gap is different, from 11,951 to 1,312,198,829; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a157376 },
+{ "a157440", "A157440", "a(n) = 121*n^2 - 204*n + 86", "polynomial",
+  "Every gap is different, from 159 to 24,199,917; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a157440 },
+{ "a157442", "A157442", "a(n) = 14641*n^2 - 24684*n + 10405", "polynomial",
+  "Every gap is different, from 19,239 to 2,928,189,957; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a157442 },
+{ "a157443", "A157443", "a(n) = 121*n^2 - 38*n + 3", "polynomial",
+  "Every gap is different, from 325 to 24,200,083; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a157443 },
+{ "a157445", "A157445", "a(n) = 14641*n^2 - 4598*n + 362", "polynomial",
+  "Every gap is different, from 39,325 to 2,928,210,043; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a157445 },
+{ "a157446", "A157446", "a(n) = 16*n^2 - n", "polynomial",
+  "Every gap is different, from 47 to 3,200,015; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a157446 },
+{ "a157448", "A157448", "a(n) = 2048*n^2 - 128*n + 1", "polynomial",
+  "Every gap is different, from 6,016 to 409,601,920; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a157448 },
+{ "a157474", "A157474", "a(n) = 16n^2 + n", "polynomial",
+  "Every gap is different, from 49 to 3,200,017; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a157474 },
+{ "a157476", "A157476", "a(n) = 2048n^2 + 128n + 1", "polynomial",
+  "Every gap is different, from 6,272 to 409,602,176; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a157476 },
+{ "a157506", "A157506", "a(n) = 13122*n^2 + 324*n + 1", "polynomial",
+  "Every gap is different, from 39,690 to 2,624,413,446; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a157506 },
+{ "a157507", "A157507", "a(n) = 81*n^2 - 2*n", "polynomial",
+  "Every gap is different, from 241 to 16,200,079; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a157507 },
+{ "a157509", "A157509", "a(n) = 13122*n^2 - 324*n + 1", "polynomial",
+  "Every gap is different, from 39,042 to 2,624,412,798; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a157509 },
+{ "a157511", "A157511", "a(n) = 5000*n^2 + 200*n + 1", "polynomial",
+  "Every gap is different, from 15,200 to 1,000,005,200; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a157511 },
+{ "a157514", "A157514", "a(n) = 25*n^2 - n", "polynomial",
+  "Every gap is different, from 74 to 5,000,024; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a157514 },
+{ "a157516", "A157516", "a(n) = 5000*n^2 - 200*n + 1", "polynomial",
+  "Every gap is different, from 14,800 to 1,000,004,800; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a157516 },
+{ "a157610", "A157610", "a(n) = 29282*n^2 - 484*n + 1", "polynomial",
+  "Every gap is different, from 87,362 to 5,856,428,798; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a157610 },
+{ "a157614", "A157614", "a(n) = 29282*n^2 + 484*n + 1", "polynomial",
+  "Every gap is different, from 88,330 to 5,856,429,766; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a157614 },
+{ "a157618", "A157618", "a(n) = 625*n^2 - 886*n + 314", "polynomial",
+  "Every gap is different, from 989 to 124,999,739; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a157618 },
+{ "a157620", "A157620", "a(n) = 781250*n^2 - 1107500*n + 392499", "polynomial",
+  "Every gap is different, from 1,236,250 to 156,249,673,750; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a157620 },
+{ "a157621", "A157621", "a(n) = 625n^2 - 364n + 53", "polynomial",
+  "Every gap is different, from 1,511 to 125,000,261; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a157621 },
+{ "a157623", "A157623", "a(n) = 781250*n^2 - 455000*n + 66249", "polynomial",
+  "Every gap is different, from 1,888,750 to 156,250,326,250; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a157623 },
+{ "a157626", "A157626", "a(n) = 100*n^2 - 151*n + 57", "polynomial",
+  "Every gap is different, from 149 to 19,999,949; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a157626 },
+{ "a157628", "A157628", "a(n) = 80000n^2 - 120800n + 45601", "polynomial",
+  "Every gap is different, from 119,200 to 15,999,959,200; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a157628 },
+{ "a157651", "A157651", "a(n) = 100*n^2 - 49*n + 6", "polynomial",
+  "Every gap is different, from 251 to 20,000,051; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a157651 },
+{ "a157653", "A157653", "a(n) = 80000*n^2 - 39200*n + 4801", "polynomial",
+  "Every gap is different, from 200,800 to 16,000,040,800; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a157653 },
+{ "a157659", "A157659", "a(n) = 100*n^2 - n", "polynomial",
+  "Every gap is different, from 299 to 20,000,099; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a157659 },
+{ "a157661", "A157661", "a(n) = 80000*n^2 - 800*n + 1", "polynomial",
+  "Every gap is different, from 239,200 to 16,000,079,200; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a157661 },
+{ "a157664", "A157664", "a(n) = 80000*n^2 + 800*n + 1", "polynomial",
+  "Every gap is different, from 240,800 to 16,000,080,800; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a157664 },
+{ "a157665", "A157665", "a(n) = 729*n^2 - 1016*n + 354", "polynomial",
+  "Every gap is different, from 1,171 to 145,799,713; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a157665 },
+{ "a157667", "A157667", "a(n) = 531441*n^2 - 740664*n + 258065", "polynomial",
+  "Every gap is different, from 853,659 to 106,287,990,777; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a157667 },
+{ "a157668", "A157668", "a(n) = 729*n^2 - 442*n + 67", "polynomial",
+  "Every gap is different, from 1,745 to 145,800,287; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a157668 },
+{ "a157670", "A157670", "a(n) = 531441*n^2 - 322218*n + 48842", "polynomial",
+  "Every gap is different, from 1,272,105 to 106,288,409,223; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a157670 },
+{ "a157730", "A157730", "a(n) = 441*n^2 - 488*n + 135", "polynomial",
+  "Every gap is different, from 835 to 88,199,953; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a157730 },
+{ "a157732", "A157732", "a(n) = 388962*n^2 - 430416*n + 119071", "polynomial",
+  "Every gap is different, from 736,470 to 77,792,358,546; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a157732 },
+{ "a157734", "A157734", "a(n) = 441*n^2 - 394*n + 88", "polynomial",
+  "Every gap is different, from 929 to 88,200,047; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a157734 },
+{ "a157736", "A157736", "a(n) = 388962*n^2 - 347508*n + 77617", "polynomial",
+  "Every gap is different, from 819,378 to 77,792,441,454; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a157736 },
+{ "a157737", "A157737", "a(n) = 441*n^2 - 2*n", "polynomial",
+  "Every gap is different, from 1,321 to 88,200,439; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a157737 },
+{ "a157739", "A157739", "a(n) = 388962*n^2 - 1764*n + 1", "polynomial",
+  "Every gap is different, from 1,165,122 to 77,792,787,198; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a157739 },
+{ "a157741", "A157741", "a(n) = 388962*n^2 + 1764*n + 1", "polynomial",
+  "Every gap is different, from 1,168,650 to 77,792,790,726; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a157741 },
+{ "a157757", "A157757", "a(n) = 2809*n^2 - 4618*n + 1898", "polynomial",
+  "Every gap is different, from 3,809 to 561,798,191; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a157757 },
+{ "a157760", "A157760", "a(n) = 2809*n^2 - 1000*n + 89", "polynomial",
+  "Every gap is different, from 7,427 to 561,801,809; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a157760 },
+{ "a157768", "A157768", "a(n) = 27225*n^2 - 39202*n + 14112", "polynomial",
+  "Every gap is different, from 42,473 to 5,444,988,023; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a157768 },
+{ "a157786", "A157786", "a(n) = 27225*n^2 - 15248*n + 2135", "polynomial",
+  "Every gap is different, from 66,427 to 5,445,011,977; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a157786 },
+{ "a157796", "A157796", "a(n) = 27225*n^2 - 12098*n + 1344", "polynomial",
+  "Every gap is different, from 69,577 to 5,445,015,127; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a157796 },
+{ "a157802", "A157802", "a(n) = 27225*n^2 - 51302*n + 24168", "polynomial",
+  "Every gap is different, from 30,373 to 5,444,975,923; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a157802 },
+{ "a157814", "A157814", "a(n) = 27225*n^2 - 2*n", "polynomial",
+  "Every gap is different, from 81,673 to 5,445,027,223; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a157814 },
+{ "a157820", "A157820", "a(n) = 27225*n^2 + 2*n", "polynomial",
+  "Every gap is different, from 81,677 to 5,445,027,227; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a157820 },
+{ "a157824", "A157824", "a(n) = 3600*n^2 - 6751*n + 3165", "polynomial",
+  "Every gap is different, from 4,049 to 719,996,849; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a157824 },
+{ "a157838", "A157838", "a(n) = 3600*n^2 - 6049*n + 2541", "polynomial",
+  "Every gap is different, from 4,751 to 719,997,551; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a157838 },
+{ "a157842", "A157842", "a(n) = 3600*n^2 - 5599*n + 2177", "polynomial",
+  "Every gap is different, from 5,201 to 719,998,001; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a157842 },
+{ "a157853", "A157853", "a(n) = 3600*n^2 - 1601*n + 178", "polynomial",
+  "Every gap is different, from 9,199 to 720,001,999; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a157853 },
+{ "a157857", "A157857", "a(n) = 3600*n^2 - n", "polynomial",
+  "Every gap is different, from 10,799 to 720,003,599; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a157857 },
+{ "a157861", "A157861", "a(n) = 3600*n^2 + n", "polynomial",
+  "Every gap is different, from 10,801 to 720,003,601; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a157861 },
+{ "a157872", "A157872", "a(n) = 9*n^2 - 3", "polynomial",
+  "Every gap is different, from 27 to 1,800,009; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a157872 },
+{ "a157888", "A157888", "a(n) = 81*n^2 + 9", "polynomial",
+  "Every gap is different, from 243 to 16,200,081; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a157888 },
+{ "a157889", "A157889", "a(n) = 18*n^2 + 1", "polynomial",
+  "Every gap is different, from 54 to 3,600,018; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a157889 },
+{ "a157909", "A157909", "a(n) = 81*n^2 - 9", "polynomial",
+  "Every gap is different, from 243 to 16,200,081; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a157909 },
+{ "a157910", "A157910", "a(n) = 18*n^2 - 1", "polynomial",
+  "Every gap is different, from 54 to 3,600,018; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a157910 },
+{ "a157912", "A157912", "a(n) = 64*n^2 + 16", "polynomial",
+  "Every gap is different, from 192 to 12,800,064; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a157912 },
+{ "a157913", "A157913", "a(n) = 64*n^2 - 16", "polynomial",
+  "Every gap is different, from 192 to 12,800,064; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a157913 },
+{ "a157914", "A157914", "a(n) = 8*n^2 - 1", "polynomial",
+  "Every gap is different, from 24 to 1,600,008; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a157914 },
+{ "a157915", "A157915", "a(n) = 625*n^2 + 25", "polynomial",
+  "Every gap is different, from 1,875 to 125,000,625; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a157915 },
+{ "a157916", "A157916", "a(n) = 50*n^2 + 1", "polynomial",
+  "Every gap is different, from 150 to 10,000,050; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a157916 },
+{ "a157918", "A157918", "a(n) = 625*n^2 - 25", "polynomial",
+  "Every gap is different, from 1,875 to 125,000,625; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a157918 },
+{ "a157919", "A157919", "a(n) = 50*n^2 - 1", "polynomial",
+  "Every gap is different, from 150 to 10,000,050; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a157919 },
+{ "a157923", "A157923", "a(n) = 49*n^2 - n", "polynomial",
+  "Every gap is different, from 146 to 9,800,048; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a157923 },
+{ "a157948", "A157948", "a(n) = 64*n^2 - n", "polynomial",
+  "Every gap is different, from 191 to 12,800,063; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a157948 },
+{ "a157953", "A157953", "a(n) = 81n^2 - n", "polynomial",
+  "Every gap is different, from 242 to 16,200,080; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a157953 },
+{ "a157960", "A157960", "a(n) = 121*n^2 - n", "polynomial",
+  "Every gap is different, from 362 to 24,200,120; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a157960 },
+{ "a157998", "A157998", "a(n) = 169*n^2 - n", "polynomial",
+  "Every gap is different, from 506 to 33,800,168; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a157998 },
+{ "a158003", "A158003", "a(n) = 196*n^2 - n", "polynomial",
+  "Every gap is different, from 587 to 39,200,195; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a158003 },
+{ "a158010", "A158010", "a(n) = 256*n^2 - n", "polynomial",
+  "Every gap is different, from 767 to 51,200,255; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a158010 },
+{ "a158056", "A158056", "a(n) = 16*n^2 + 2*n", "polynomial",
+  "Every gap is different, from 50 to 3,200,018; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a158056 },
+{ "a158058", "A158058", "a(n) = 16*n^2 - 2*n", "polynomial",
+  "Every gap is different, from 46 to 3,200,014; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a158058 },
+{ "a158062", "A158062", "a(n) = 36*n^2 - 2*n", "polynomial",
+  "Every gap is different, from 106 to 7,200,034; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a158062 },
+{ "a158064", "A158064", "a(n) = 36*n^2 + 2*n", "polynomial",
+  "Every gap is different, from 110 to 7,200,038; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a158064 },
+{ "a158067", "A158067", "a(n) = 64*n^2 - 2*n", "polynomial",
+  "Every gap is different, from 190 to 12,800,062; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a158067 },
+{ "a158070", "A158070", "a(n) = 64*n^2 + 2*n", "polynomial",
+  "Every gap is different, from 66 to 12,799,938; every decomposable term is forced level (l <= d^2).",
+  100000, 0, gen_a158070 },
+{ "a158127", "A158127", "a(n) = 100*n^2 + 2*n", "polynomial",
+  "Every gap is different, from 302 to 20,000,102; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a158127 },
+{ "a158129", "A158129", "a(n) = 100*n^2 - 2*n", "polynomial",
+  "Every gap is different, from 98 to 19,999,898; every decomposable term is forced level (l <= d^2).",
+  100000, 0, gen_a158129 },
+{ "a158132", "A158132", "a(n) = 144n^2 + 2n", "polynomial",
+  "Every gap is different, from 434 to 28,800,146; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a158132 },
+{ "a158135", "A158135", "a(n) = 144*n^2 - 2*n", "polynomial",
+  "Every gap is different, from 430 to 28,800,142; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a158135 },
+{ "a158186", "A158186", "a(n) = 10*n^2 - 7*n + 1", "polynomial",
+  "Every gap is different, from 3 to 1,999,983; every decomposable term is forced level (l <= d^2).",
+  100000, 0, gen_a158186 },
+{ "a158187", "A158187", "a(n) = 10*n^2 + 1", "polynomial",
+  "Every gap is different, from 10 to 1,999,990; every decomposable term is forced level (l <= d^2).",
+  100000, 0, gen_a158187 },
+{ "a158218", "A158218", "a(n) = 169*n^2 - 2*n", "polynomial",
+  "Every gap is different, from 505 to 33,800,167; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a158218 },
+{ "a158220", "A158220", "a(n) = 169*n^2 + 2*n", "polynomial",
+  "Every gap is different, from 509 to 33,800,171; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a158220 },
+{ "a158222", "A158222", "a(n) = 196*n^2 + 2*n", "polynomial",
+  "Every gap is different, from 590 to 39,200,198; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a158222 },
+{ "a158224", "A158224", "a(n) = 196*n^2 - 2*n", "polynomial",
+  "Every gap is different, from 586 to 39,200,194; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a158224 },
+{ "a158226", "A158226", "a(n) = 225*n^2 - 2*n", "polynomial",
+  "Every gap is different, from 673 to 45,000,223; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a158226 },
+{ "a158228", "A158228", "a(n) = 225n^2 + 2n", "polynomial",
+  "Every gap is different, from 677 to 45,000,227; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a158228 },
+{ "a158230", "A158230", "a(n) = 256*n^2 + 2*n", "polynomial",
+  "Every gap is different, from 770 to 51,200,258; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a158230 },
+{ "a158249", "A158249", "a(n) = 256*n^2 - 2*n", "polynomial",
+  "Every gap is different, from 766 to 51,200,254; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a158249 },
+{ "a158252", "A158252", "a(n) = 289*n^2 - 2*n", "polynomial",
+  "Every gap is different, from 865 to 57,800,287; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a158252 },
+{ "a158254", "A158254", "a(n) = 289n^2 + 2n", "polynomial",
+  "Every gap is different, from 869 to 57,800,291; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a158254 },
+{ "a158271", "A158271", "a(n) = 324n^2 + 2n", "polynomial",
+  "Every gap is different, from 974 to 64,800,326; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a158271 },
+{ "a158305", "A158305", "a(n) = 324n^2 - 2n", "polynomial",
+  "Every gap is different, from 970 to 64,800,322; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a158305 },
+{ "a158307", "A158307", "a(n) = 361*n^2 - 2*n", "polynomial",
+  "Every gap is different, from 1,081 to 72,200,359; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a158307 },
+{ "a158309", "A158309", "a(n) = 361*n^2 + 2*n", "polynomial",
+  "Every gap is different, from 1,085 to 72,200,363; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a158309 },
+{ "a158312", "A158312", "a(n) = 400*n^2 + 2*n", "polynomial",
+  "Every gap is different, from 1,202 to 80,000,402; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a158312 },
+{ "a158316", "A158316", "a(n) = 400*n^2 - 2*n", "polynomial",
+  "Every gap is different, from 1,198 to 80,000,398; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a158316 },
+{ "a158321", "A158321", "a(n) = 441n^2 + 2n", "polynomial",
+  "Every gap is different, from 1,325 to 88,200,443; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a158321 },
+{ "a158325", "A158325", "a(n) = 484*n^2 + 2*n", "polynomial",
+  "Every gap is different, from 1,454 to 96,800,486; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a158325 },
+{ "a158329", "A158329", "a(n) = 484*n^2 - 2*n", "polynomial",
+  "Every gap is different, from 1,450 to 96,800,482; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a158329 },
+{ "a158364", "A158364", "a(n) = 529*n^2 - 2*n", "polynomial",
+  "Every gap is different, from 1,585 to 105,800,527; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a158364 },
+{ "a158367", "A158367", "a(n) = 529*n^2 + 2*n", "polynomial",
+  "Every gap is different, from 1,589 to 105,800,531; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a158367 },
+{ "a158369", "A158369", "a(n) = 576*n^2 + 2*n", "polynomial",
+  "Every gap is different, from 1,730 to 115,200,578; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a158369 },
+{ "a158371", "A158371", "a(n) = 576*n^2 - 2*n", "polynomial",
+  "Every gap is different, from 1,726 to 115,200,574; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a158371 },
+{ "a158373", "A158373", "a(n) = 625*n^2 - 2*n", "polynomial",
+  "Every gap is different, from 1,873 to 125,000,623; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a158373 },
+{ "a158382", "A158382", "a(n) = 625*n^2 + 2*n", "polynomial",
+  "Every gap is different, from 1,877 to 125,000,627; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a158382 },
+{ "a158385", "A158385", "a(n) = 676*n^2 + 2*n", "polynomial",
+  "Every gap is different, from 2,030 to 135,200,678; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a158385 },
+{ "a158392", "A158392", "a(n) = 676*n^2 - 2*n", "polynomial",
+  "Every gap is different, from 2,026 to 135,200,674; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a158392 },
+{ "a158394", "A158394", "a(n) = 729*n^2 - 2*n", "polynomial",
+  "Every gap is different, from 2,185 to 145,800,727; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a158394 },
+{ "a158396", "A158396", "a(n) = 729*n^2 + 2*n", "polynomial",
+  "Every gap is different, from 2,189 to 145,800,731; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a158396 },
+{ "a158398", "A158398", "a(n) = 784*n^2 - 2*n", "polynomial",
+  "Every gap is different, from 2,350 to 156,800,782; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a158398 },
+{ "a158401", "A158401", "a(n) = 841*n^2 - 2*n", "polynomial",
+  "Every gap is different, from 2,521 to 168,200,839; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a158401 },
+{ "a158403", "A158403", "a(n) = 841*n^2 + 2*n", "polynomial",
+  "Every gap is different, from 2,525 to 168,200,843; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a158403 },
+{ "a158406", "A158406", "a(n) = 900*n^2 + 2*n", "polynomial",
+  "Every gap is different, from 2,702 to 180,000,902; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a158406 },
+{ "a158408", "A158408", "a(n) = 900*n^2 - 2*n", "polynomial",
+  "Every gap is different, from 2,698 to 180,000,898; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a158408 },
+{ "a158410", "A158410", "a(n) = 961*n^2 - 2*n", "polynomial",
+  "Every gap is different, from 2,881 to 192,200,959; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a158410 },
+{ "a158413", "A158413", "a(n) = 961*n^2 + 2*n", "polynomial",
+  "Every gap is different, from 2,885 to 192,200,963; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a158413 },
+{ "a158420", "A158420", "a(n) = 1024*n^2 - 2*n", "polynomial",
+  "Every gap is different, from 3,070 to 204,801,022; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a158420 },
+{ "a158443", "A158443", "a(n) = 16*n^2 - 4", "polynomial",
+  "Every gap is different, from 48 to 3,200,016; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a158443 },
+{ "a158444", "A158444", "a(n) = 16*n^2 + 4", "polynomial",
+  "Every gap is different, from 48 to 3,200,016; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a158444 },
+{ "a158445", "A158445", "a(n) = 25*n^2 + 5", "polynomial",
+  "Every gap is different, from 75 to 5,000,025; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a158445 },
+{ "a158446", "A158446", "a(n) = 25*n^2 - 5", "polynomial",
+  "Every gap is different, from 75 to 5,000,025; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a158446 },
+{ "a158447", "A158447", "a(n) = 10*n^2 - 1", "polynomial",
+  "Every gap is different, from 30 to 2,000,010; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a158447 },
+{ "a158462", "A158462", "a(n) = 36*n^2 - 6", "polynomial",
+  "Every gap is different, from 108 to 7,200,036; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a158462 },
+{ "a158479", "A158479", "a(n) = 36*n^2 + 6", "polynomial",
+  "Every gap is different, from 108 to 7,200,036; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a158479 },
+{ "a158480", "A158480", "a(n) = 12*n^2 + 1", "polynomial",
+  "Every gap is different, from 12 to 2,399,988; every decomposable term is forced level (l <= d^2).",
+  100000, 0, gen_a158480 },
+{ "a158481", "A158481", "a(n) = 49*n^2 + 7", "polynomial",
+  "Every gap is different, from 147 to 9,800,049; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a158481 },
+{ "a158482", "A158482", "a(n) = 14*n^2 + 1", "polynomial",
+  "Every gap is different, from 42 to 2,800,014; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a158482 },
+{ "a158484", "A158484", "a(n) = 49*n^2 - 7", "polynomial",
+  "Every gap is different, from 147 to 9,800,049; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a158484 },
+{ "a158485", "A158485", "a(n) = 14*n^2 - 1", "polynomial",
+  "Every gap is different, from 42 to 2,800,014; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a158485 },
+{ "a158487", "A158487", "a(n) = 64*n^2 - 8", "polynomial",
+  "Every gap is different, from 192 to 12,800,064; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a158487 },
+{ "a158488", "A158488", "a(n) = 64*n^2 + 8", "polynomial",
+  "Every gap is different, from 192 to 12,800,064; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a158488 },
+{ "a158490", "A158490", "a(n) = 100*n^2 - 10", "polynomial",
+  "Every gap is different, from 300 to 20,000,100; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a158490 },
+{ "a158491", "A158491", "a(n) = 20*n^2 - 1", "polynomial",
+  "Every gap is different, from 60 to 4,000,020; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a158491 },
+{ "a158492", "A158492", "a(n) = 100*n^2 + 10", "polynomial",
+  "Every gap is different, from 100 to 19,999,900; every decomposable term is forced level (l <= d^2).",
+  100000, 0, gen_a158492 },
+{ "a158493", "A158493", "a(n) = 20*n^2 + 1", "polynomial",
+  "Every gap is different, from 20 to 3,999,980; every decomposable term is forced level (l <= d^2).",
+  100000, 0, gen_a158493 },
+{ "a158536", "A158536", "a(n) = 121*n^2 + 11", "polynomial",
+  "Every gap is different, from 121 to 24,199,879; every decomposable term is forced level (l <= d^2).",
+  100000, 0, gen_a158536 },
+{ "a158537", "A158537", "a(n) = 22*n^2 + 1", "polynomial",
+  "Every gap is different, from 22 to 4,399,978; every decomposable term is forced level (l <= d^2).",
+  100000, 0, gen_a158537 },
+{ "a158539", "A158539", "a(n) = 121*n^2 - 11", "polynomial",
+  "Every gap is different, from 363 to 24,200,121; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a158539 },
+{ "a158540", "A158540", "a(n) = 22*n^2 - 1", "polynomial",
+  "Every gap is different, from 66 to 4,400,022; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a158540 },
+{ "a158543", "A158543", "a(n) = 144*n^2 - 12", "polynomial",
+  "Every gap is different, from 432 to 28,800,144; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a158543 },
+{ "a158544", "A158544", "a(n) = 24*n^2 - 1", "polynomial",
+  "Every gap is different, from 72 to 4,800,024; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a158544 },
+{ "a158546", "A158546", "a(n) = 144*n^2 + 12", "polynomial",
+  "Every gap is different, from 144 to 28,799,856; every decomposable term is forced level (l <= d^2).",
+  100000, 0, gen_a158546 },
+{ "a158547", "A158547", "a(n) = 24*n^2 + 1", "polynomial",
+  "Every gap is different, from 24 to 4,799,976; every decomposable term is forced level (l <= d^2).",
+  100000, 0, gen_a158547 },
+{ "a158548", "A158548", "a(n) = 169*n^2 + 13", "polynomial",
+  "Every gap is different, from 169 to 33,799,831; every decomposable term is forced level (l <= d^2).",
+  100000, 0, gen_a158548 },
+{ "a158549", "A158549", "a(n) = 26*n^2 + 1", "polynomial",
+  "Every gap is different, from 26 to 5,199,974; every decomposable term is forced level (l <= d^2).",
+  100000, 0, gen_a158549 },
+{ "a158550", "A158550", "a(n) = 169*n^2 - 13", "polynomial",
+  "Every gap is different, from 507 to 33,800,169; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a158550 },
+{ "a158551", "A158551", "a(n) = 26*n^2 - 1", "polynomial",
+  "Every gap is different, from 78 to 5,200,026; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a158551 },
+{ "a158553", "A158553", "a(n) = 196*n^2 - 14", "polynomial",
+  "Every gap is different, from 588 to 39,200,196; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a158553 },
+{ "a158554", "A158554", "a(n) = 28*n^2 - 1", "polynomial",
+  "Every gap is different, from 84 to 5,600,028; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a158554 },
+{ "a158555", "A158555", "a(n) = 196*n^2 + 14", "polynomial",
+  "Every gap is different, from 196 to 39,199,804; every decomposable term is forced level (l <= d^2).",
+  100000, 0, gen_a158555 },
+{ "a158556", "A158556", "a(n) = 28*n^2 + 1", "polynomial",
+  "Every gap is different, from 28 to 5,599,972; every decomposable term is forced level (l <= d^2).",
+  100000, 0, gen_a158556 },
+{ "a158557", "A158557", "a(n) = 225*n^2 + 15", "polynomial",
+  "Every gap is different, from 225 to 44,999,775; every decomposable term is forced level (l <= d^2).",
+  100000, 0, gen_a158557 },
+{ "a158558", "A158558", "a(n) = 30*n^2 + 1", "polynomial",
+  "Every gap is different, from 30 to 5,999,970; every decomposable term is forced level (l <= d^2).",
+  100000, 0, gen_a158558 },
+{ "a158559", "A158559", "a(n) = 225*n^2 - 15", "polynomial",
+  "Every gap is different, from 675 to 45,000,225; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a158559 },
+{ "a158560", "A158560", "a(n) = 30*n^2 - 1", "polynomial",
+  "Every gap is different, from 90 to 6,000,030; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a158560 },
+{ "a158562", "A158562", "a(n) = 256*n^2 - 16", "polynomial",
+  "Every gap is different, from 768 to 51,200,256; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a158562 },
+{ "a158563", "A158563", "a(n) = 32*n^2 - 1", "polynomial",
+  "Every gap is different, from 96 to 6,400,032; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a158563 },
+{ "a158574", "A158574", "a(n) = 256*n^2 + 16", "polynomial",
+  "Every gap is different, from 256 to 51,199,744; every decomposable term is forced level (l <= d^2).",
+  100000, 0, gen_a158574 },
+{ "a158575", "A158575", "a(n) = 32*n^2 + 1", "polynomial",
+  "Every gap is different, from 32 to 6,399,968; every decomposable term is forced level (l <= d^2).",
+  100000, 0, gen_a158575 },
+{ "a158585", "A158585", "a(n) = 289*n^2 + 17", "polynomial",
+  "Every gap is different, from 289 to 57,799,711; every decomposable term is forced level (l <= d^2).",
+  100000, 0, gen_a158585 },
+{ "a158586", "A158586", "a(n) = 34*n^2 + 1", "polynomial",
+  "Every gap is different, from 34 to 6,799,966; every decomposable term is forced level (l <= d^2).",
+  100000, 0, gen_a158586 },
+{ "a158587", "A158587", "a(n) = 289*n^2 - 17", "polynomial",
+  "Every gap is different, from 867 to 57,800,289; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a158587 },
+{ "a158588", "A158588", "a(n) = 34*n^2 - 1", "polynomial",
+  "Every gap is different, from 102 to 6,800,034; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a158588 },
+{ "a158589", "A158589", "a(n) = 324*n^2 - 18", "polynomial",
+  "Every gap is different, from 972 to 64,800,324; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a158589 },
+{ "a158590", "A158590", "a(n) = 324*n^2 + 18", "polynomial",
+  "Every gap is different, from 324 to 64,799,676; every decomposable term is forced level (l <= d^2).",
+  100000, 0, gen_a158590 },
+{ "a158591", "A158591", "a(n) = 36*n^2 + 1", "polynomial",
+  "Every gap is different, from 36 to 7,199,964; every decomposable term is forced level (l <= d^2).",
+  100000, 0, gen_a158591 },
+{ "a158592", "A158592", "a(n) = 361*n^2 + 19", "polynomial",
+  "Every gap is different, from 361 to 72,199,639; every decomposable term is forced level (l <= d^2).",
+  100000, 0, gen_a158592 },
+{ "a158593", "A158593", "a(n) = 38*n^2 + 1", "polynomial",
+  "Every gap is different, from 38 to 7,599,962; every decomposable term is forced level (l <= d^2).",
+  100000, 0, gen_a158593 },
+{ "a158595", "A158595", "a(n) = 361*n^2 - 19", "polynomial",
+  "Every gap is different, from 1,083 to 72,200,361; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a158595 },
+{ "a158596", "A158596", "a(n) = 38*n^2 - 1", "polynomial",
+  "Every gap is different, from 114 to 7,600,038; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a158596 },
+{ "a158597", "A158597", "a(n) = 400*n^2 - 20", "polynomial",
+  "Every gap is different, from 1,200 to 80,000,400; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a158597 },
+{ "a158598", "A158598", "a(n) = 40*n^2 - 1", "polynomial",
+  "Every gap is different, from 120 to 8,000,040; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a158598 },
+{ "a158601", "A158601", "a(n) = 400*n^2 + 20", "polynomial",
+  "Every gap is different, from 400 to 79,999,600; every decomposable term is forced level (l <= d^2).",
+  100000, 0, gen_a158601 },
+{ "a158602", "A158602", "a(n) = 40*n^2 + 1", "polynomial",
+  "Every gap is different, from 40 to 7,999,960; every decomposable term is forced level (l <= d^2).",
+  100000, 0, gen_a158602 },
+{ "a158603", "A158603", "a(n) = 441*n^2 + 21", "polynomial",
+  "Every gap is different, from 441 to 88,199,559; every decomposable term is forced level (l <= d^2).",
+  100000, 0, gen_a158603 },
+{ "a158604", "A158604", "a(n) = 42*n^2 + 1", "polynomial",
+  "Every gap is different, from 42 to 8,399,958; every decomposable term is forced level (l <= d^2).",
+  100000, 0, gen_a158604 },
+{ "a158626", "A158626", "a(n) = 42*n^2 - 1", "polynomial",
+  "Every gap is different, from 126 to 8,400,042; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a158626 },
+{ "a158627", "A158627", "a(n) = 484*n^2 - 22", "polynomial",
+  "Every gap is different, from 1,452 to 96,800,484; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a158627 },
+{ "a158628", "A158628", "a(n) = 44*n^2 - 1", "polynomial",
+  "Every gap is different, from 132 to 8,800,044; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a158628 },
+{ "a158629", "A158629", "a(n) = 484*n^2 + 22", "polynomial",
+  "Every gap is different, from 484 to 96,799,516; every decomposable term is forced level (l <= d^2).",
+  100000, 0, gen_a158629 },
+{ "a158630", "A158630", "a(n) = 44*n^2 + 1", "polynomial",
+  "Every gap is different, from 44 to 8,799,956; every decomposable term is forced level (l <= d^2).",
+  100000, 0, gen_a158630 },
+{ "a158631", "A158631", "a(n) = 529*n^2 + 23", "polynomial",
+  "Every gap is different, from 529 to 105,799,471; every decomposable term is forced level (l <= d^2).",
+  100000, 0, gen_a158631 },
+{ "a158632", "A158632", "a(n) = 46*n^2 + 1", "polynomial",
+  "Every gap is different, from 46 to 9,199,954; every decomposable term is forced level (l <= d^2).",
+  100000, 0, gen_a158632 },
+{ "a158633", "A158633", "a(n) = 529*n^2 - 23", "polynomial",
+  "Every gap is different, from 1,587 to 105,800,529; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a158633 },
+{ "a158634", "A158634", "a(n) = 46*n^2 - 1", "polynomial",
+  "Every gap is different, from 138 to 9,200,046; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a158634 },
+{ "a158636", "A158636", "a(n) = 576*n^2 - 24", "polynomial",
+  "Every gap is different, from 1,728 to 115,200,576; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a158636 },
+{ "a158637", "A158637", "a(n) = 576*n^2 + 24", "polynomial",
+  "Every gap is different, from 576 to 115,199,424; every decomposable term is forced level (l <= d^2).",
+  100000, 0, gen_a158637 },
+{ "a158638", "A158638", "a(n) = 48*n^2 + 1", "polynomial",
+  "Every gap is different, from 48 to 9,599,952; every decomposable term is forced level (l <= d^2).",
+  100000, 0, gen_a158638 },
+{ "a158639", "A158639", "a(n) = 676*n^2 - 26", "polynomial",
+  "Every gap is different, from 2,028 to 135,200,676; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a158639 },
+{ "a158640", "A158640", "a(n) = 52*n^2 - 1", "polynomial",
+  "Every gap is different, from 156 to 10,400,052; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a158640 },
+{ "a158643", "A158643", "a(n) = 676*n^2 + 26", "polynomial",
+  "Every gap is different, from 676 to 135,199,324; every decomposable term is forced level (l <= d^2).",
+  100000, 0, gen_a158643 },
+{ "a158644", "A158644", "a(n) = 52*n^2 + 1", "polynomial",
+  "Every gap is different, from 52 to 10,399,948; every decomposable term is forced level (l <= d^2).",
+  100000, 0, gen_a158644 },
+{ "a158645", "A158645", "a(n) = 729*n^2 + 27", "polynomial",
+  "Every gap is different, from 729 to 145,799,271; every decomposable term is forced level (l <= d^2).",
+  100000, 0, gen_a158645 },
+{ "a158646", "A158646", "a(n) = 54*n^2 + 1", "polynomial",
+  "Every gap is different, from 54 to 10,799,946; every decomposable term is forced level (l <= d^2).",
+  100000, 0, gen_a158646 },
+{ "a158655", "A158655", "a(n) = 729*n^2 - 27", "polynomial",
+  "Every gap is different, from 2,187 to 145,800,729; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a158655 },
+{ "a158656", "A158656", "a(n) = 54*n^2 - 1", "polynomial",
+  "Every gap is different, from 162 to 10,800,054; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a158656 },
+{ "a158657", "A158657", "a(n) = 784*n^2 - 28", "polynomial",
+  "Every gap is different, from 2,352 to 156,800,784; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a158657 },
+{ "a158658", "A158658", "a(n) = 56*n^2 - 1", "polynomial",
+  "Every gap is different, from 168 to 11,200,056; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a158658 },
+{ "a158659", "A158659", "a(n) = 784*n^2 + 28", "polynomial",
+  "Every gap is different, from 784 to 156,799,216; every decomposable term is forced level (l <= d^2).",
+  100000, 0, gen_a158659 },
+{ "a158660", "A158660", "a(n) = 56*n^2 + 1", "polynomial",
+  "Every gap is different, from 56 to 11,199,944; every decomposable term is forced level (l <= d^2).",
+  100000, 0, gen_a158660 },
+{ "a158665", "A158665", "a(n) = 841*n^2 + 29", "polynomial",
+  "Every gap is different, from 841 to 168,199,159; every decomposable term is forced level (l <= d^2).",
+  100000, 0, gen_a158665 },
+{ "a158666", "A158666", "a(n) = 58*n^2 + 1", "polynomial",
+  "Every gap is different, from 58 to 11,599,942; every decomposable term is forced level (l <= d^2).",
+  100000, 0, gen_a158666 },
+{ "a158667", "A158667", "a(n) = 841*n^2 - 29", "polynomial",
+  "Every gap is different, from 2,523 to 168,200,841; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a158667 },
+{ "a158668", "A158668", "a(n) = 58*n^2 - 1", "polynomial",
+  "Every gap is different, from 174 to 11,600,058; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a158668 },
+{ "a158669", "A158669", "a(n) = 900*n^2 - 30", "polynomial",
+  "Every gap is different, from 2,700 to 180,000,900; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a158669 },
+{ "a158670", "A158670", "a(n) = 60*n^2 - 1", "polynomial",
+  "Every gap is different, from 180 to 12,000,060; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a158670 },
+{ "a158672", "A158672", "a(n) = 900*n^2 + 30", "polynomial",
+  "Every gap is different, from 900 to 179,999,100; every decomposable term is forced level (l <= d^2).",
+  100000, 0, gen_a158672 },
+{ "a158673", "A158673", "a(n) = 60*n^2 + 1", "polynomial",
+  "Every gap is different, from 60 to 11,999,940; every decomposable term is forced level (l <= d^2).",
+  100000, 0, gen_a158673 },
+{ "a158675", "A158675", "a(n) = 961*n^2 + 31", "polynomial",
+  "Every gap is different, from 961 to 192,199,039; every decomposable term is forced level (l <= d^2).",
+  100000, 0, gen_a158675 },
+{ "a158676", "A158676", "a(n) = 62*n^2 + 1", "polynomial",
+  "Every gap is different, from 62 to 12,399,938; every decomposable term is forced level (l <= d^2).",
+  100000, 0, gen_a158676 },
+{ "a158679", "A158679", "a(n) = 961*n^2 - 31", "polynomial",
+  "Every gap is different, from 2,883 to 192,200,961; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a158679 },
+{ "a158680", "A158680", "a(n) = 62*n^2 - 1", "polynomial",
+  "Every gap is different, from 186 to 12,400,062; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a158680 },
+{ "a158683", "A158683", "a(n) = 1024*n^2 - 32", "polynomial",
+  "Every gap is different, from 3,072 to 204,801,024; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a158683 },
+{ "a158684", "A158684", "a(n) = 64*n^2 - 1", "polynomial",
+  "Every gap is different, from 192 to 12,800,064; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_a158684 },
+{ "a047292", "A047292", "Numbers that are congruent to {2, 4, 6} mod 7", "residue class",
+  "The gaps are 2 and 3; the level share is 11.84 %; L = 1 holds 58 % of the level class.",
+  100000, 1, gen_a047292 },
+{ "a047293", "A047293", "Numbers that are congruent to {0, 2, 4, 6} mod 7", "residue class",
+  "The gaps are 1 and 2; the level share is 10.80 %; L = 1 holds 74 % of the level class.",
+  100000, 1, gen_a047293 },
+{ "a047294", "A047294", "Numbers that are congruent to {1, 2, 4, 6} mod 7", "residue class",
+  "The gaps are 1 and 2; the level share is 8.11 %; L = 1 holds 65 % of the level class.",
+  100000, 1, gen_a047294 },
+{ "a047295", "A047295", "Numbers that are congruent to {0, 1, 2, 4, 6} mod 7", "residue class",
+  "The gaps are 1 and 2; the level share is 7.66 %; L = 1 holds 85 % of the level class.",
+  100000, 1, gen_a047295 },
+{ "a047296", "A047296", "Numbers that are congruent to {3, 4, 6} mod 7", "residue class",
+  "The gaps are 1, 2 and 4; the level share is 16.25 %; L = 1 holds 63 % of the level class.",
+  100000, 1, gen_a047296 },
+{ "a047297", "A047297", "Numbers that are congruent to {0, 3, 4, 6} mod 7", "residue class",
+  "The gaps are 1, 2 and 3; the level share is 14.41 %; L = 1 holds 74 % of the level class.",
+  100000, 1, gen_a047297 },
+{ "a047298", "A047298", "Numbers that are congruent to {1, 3, 4, 6} mod 7", "residue class",
+  "The gaps are 1 and 2; the level share is 14.85 %; L = 1 holds 71 % of the level class.",
+  100000, 1, gen_a047298 },
+{ "a047299", "A047299", "Numbers that are congruent to {0, 1, 3, 4, 6} mod 7", "residue class",
+  "The gaps are 1 and 2; the level share is 13.14 %; L = 1 holds 82 % of the level class.",
+  100000, 1, gen_a047299 },
+{ "a047300", "A047300", "Numbers that are congruent to {2, 3, 4, 6} mod 7", "residue class",
+  "The gaps are 1, 2 and 3; the level share is 14.42 %; L = 1 holds 74 % of the level class.",
+  100000, 1, gen_a047300 },
+{ "a047301", "A047301", "Numbers that are congruent to {0, 2, 3, 4, 6} mod 7", "residue class",
+  "The gaps are 1 and 2; the level share is 13.18 %; L = 1 holds 82 % of the level class.",
+  100000, 1, gen_a047301 },
+{ "a047302", "A047302", "Numbers that are congruent to {1, 2, 3, 4, 6} mod 7", "residue class",
+  "The gaps are 1 and 2; the level share is 10.96 %; L = 1 holds 79 % of the level class.",
+  100000, 1, gen_a047302 },
+{ "a047303", "A047303", "Numbers that are congruent to {0, 1, 2, 3, 4, 6} mod 7", "residue class",
+  "The gaps are 1 and 2; the level share is 10.13 %; L = 1 holds 90 % of the level class.",
+  100000, 1, gen_a047303 },
+{ "a047305", "A047305", "Numbers that are congruent to {2, 3, 4, 5, 6} mod 7", "residue class",
+  "The gaps are 1 and 3; the level share is 12.80 %; L = 1 holds 85 % of the level class.",
+  100000, 1, gen_a047305 },
+{ "a047306", "A047306", "Numbers that are congruent to {0, 2, 3, 4, 5, 6} mod 7", "residue class",
+  "The gaps are 1 and 2; the level share is 12.02 %; L = 1 holds 92 % of the level class.",
+  100000, 1, gen_a047306 },
+{ "a047411", "A047411", "Numbers that are congruent to {1, 2, 4, 6} mod 8", "residue class",
+  "The gaps are 1, 2 and 3; the level share is 10.92 %; L = 2 holds 44 % of the level class.",
+  100000, 1, gen_a047411 },
+{ "a047412", "A047412", "Numbers that are congruent to {0, 1, 2, 4, 6} mod 8", "residue class",
+  "The gaps are 1 and 2; the level share is 7.58 %; L = 2 holds 52 % of the level class.",
+  100000, 1, gen_a047412 },
+{ "a047413", "A047413", "Numbers that are congruent to {3, 4, 6} mod 8", "residue class",
+  "The gaps are 1, 2 and 5; the level share is 15.53 %; L = 2 holds 40 % of the level class.",
+  100000, 1, gen_a047413 },
+{ "a047414", "A047414", "Numbers that are congruent to {0, 3, 4, 6} mod 8", "residue class",
+  "The gaps are 1, 2 and 3; the level share is 10.97 %; L = 2 holds 44 % of the level class; there are no ties.",
+  100000, 1, gen_a047414 },
+{ "a047415", "A047415", "Numbers that are congruent to {1, 3, 4, 6} mod 8", "residue class",
+  "The gaps are 1, 2 and 3; the level share is 15.43 %; L = 1 holds 58 % of the level class; there are no ties.",
+  100000, 1, gen_a047415 },
+{ "a047416", "A047416", "Numbers that are congruent to {0, 1, 3, 4, 6} mod 8", "residue class",
+  "The gaps are 1 and 2; the level share is 11.25 %; L = 1 holds 65 % of the level class; there are no ties.",
+  100000, 1, gen_a047416 },
+{ "a047417", "A047417", "Numbers that are congruent to {2, 3, 4, 6} mod 8", "residue class",
+  "The gaps are 1, 2 and 4; the level share is 14.03 %; L = 2 holds 68 % of the level class.",
+  100000, 1, gen_a047417 },
+{ "a047418", "A047418", "Numbers that are congruent to {0, 2, 3, 4, 6} mod 8", "residue class",
+  "The gaps are 1 and 2; the level share is 11.48 %; L = 2 holds 68 % of the level class.",
+  100000, 1, gen_a047418 },
+{ "a047419", "A047419", "Numbers that are congruent to {1, 2, 3, 4, 6} mod 8", "residue class",
+  "The gaps are 1, 2 and 3; the level share is 12.58 %; L = 1 holds 58 % of the level class.",
+  100000, 1, gen_a047419 },
+{ "a047420", "A047420", "Numbers that are congruent to {0, 1, 2, 3, 4, 6} mod 8", "residue class",
+  "The gaps are 1 and 2; the level share is 9.50 %; L = 1 holds 65 % of the level class.",
+  100000, 1, gen_a047420 },
+{ "a047422", "A047422", "Numbers that are congruent to {1, 2, 3, 4, 5, 6} mod 8", "residue class",
+  "The gaps are 1 and 3; the level share is 10.48 %; L = 1 holds 89 % of the level class.",
+  100000, 1, gen_a047422 },
+{ "a047423", "A047423", "Numbers that are congruent to {2, 3, 4, 5, 6} mod 8", "residue class",
+  "The gaps are 1 and 4; the level share is 11.24 %; L = 1 holds 65 % of the level class.",
+  100000, 1, gen_a047423 },
+{ "a047424", "A047424", "Numbers that are congruent to {0, 2, 3, 4, 5, 6} mod 8", "residue class",
+  "The gaps are 1 and 2; the level share is 9.55 %; L = 1 holds 65 % of the level class.",
+  100000, 1, gen_a047424 },
+{ "a047425", "A047425", "Numbers that are congruent to {3, 4, 5, 6} mod 8", "residue class",
+  "The gaps are 1 and 5; the level share is 11.68 %; L = 1 holds 77 % of the level class.",
+  100000, 1, gen_a047425 },
+{ "a190719", "A190719", "Numbers that are congruent to {0, 1, 3, 5, 7, 8, 11} mod 12", "residue class",
+  "The gaps are 1, 2 and 3; the level share is 15.62 %; L = 1 holds 100 % of the level class.",
+  100000, 1, gen_a190719 },
+{ "a190785", "A190785", "Numbers that are congruent to {0, 2, 3, 5, 7, 9, 11} mod 12", "residue class",
+  "The gaps are 1 and 2; the level share is 19.76 %; L = 1 holds 79 % of the level class.",
+  100000, 1, gen_a190785 },
+{ "a191275", "A191275", "Numbers that are congruent to {0, 1, 3, 5, 7, 9, 11} mod 12", "residue class",
+  "The gaps are 1 and 2; the level share is 19.53 %; L = 1 holds 100 % of the level class.",
+  100000, 1, gen_a191275 },
+{ "a218155", "A218155", "Numbers congruent to 2, 3, 6, 11 mod 12", "residue class",
+  "The gaps are 1, 3 and 5; the level share is 14.45 %; L = 1 holds 89 % of the level class.",
+  100000, 1, gen_a218155 },
+{ "a228137", "A228137", "Numbers that are congruent to {1, 4} mod 12", "residue class",
+  "The gaps are 3 and 9; the level share is 30.22 %; L = 2 holds 43 % of the level class; there are no ties.",
+  100000, 1, gen_a228137 },
+{ "a272975", "A272975", "Numbers that are congruent to {0,7} mod 12", "residue class",
+  "The gaps are 5 and 7; the level share is 30.15 %; L = 2 holds 43 % of the level class; there are no ties.",
+  100000, 1, gen_a272975 },
+{ "a305859", "A305859", "Numbers that are congruent to {1, 3, 11} mod 12", "residue class",
+  "The gaps are 2 and 8; the level share is 20.36 %; L = 1 holds 83 % of the level class.",
+  100000, 1, gen_a305859 },
+{ "a319279", "A319279", "Numbers that are congruent to {0, 3, 7, 10} mod 12", "residue class",
+  "The gaps are 2, 3 and 4; the level share is 11.32 %; L = 1 holds 58 % of the level class.",
+  100000, 1, gen_a319279 },
+{ "a319280", "A319280", "Numbers that are congruent to {0, 4, 7, 11} mod 12", "residue class",
+  "The gaps are 1, 3 and 4; the level share is 14.96 %; L = 1 holds 43 % of the level class.",
+  100000, 1, gen_a319280 },
+{ "a319452", "A319452", "Numbers that are congruent to {0, 3, 6, 10} mod 12", "residue class",
+  "The gaps are 2, 3 and 4; the level share is 11.72 %; L = 2 holds 59 % of the level class.",
+  100000, 1, gen_a319452 },
+{ "a141924", "A141924", "Primes congruent to 20 mod 23", "primes",
+  "66 different gaps occur, from 46 to 3,358; the level share is 46.24 %; there are no ties.",
+  100000, 1, gen_a141924 },
+{ "a141925", "A141925", "Primes congruent to 21 mod 23", "primes",
+  "63 different gaps occur, from 46 to 3,128; the level share is 46.19 %; there are no ties.",
+  100000, 1, gen_a141925 },
+{ "a141926", "A141926", "Primes congruent to 22 mod 23", "primes",
+  "68 different gaps occur, from 46 to 3,864; the level share is 46.29 %; there are no ties.",
+  100000, 1, gen_a141926 },
+{ "a141943", "A141943", "Primes congruent to 21 mod 25", "primes",
+  "54 different gaps occur, from 50 to 3,000; the level share is 48.36 %.",
+  100000, 1, gen_a141943 },
+{ "a141944", "A141944", "Primes congruent to 22 mod 25", "primes",
+  "57 different gaps occur, from 50 to 3,200; the level share is 48.27 %; there are no ties.",
+  100000, 1, gen_a141944 },
+{ "a141945", "A141945", "Primes congruent to 23 mod 25", "primes",
+  "54 different gaps occur, from 50 to 3,450; the level share is 48.30 %; there are no ties.",
+  100000, 1, gen_a141945 },
+{ "a141946", "A141946", "Primes congruent to 24 mod 25", "primes",
+  "57 different gaps occur, from 50 to 4,950; the level share is 48.36 %.",
+  100000, 1, gen_a141946 },
+{ "a141960", "A141960", "Primes congruent to 19 mod 27", "primes",
+  "47 different gaps occur, from 54 to 2,754; the level share is 50.00 %; L = 1 holds 31 % of the level class.",
+  100000, 1, gen_a141960 },
+{ "a141961", "A141961", "Primes congruent to 20 mod 27", "primes",
+  "47 different gaps occur, from 54 to 2,646; the level share is 49.84 %; L = 1 holds 31 % of the level class; there are no ties.",
+  100000, 1, gen_a141961 },
+{ "a141962", "A141962", "Primes congruent to 22 mod 27", "primes",
+  "47 different gaps occur, from 54 to 2,862; the level share is 50.14 %; L = 1 holds 31 % of the level class.",
+  100000, 1, gen_a141962 },
+{ "a141963", "A141963", "Primes congruent to 23 mod 27", "primes",
+  "46 different gaps occur, from 54 to 2,592; the level share is 49.95 %; L = 1 holds 30 % of the level class; there are no ties.",
+  100000, 1, gen_a141963 },
+{ "a141964", "A141964", "Primes congruent to 25 mod 27", "primes",
+  "47 different gaps occur, from 54 to 3,294; the level share is 49.50 %; L = 1 holds 31 % of the level class.",
+  100000, 1, gen_a141964 },
+{ "a141965", "A141965", "Primes congruent to 26 mod 27", "primes",
+  "45 different gaps occur, from 54 to 2,754; the level share is 50.14 %; L = 1 holds 31 % of the level class; there are no ties.",
+  100000, 1, gen_a141965 },
+{ "a141989", "A141989", "Primes congruent to 13 mod 29", "primes",
+  "67 different gaps occur, from 58 to 4,292; the level share is 47.88 %.",
+  100000, 1, gen_a141989 },
+{ "a141990", "A141990", "Primes congruent to 14 mod 29", "primes",
+  "66 different gaps occur, from 58 to 5,394; the level share is 47.69 %; there are no ties.",
+  100000, 1, gen_a141990 },
+{ "a141991", "A141991", "Primes congruent to 15 mod 29", "primes",
+  "67 different gaps occur, from 58 to 4,698; the level share is 47.63 %; there are no ties.",
+  100000, 1, gen_a141991 },
+{ "a141992", "A141992", "Primes congruent to 16 mod 29", "primes",
+  "64 different gaps occur, from 58 to 4,350; the level share is 47.86 %.",
+  100000, 1, gen_a141992 },
+{ "a141993", "A141993", "Primes congruent to 17 mod 29", "primes",
+  "69 different gaps occur, from 58 to 4,698; the level share is 48.20 %; there are no ties.",
+  100000, 1, gen_a141993 },
+{ "a141994", "A141994", "Primes congruent to 18 mod 29", "primes",
+  "68 different gaps occur, from 58 to 4,872; the level share is 47.88 %; there are no ties.",
+  100000, 1, gen_a141994 },
+{ "a141995", "A141995", "Primes congruent to 19 mod 29", "primes",
+  "64 different gaps occur, from 58 to 3,828; the level share is 47.67 %; there are no ties.",
+  100000, 1, gen_a141995 },
+{ "a141996", "A141996", "Primes congruent to 20 mod 29", "primes",
+  "68 different gaps occur, from 58 to 4,350; the level share is 47.73 %.",
+  100000, 1, gen_a141996 },
+{ "a141997", "A141997", "Primes congruent to 21 mod 29", "primes",
+  "69 different gaps occur, from 58 to 4,930; the level share is 47.87 %; there are no ties.",
+  100000, 1, gen_a141997 },
+{ "a141998", "A141998", "Primes congruent to 22 mod 29", "primes",
+  "68 different gaps occur, from 58 to 5,278; the level share is 47.96 %.",
+  100000, 1, gen_a141998 },
+{ "a141999", "A141999", "Primes congruent to 23 mod 29", "primes",
+  "64 different gaps occur, from 58 to 4,234; the level share is 47.90 %.",
+  100000, 1, gen_a141999 },
+{ "a142000", "A142000", "Primes congruent to 24 mod 29", "primes",
+  "68 different gaps occur, from 58 to 4,292; the level share is 47.77 %.",
+  100000, 1, gen_a142000 },
+{ "a142017", "A142017", "Primes congruent to 13 mod 31", "primes",
+  "63 different gaps occur, from 62 to 4,650; the level share is 48.18 %; there are no ties.",
+  100000, 1, gen_a142017 },
+{ "a142018", "A142018", "Primes congruent to 14 mod 31", "primes",
+  "69 different gaps occur, from 62 to 4,836; the level share is 48.41 %.",
+  100000, 1, gen_a142018 },
+{ "a142019", "A142019", "Primes congruent to 15 mod 31", "primes",
+  "70 different gaps occur, from 62 to 5,394; the level share is 48.25 %; there are no ties.",
+  100000, 1, gen_a142019 },
+{ "a142020", "A142020", "Primes congruent to 16 mod 31", "primes",
+  "68 different gaps occur, from 62 to 5,084; the level share is 47.98 %.",
+  100000, 1, gen_a142020 },
+{ "a142021", "A142021", "Primes congruent to 17 mod 31", "primes",
+  "64 different gaps occur, from 62 to 4,030; the level share is 48.29 %; there are no ties.",
+  100000, 1, gen_a142021 },
+{ "a142022", "A142022", "Primes congruent to 18 mod 31", "primes",
+  "68 different gaps occur, from 62 to 4,464; the level share is 48.22 %.",
+  100000, 1, gen_a142022 },
+{ "a142023", "A142023", "Primes congruent to 19 mod 31", "primes",
+  "63 different gaps occur, from 62 to 4,464; the level share is 47.85 %.",
+  100000, 1, gen_a142023 },
+{ "a142024", "A142024", "Primes congruent to 20 mod 31", "primes",
+  "66 different gaps occur, from 62 to 5,270; the level share is 48.20 %.",
+  100000, 1, gen_a142024 },
+{ "a142025", "A142025", "Primes congruent to 21 mod 31", "primes",
+  "66 different gaps occur, from 62 to 4,464; the level share is 48.13 %; there are no ties.",
+  100000, 1, gen_a142025 },
+{ "a142026", "A142026", "Primes congruent to 22 mod 31", "primes",
+  "68 different gaps occur, from 62 to 4,836; the level share is 48.34 %; there are no ties.",
+  100000, 1, gen_a142026 },
+{ "a142027", "A142027", "Primes congruent to 23 mod 31", "primes",
+  "66 different gaps occur, from 62 to 5,394; the level share is 48.32 %; there are no ties.",
+  100000, 1, gen_a142027 },
+{ "a142028", "A142028", "Primes congruent to 24 mod 31", "primes",
+  "66 different gaps occur, from 62 to 5,270; the level share is 48.16 %; there are no ties.",
+  100000, 1, gen_a142028 },
+{ "a142047", "A142047", "Primes congruent to 29 mod 32", "primes",
+  "67 different gaps occur, from 32 to 3,040; the level share is 42.83 %; there are no ties.",
+  100000, 1, gen_a142047 },
+{ "a142061", "A142061", "Primes congruent to 20 mod 33", "primes",
+  "40 different gaps occur, from 66 to 2,772; the level share is 52.47 %; L = 1 holds 32 % of the level class; there are no ties.",
+  100000, 1, gen_a142061 },
+{ "a142062", "A142062", "Primes congruent to 23 mod 33", "primes",
+  "43 different gaps occur, from 66 to 3,498; the level share is 52.60 %; L = 1 holds 32 % of the level class; there are no ties.",
+  100000, 1, gen_a142062 },
+{ "a142063", "A142063", "Primes congruent to 25 mod 33", "primes",
+  "42 different gaps occur, from 66 to 2,970; the level share is 52.50 %; L = 1 holds 32 % of the level class.",
+  100000, 1, gen_a142063 },
+{ "a142064", "A142064", "Primes congruent to 26 mod 33", "primes",
+  "44 different gaps occur, from 66 to 3,036; the level share is 52.57 %; L = 1 holds 32 % of the level class; there are no ties.",
+  100000, 1, gen_a142064 },
+{ "a142065", "A142065", "Primes congruent to 28 mod 33", "primes",
+  "41 different gaps occur, from 66 to 2,904; the level share is 52.37 %; L = 1 holds 32 % of the level class; there are no ties.",
+  100000, 1, gen_a142065 },
+{ "a142066", "A142066", "Primes congruent to 29 mod 33", "primes",
+  "41 different gaps occur, from 66 to 2,970; the level share is 52.86 %; L = 1 holds 32 % of the level class; there are no ties.",
+  100000, 1, gen_a142066 },
+{ "a142067", "A142067", "Primes congruent to 31 mod 33", "primes",
+  "44 different gaps occur, from 66 to 3,102; the level share is 52.56 %; L = 1 holds 32 % of the level class.",
+  100000, 1, gen_a142067 },
+{ "a142068", "A142068", "Primes congruent to 32 mod 33", "primes",
+  "41 different gaps occur, from 66 to 3,102; the level share is 52.61 %; L = 1 holds 32 % of the level class; there are no ties.",
+  100000, 1, gen_a142068 },
+{ "a142088", "A142088", "Primes congruent to 18 mod 35", "primes",
+  "46 different gaps occur, from 70 to 3,500; the level share is 52.36 %; there are no ties.",
+  100000, 1, gen_a142088 },
+{ "a142089", "A142089", "Primes congruent to 19 mod 35", "primes",
+  "48 different gaps occur, from 70 to 4,270; the level share is 52.25 %; there are no ties.",
+  100000, 1, gen_a142089 },
+{ "a142090", "A142090", "Primes congruent to 22 mod 35", "primes",
+  "43 different gaps occur, from 70 to 3,150; the level share is 52.37 %; there are no ties.",
+  100000, 1, gen_a142090 },
+{ "a142091", "A142091", "Primes congruent to 23 mod 35", "primes",
+  "46 different gaps occur, from 70 to 3,430; the level share is 52.09 %; there are no ties.",
+  100000, 1, gen_a142091 },
+{ "a142092", "A142092", "Primes congruent to 24 mod 35", "primes",
+  "47 different gaps occur, from 70 to 3,990; the level share is 52.23 %; there are no ties.",
+  100000, 1, gen_a142092 },
+{ "a142093", "A142093", "Primes congruent to 26 mod 35", "primes",
+  "47 different gaps occur, from 70 to 3,360; the level share is 52.30 %; there are no ties.",
+  100000, 1, gen_a142093 },
+{ "a142094", "A142094", "Primes congruent to 27 mod 35", "primes",
+  "49 different gaps occur, from 70 to 3,780; the level share is 52.31 %; there are no ties.",
+  100000, 1, gen_a142094 },
+{ "a142095", "A142095", "Primes congruent to 29 mod 35", "primes",
+  "46 different gaps occur, from 70 to 3,360; the level share is 52.37 %.",
+  100000, 1, gen_a142095 },
+{ "a142096", "A142096", "Primes congruent to 31 mod 35", "primes",
+  "49 different gaps occur, from 70 to 3,710; the level share is 52.05 %; there are no ties.",
+  100000, 1, gen_a142096 },
+{ "a142097", "A142097", "Primes congruent to 32 mod 35", "primes",
+  "49 different gaps occur, from 70 to 3,990; the level share is 51.87 %; there are no ties.",
+  100000, 1, gen_a142097 },
+{ "a142098", "A142098", "Primes congruent to 33 mod 35", "primes",
+  "48 different gaps occur, from 70 to 3,780; the level share is 52.21 %; there are no ties.",
+  100000, 1, gen_a142098 },
+{ "a142099", "A142099", "Primes congruent to 34 mod 35", "primes",
+  "48 different gaps occur, from 70 to 4,550; the level share is 52.23 %; there are no ties.",
+  100000, 1, gen_a142099 },
+{ "a142127", "A142127", "Primes congruent to 18 mod 37", "primes",
+  "65 different gaps occur, from 74 to 5,920; the level share is 49.58 %; there are no ties.",
+  100000, 1, gen_a142127 },
+{ "a142131", "A142131", "Primes congruent to 22 mod 37", "primes",
+  "66 different gaps occur, from 74 to 6,364; the level share is 49.55 %; there are no ties.",
+  100000, 1, gen_a142131 },
+{ "a142133", "A142133", "Primes congruent to 24 mod 37", "primes",
+  "67 different gaps occur, from 74 to 5,328; the level share is 49.62 %; there are no ties.",
+  100000, 1, gen_a142133 },
+{ "a142171", "A142171", "Primes congruent to 20 mod 39", "primes",
+  "43 different gaps occur, from 78 to 3,822; the level share is 53.59 %; L = 1 holds 31 % of the level class; there are no ties.",
+  100000, 1, gen_a142171 },
+{ "a142172", "A142172", "Primes congruent to 22 mod 39", "primes",
+  "45 different gaps occur, from 78 to 3,666; the level share is 53.36 %; L = 1 holds 31 % of the level class.",
+  100000, 1, gen_a142172 },
+{ "a142173", "A142173", "Primes congruent to 23 mod 39", "primes",
+  "42 different gaps occur, from 78 to 3,354; the level share is 53.54 %; L = 1 holds 31 % of the level class; there are no ties.",
+  100000, 1, gen_a142173 },
+{ "a142174", "A142174", "Primes congruent to 25 mod 39", "primes",
+  "45 different gaps occur, from 78 to 4,524; the level share is 53.27 %; L = 1 holds 31 % of the level class.",
+  100000, 1, gen_a142174 },
+{ "a142176", "A142176", "Primes congruent to 29 mod 39", "primes",
+  "45 different gaps occur, from 78 to 4,524; the level share is 53.27 %; L = 1 holds 31 % of the level class; there are no ties.",
+  100000, 1, gen_a142176 },
+{ "a142177", "A142177", "Primes congruent to 31 mod 39", "primes",
+  "45 different gaps occur, from 78 to 3,744; the level share is 53.55 %; L = 1 holds 31 % of the level class; there are no ties.",
+  100000, 1, gen_a142177 },
+{ "a142178", "A142178", "Primes congruent to 32 mod 39", "primes",
+  "41 different gaps occur, from 78 to 3,510; the level share is 53.31 %; L = 1 holds 30 % of the level class; there are no ties.",
+  100000, 1, gen_a142178 },
+{ "a142179", "A142179", "Primes congruent to 34 mod 39", "primes",
+  "43 different gaps occur, from 78 to 3,822; the level share is 53.40 %; L = 1 holds 31 % of the level class; there are no ties.",
+  100000, 1, gen_a142179 },
+{ "a142180", "A142180", "Primes congruent to 35 mod 39", "primes",
+  "42 different gaps occur, from 78 to 3,822; the level share is 53.49 %; L = 1 holds 31 % of the level class; there are no ties.",
+  100000, 1, gen_a142180 },
+{ "a142181", "A142181", "Primes congruent to 37 mod 39", "primes",
+  "44 different gaps occur, from 78 to 3,822; the level share is 53.75 %; L = 1 holds 31 % of the level class; there are no ties.",
+  100000, 1, gen_a142181 },
+{ "a142182", "A142182", "Primes congruent to 38 mod 39", "primes",
+  "44 different gaps occur, from 78 to 4,212; the level share is 53.29 %; L = 1 holds 30 % of the level class; there are no ties.",
+  100000, 1, gen_a142182 },
+{ "a142195", "A142195", "Primes congruent to 31 mod 40", "primes",
+  "52 different gaps occur, from 40 to 2,080; the level share is 46.86 %; there are no ties.",
+  100000, 1, gen_a142195 },
+{ "a142196", "A142196", "Primes congruent to 33 mod 40", "primes",
+  "53 different gaps occur, from 40 to 2,280; the level share is 46.82 %; there are no ties.",
+  100000, 1, gen_a142196 },
+{ "a142197", "A142197", "Primes congruent to 37 mod 40", "primes",
+  "54 different gaps occur, from 40 to 2,320; the level share is 46.77 %; there are no ties.",
+  100000, 1, gen_a142197 },
+{ "a142198", "A142198", "Primes congruent to 39 mod 40", "primes",
+  "55 different gaps occur, from 40 to 2,440; the level share is 47.02 %; there are no ties.",
+  100000, 1, gen_a142198 },
+{ "a142299", "A142299", "Primes congruent to 17 mod 44", "primes",
+  "62 different gaps occur, from 44 to 3,036; the level share is 46.20 %; there are no ties.",
+  100000, 1, gen_a142299 },
+{ "a142300", "A142300", "Primes congruent to 19 mod 44", "primes",
+  "63 different gaps occur, from 44 to 3,300; the level share is 46.31 %; there are no ties.",
+  100000, 1, gen_a142300 },
+{ "a142301", "A142301", "Primes congruent to 21 mod 44", "primes",
+  "60 different gaps occur, from 44 to 2,860; the level share is 46.60 %; there are no ties.",
+  100000, 1, gen_a142301 },
+{ "a142302", "A142302", "Primes congruent to 23 mod 44", "primes",
+  "61 different gaps occur, from 44 to 3,300; the level share is 46.51 %; there are no ties.",
+  100000, 1, gen_a142302 },
+{ "a142303", "A142303", "Primes congruent to 25 mod 44", "primes",
+  "60 different gaps occur, from 44 to 3,036; the level share is 46.28 %.",
+  100000, 1, gen_a142303 },
+{ "a142304", "A142304", "Primes congruent to 27 mod 44", "primes",
+  "62 different gaps occur, from 44 to 3,300; the level share is 46.36 %; there are no ties.",
+  100000, 1, gen_a142304 },
+{ "a142305", "A142305", "Primes congruent to 29 mod 44", "primes",
+  "61 different gaps occur, from 44 to 3,344; the level share is 46.59 %; there are no ties.",
+  100000, 1, gen_a142305 },
+{ "a142306", "A142306", "Primes congruent to 31 mod 44", "primes",
+  "63 different gaps occur, from 44 to 3,344; the level share is 46.49 %; there are no ties.",
+  100000, 1, gen_a142306 },
+{ "a142307", "A142307", "Primes congruent to 35 mod 44", "primes",
+  "62 different gaps occur, from 44 to 3,300; the level share is 46.46 %; there are no ties.",
+  100000, 1, gen_a142307 },
+{ "a142308", "A142308", "Primes congruent to 37 mod 44", "primes",
+  "60 different gaps occur, from 44 to 3,080; the level share is 46.58 %.",
+  100000, 1, gen_a142308 },
+{ "a142309", "A142309", "Primes congruent to 39 mod 44", "primes",
+  "60 different gaps occur, from 44 to 3,036; the level share is 46.46 %; there are no ties.",
+  100000, 1, gen_a142309 },
+{ "a142310", "A142310", "Primes congruent to 41 mod 44", "primes",
+  "61 different gaps occur, from 44 to 3,168; the level share is 46.40 %; there are no ties.",
+  100000, 1, gen_a142310 },
+{ "a142312", "A142312", "Primes congruent to 1 mod 45", "primes",
+  "37 different gaps occur, from 90 to 4,230; the level share is 55.41 %; L = 1 holds 37 % of the level class.",
+  100000, 1, gen_a142312 },
+{ "a142313", "A142313", "Primes congruent to 2 mod 45", "primes",
+  "38 different gaps occur, from 45 to 5,220; the level share is 55.80 %; L = 1 holds 38 % of the level class; there are no ties.",
+  100000, 1, gen_a142313 },
+{ "a142314", "A142314", "Primes congruent to 4 mod 45", "primes",
+  "38 different gaps occur, from 90 to 3,960; the level share is 55.63 %; L = 1 holds 37 % of the level class.",
+  100000, 1, gen_a142314 },
+{ "a142315", "A142315", "Primes congruent to 7 mod 45", "primes",
+  "39 different gaps occur, from 90 to 4,050; the level share is 55.39 %; L = 1 holds 37 % of the level class; there are no ties.",
+  100000, 1, gen_a142315 },
+{ "a142316", "A142316", "Primes congruent to 8 mod 45", "primes",
+  "41 different gaps occur, from 90 to 3,780; the level share is 55.16 %; L = 1 holds 37 % of the level class; there are no ties.",
+  100000, 1, gen_a142316 },
+{ "a142317", "A142317", "Primes congruent to 11 mod 45", "primes",
+  "37 different gaps occur, from 90 to 3,510; the level share is 55.65 %; L = 1 holds 37 % of the level class; there are no ties.",
+  100000, 1, gen_a142317 },
+{ "a142318", "A142318", "Primes congruent to 13 mod 45", "primes",
+  "41 different gaps occur, from 90 to 4,140; the level share is 55.55 %; L = 1 holds 37 % of the level class; there are no ties.",
+  100000, 1, gen_a142318 },
+{ "a142319", "A142319", "Primes congruent to 14 mod 45", "primes",
+  "37 different gaps occur, from 90 to 3,510; the level share is 55.46 %; L = 1 holds 37 % of the level class; there are no ties.",
+  100000, 1, gen_a142319 },
+{ "a142320", "A142320", "Primes congruent to 16 mod 45", "primes",
+  "38 different gaps occur, from 90 to 4,320; the level share is 55.35 %; L = 1 holds 37 % of the level class.",
+  100000, 1, gen_a142320 },
+{ "a142321", "A142321", "Primes congruent to 17 mod 45", "primes",
+  "36 different gaps occur, from 90 to 3,690; the level share is 55.47 %; L = 1 holds 38 % of the level class; there are no ties.",
+  100000, 1, gen_a142321 },
+{ "a142322", "A142322", "Primes congruent to 19 mod 45", "primes",
+  "35 different gaps occur, from 90 to 3,240; the level share is 55.70 %; L = 1 holds 37 % of the level class.",
+  100000, 1, gen_a142322 },
+{ "a142323", "A142323", "Primes congruent to 22 mod 45", "primes",
+  "41 different gaps occur, from 90 to 5,310; the level share is 55.39 %; L = 1 holds 37 % of the level class; there are no ties.",
+  100000, 1, gen_a142323 },
+{ "a142398", "A142398", "Primes congruent to 1 mod 48", "primes",
+  "45 different gaps occur, from 48 to 2,304; the level share is 49.36 %; L = 1 holds 31 % of the level class.",
+  100000, 1, gen_a142398 },
+{ "a142399", "A142399", "Primes congruent to 5 mod 48", "primes",
+  "44 different gaps occur, from 48 to 2,304; the level share is 49.46 %; L = 1 holds 31 % of the level class; there are no ties.",
+  100000, 1, gen_a142399 },
+{ "a142400", "A142400", "Primes congruent to 7 mod 48", "primes",
+  "47 different gaps occur, from 48 to 2,496; the level share is 48.98 %; L = 1 holds 31 % of the level class; there are no ties.",
+  100000, 1, gen_a142400 },
+{ "a142401", "A142401", "Primes congruent to 11 mod 48", "primes",
+  "46 different gaps occur, from 48 to 2,496; the level share is 49.03 %; L = 1 holds 31 % of the level class; there are no ties.",
+  100000, 1, gen_a142401 },
+{ "a142402", "A142402", "Primes congruent to 13 mod 48", "primes",
+  "44 different gaps occur, from 48 to 2,400; the level share is 49.35 %; L = 1 holds 31 % of the level class; there are no ties.",
+  100000, 1, gen_a142402 },
+{ "a142403", "A142403", "Primes congruent to 17 mod 48", "primes",
+  "46 different gaps occur, from 48 to 2,496; the level share is 49.36 %; L = 1 holds 32 % of the level class; there are no ties.",
+  100000, 1, gen_a142403 },
+{ "a142404", "A142404", "Primes congruent to 19 mod 48", "primes",
+  "47 different gaps occur, from 48 to 2,640; the level share is 49.33 %; L = 1 holds 32 % of the level class; there are no ties.",
+  100000, 1, gen_a142404 },
+{ "a142405", "A142405", "Primes congruent to 23 mod 48", "primes",
+  "46 different gaps occur, from 48 to 2,976; the level share is 49.29 %; L = 1 holds 31 % of the level class; there are no ties.",
+  100000, 1, gen_a142405 },
+{ "a142406", "A142406", "Primes congruent to 25 mod 48", "primes",
+  "46 different gaps occur, from 48 to 2,640; the level share is 48.93 %; L = 1 holds 31 % of the level class.",
+  100000, 1, gen_a142406 },
+{ "a142407", "A142407", "Primes congruent to 29 mod 48", "primes",
+  "45 different gaps occur, from 48 to 2,160; the level share is 49.39 %; L = 1 holds 31 % of the level class; there are no ties.",
+  100000, 1, gen_a142407 },
+{ "a142408", "A142408", "Primes congruent to 31 mod 48", "primes",
+  "47 different gaps occur, from 48 to 2,736; the level share is 49.34 %; L = 1 holds 31 % of the level class; there are no ties.",
+  100000, 1, gen_a142408 },
+{ "a142409", "A142409", "Primes congruent to 35 mod 48", "primes",
+  "47 different gaps occur, from 48 to 2,400; the level share is 48.88 %; L = 1 holds 32 % of the level class; there are no ties.",
+  100000, 1, gen_a142409 },
+{ "a142414", "A142414", "Primes congruent to 1 mod 49", "primes",
+  "62 different gaps occur, from 98 to 6,370; the level share is 52.48 %; 1.1 % of terms are forced level (l <= d^2).",
+  100000, 1, gen_a142414 },
+{ "a142415", "A142415", "Primes congruent to 2 mod 49", "primes",
+  "61 different gaps occur, from 98 to 7,056; the level share is 52.38 %; 1.1 % of terms are forced level (l <= d^2).",
+  100000, 1, gen_a142415 },
+{ "a142416", "A142416", "Primes congruent to 3 mod 49", "primes",
+  "58 different gaps occur, from 98 to 6,076; the level share is 52.54 %; 1.1 % of terms are forced level (l <= d^2); there are no ties.",
+  100000, 1, gen_a142416 },
+{ "a142417", "A142417", "Primes congruent to 4 mod 49", "primes",
+  "59 different gaps occur, from 98 to 6,174; the level share is 52.21 %; 1.1 % of terms are forced level (l <= d^2).",
+  100000, 1, gen_a142417 },
+{ "a142418", "A142418", "Primes congruent to 5 mod 49", "primes",
+  "63 different gaps occur, from 98 to 6,762; the level share is 52.48 %; 1.1 % of terms are forced level (l <= d^2); there are no ties.",
+  100000, 1, gen_a142418 },
+{ "a142419", "A142419", "Primes congruent to 6 mod 49", "primes",
+  "60 different gaps occur, from 98 to 6,370; the level share is 52.31 %; 1.1 % of terms are forced level (l <= d^2); there are no ties.",
+  100000, 1, gen_a142419 },
+{ "a142420", "A142420", "Primes congruent to 8 mod 49", "primes",
+  "61 different gaps occur, from 98 to 7,252; the level share is 52.49 %; 1.1 % of terms are forced level (l <= d^2).",
+  100000, 1, gen_a142420 },
+{ "a142421", "A142421", "Primes congruent to 9 mod 49", "primes",
+  "61 different gaps occur, from 98 to 6,468; the level share is 52.50 %; 1.1 % of terms are forced level (l <= d^2).",
+  100000, 1, gen_a142421 },
+{ "a142422", "A142422", "Primes congruent to 10 mod 49", "primes",
+  "60 different gaps occur, from 98 to 8,330; the level share is 52.41 %; 1.1 % of terms are forced level (l <= d^2); there are no ties.",
+  100000, 1, gen_a142422 },
+{ "a142423", "A142423", "Primes congruent to 11 mod 49", "primes",
+  "62 different gaps occur, from 98 to 8,134; the level share is 52.38 %; 1.1 % of terms are forced level (l <= d^2).",
+  100000, 1, gen_a142423 },
+{ "a142424", "A142424", "Primes congruent to 12 mod 49", "primes",
+  "59 different gaps occur, from 98 to 5,880; the level share is 52.35 %; 1.1 % of terms are forced level (l <= d^2); there are no ties.",
+  100000, 1, gen_a142424 },
+{ "a142425", "A142425", "Primes congruent to 13 mod 49", "primes",
+  "63 different gaps occur, from 98 to 8,232; the level share is 52.37 %; 1.1 % of terms are forced level (l <= d^2); there are no ties.",
+  100000, 1, gen_a142425 },
+{ "a142476", "A142476", "Primes congruent to 1 mod 51", "primes",
+  "47 different gaps occur, from 102 to 5,100; the level share is 55.09 %.",
+  100000, 1, gen_a142476 },
+{ "a142477", "A142477", "Primes congruent to 2 mod 51", "primes",
+  "46 different gaps occur, from 51 to 5,202; the level share is 54.95 %; there are no ties.",
+  100000, 1, gen_a142477 },
+{ "a142478", "A142478", "Primes congruent to 4 mod 51", "primes",
+  "47 different gaps occur, from 102 to 5,202; the level share is 55.14 %.",
+  100000, 1, gen_a142478 },
+{ "a142479", "A142479", "Primes congruent to 5 mod 51", "primes",
+  "45 different gaps occur, from 102 to 5,100; the level share is 55.23 %; there are no ties.",
+  100000, 1, gen_a142479 },
+{ "a142480", "A142480", "Primes congruent to 7 mod 51", "primes",
+  "47 different gaps occur, from 102 to 5,202; the level share is 55.26 %; there are no ties.",
+  100000, 1, gen_a142480 },
+{ "a142481", "A142481", "Primes congruent to 8 mod 51", "primes",
+  "46 different gaps occur, from 102 to 5,202; the level share is 55.14 %; there are no ties.",
+  100000, 1, gen_a142481 },
+{ "a142482", "A142482", "Primes congruent to 10 mod 51", "primes",
+  "46 different gaps occur, from 102 to 6,426; the level share is 55.09 %; there are no ties.",
+  100000, 1, gen_a142482 },
+{ "a142483", "A142483", "Primes congruent to 11 mod 51", "primes",
+  "47 different gaps occur, from 102 to 5,100; the level share is 55.22 %; there are no ties.",
+  100000, 1, gen_a142483 },
+{ "a142484", "A142484", "Primes congruent to 13 mod 51", "primes",
+  "44 different gaps occur, from 102 to 5,202; the level share is 55.24 %.",
+  100000, 1, gen_a142484 },
+{ "a142485", "A142485", "Primes congruent to 14 mod 51", "primes",
+  "47 different gaps occur, from 102 to 5,712; the level share is 55.40 %; there are no ties.",
+  100000, 1, gen_a142485 },
+{ "a142486", "A142486", "Primes congruent to 16 mod 51", "primes",
+  "42 different gaps occur, from 102 to 4,386; the level share is 55.24 %.",
+  100000, 1, gen_a142486 },
+{ "a142487", "A142487", "Primes congruent to 19 mod 51", "primes",
+  "44 different gaps occur, from 102 to 4,998; the level share is 55.21 %.",
+  100000, 1, gen_a142487 },
+{ "a142508", "A142508", "Primes congruent to 1 mod 52", "primes",
+  "65 different gaps occur, from 52 to 4,056; the level share is 47.58 %.",
+  100000, 1, gen_a142508 },
+{ "a142509", "A142509", "Primes congruent to 3 mod 52", "primes",
+  "61 different gaps occur, from 52 to 3,588; the level share is 47.21 %; there are no ties.",
+  100000, 1, gen_a142509 },
+{ "a142510", "A142510", "Primes congruent to 5 mod 52", "primes",
+  "62 different gaps occur, from 52 to 4,212; the level share is 47.43 %; there are no ties.",
+  100000, 1, gen_a142510 },
+{ "a142511", "A142511", "Primes congruent to 7 mod 52", "primes",
+  "64 different gaps occur, from 52 to 3,432; the level share is 47.41 %; there are no ties.",
+  100000, 1, gen_a142511 },
+{ "a142512", "A142512", "Primes congruent to 9 mod 52", "primes",
+  "65 different gaps occur, from 52 to 4,368; the level share is 47.64 %.",
+  100000, 1, gen_a142512 },
+{ "a142513", "A142513", "Primes congruent to 11 mod 52", "primes",
+  "68 different gaps occur, from 52 to 3,796; the level share is 47.32 %; there are no ties.",
+  100000, 1, gen_a142513 },
+{ "a142514", "A142514", "Primes congruent to 15 mod 52", "primes",
+  "64 different gaps occur, from 52 to 3,900; the level share is 47.23 %; there are no ties.",
+  100000, 1, gen_a142514 },
+{ "a142515", "A142515", "Primes congruent to 17 mod 52", "primes",
+  "63 different gaps occur, from 52 to 3,432; the level share is 47.33 %.",
+  100000, 1, gen_a142515 },
+{ "a142516", "A142516", "Primes congruent to 19 mod 52", "primes",
+  "64 different gaps occur, from 52 to 3,744; the level share is 47.64 %; there are no ties.",
+  100000, 1, gen_a142516 },
+{ "a142517", "A142517", "Primes congruent to 21 mod 52", "primes",
+  "61 different gaps occur, from 52 to 3,536; the level share is 47.46 %; there are no ties.",
+  100000, 1, gen_a142517 },
+{ "a142518", "A142518", "Primes congruent to 23 mod 52", "primes",
+  "65 different gaps occur, from 52 to 3,744; the level share is 47.36 %; there are no ties.",
+  100000, 1, gen_a142518 },
+{ "a142519", "A142519", "Primes congruent to 25 mod 52", "primes",
+  "63 different gaps occur, from 52 to 3,640; the level share is 47.36 %.",
+  100000, 1, gen_a142519 },
 };
 static const int NDEF = (int)(sizeof defs / sizeof defs[0]);
 
