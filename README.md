@@ -1,7 +1,7 @@
 # decompwlj 3D
 
 An interactive atlas of Rémi Eismann's **decomposition into weight × level + jump**, built as a
-static website: 4000 integer sequences from the OEIS, 10⁵ terms each, shown as a browsable gallery
+static website: 4500 integer sequences from the OEIS, 10⁵ terms each, shown as a browsable gallery
 of 2-D plates and an explorable 3-D point cloud (three.js / WebGL).
 
 **Live site:** <https://decompwlj.net/> (also <https://decompwlj.github.io/decompwlj3dopus/>)
@@ -42,7 +42,7 @@ code, database, build step or third-party request, so it runs on any static host
 
 ## Features
 
-- **Gallery** of 4000 weight–level plates, sorted by A-number, with full-text search, a
+- **Gallery** of 4500 weight–level plates, sorted by A-number, with full-text search, a
   **family selector** (primes, polynomial, digit rule, Beatty, sieve, …) and a
   **Random sequence** button.
 - **Progressive loading**: the gallery builds cards thirty at a time as you scroll, and each preview
@@ -87,7 +87,7 @@ subfolder.
 Every push to `main` republishes the site. `.nojekyll` tells GitHub Pages to serve the files as
 they are, without running Jekyll.
 
-The site is about 715 MB, within GitHub Pages' limits: 1 GB per published site, with a soft
+The site is about 800 MB, within GitHub Pages' limits: 1 GB per published site, with a soft
 bandwidth limit of 100 GB per month.
 
 ### A custom domain with HTTPS
@@ -188,7 +188,7 @@ Chrome/Edge 111+, Firefox 113+ or Safari 16.4+. The gallery works without WebGL;
 needs it.
 
 **Rebuilding the data** (optional) needs a C compiler (gcc or clang), Python 3.9+ with `numpy` and
-`Pillow`, about 2 GB of RAM, 11 GB of free disk space and about 100 minutes of CPU time for the full pipeline.
+`Pillow`, about 2 GB of RAM, 12 GB of free disk space and about 110 minutes of CPU time for the full pipeline.
 
 ## Repository layout
 
@@ -201,7 +201,7 @@ needs it.
 | `vendor/` | three.js r169 and OrbitControls, unmodified (MIT licence included) |
 | `deploy/` | Example Apache and nginx configurations |
 | `tools/` | Data generator, OEIS metadata and verification scripts (not needed at runtime) |
-| `docs/SEQUENCES.md` | All 4000 sequences by family, and how the data was verified |
+| `docs/SEQUENCES.md` | All 4500 sequences by family, and how the data was verified |
 | `CNAME`, `.nojekyll` | GitHub Pages settings: custom domain; serve files as they are |
 | `seq/`, `family/`, `404.html` | Static pages for search engines, written by `tools/seo.py` |
 | `sitemap.xml`, `robots.txt`, `og.png` | Sitemap, crawler rules and link preview image |
@@ -271,8 +271,8 @@ smaller one, or if a chunk does not continue the previous one. All values are be
 JavaScript numbers hold them exactly. `tools/compact.py` has an `encode()` and a `decode()` for
 reading the files from Python.
 
-A sequence costs from under 1 kB to 0.6 MB to download (median 0.16 MB). The gallery previews
-total 25 MB, but only the visible ones are fetched.
+A sequence costs from under 1 kB to 0.6 MB to download (median 0.17 MB). The gallery previews
+total 28 MB, but only the visible ones are fetched.
 
 ## Rebuilding the data
 
@@ -282,7 +282,7 @@ unchanged sequences produce no diff.
 ```sh
 cd tools
 cc -O2 -o decompwlj_gen decompwlj_gen.c -lm
-./decompwlj_gen raw                 # all sequences: raw a,d,k,L chunks + catalog.csv (~50 min)
+./decompwlj_gen raw                 # all sequences: raw a,d,k,L chunks + catalog.csv (~55 min)
 ./decompwlj_gen raw primes 200000   # or a single sequence, at any length below 2^53
 python3 names.py raw                # OEIS names into the catalogue (from oeis.json)
 python3 audit.py raw                # independent verification of every row and of the OEIS terms
