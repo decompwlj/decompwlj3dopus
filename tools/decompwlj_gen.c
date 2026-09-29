@@ -58,6 +58,9 @@
  *                classes and primes in residue classes.
  *   28 Sep 2026  three thousand: five hundred more, mostly polynomials, primes in
  *                residue classes and quadratic forms.
+ *   29 Sep 2026  thirty-five hundred: five hundred from the original decompwlj.com
+ *                list, written out one by one (digit and binary rules, prime
+ *                conditions, divisor functions, forms, Beatty sequences, recurrences).
  *
  * Build:  cc -O2 -o decompwlj_gen decompwlj_gen.c -lm
  * Run:    ./decompwlj_gen <outdir>            all sequences
@@ -4870,6 +4873,1195 @@ static void gen_a142295(u64 *t, long cnt) { gen_pres(t, cnt, 44, 128ULL); }
 static void gen_a142296(u64 *t, long cnt) { gen_pres(t, cnt, 44, 512ULL); }
 static void gen_a142297(u64 *t, long cnt) { gen_pres(t, cnt, 44, 8192ULL); }
 static void gen_a142298(u64 *t, long cnt) { gen_pres(t, cnt, 44, 32768ULL); }
+
+/* ------------------------------------------------ the five hundred added 29 Sep 2026 (3001-3500) */
+/* Sequences from the original decompwlj.com list that the atlas did not have yet: digit and
+   binary rules, prime conditions, divisor functions, forms, Beatty sequences, recurrences and
+   closures, each written out and checked against its OEIS terms.  The helpers below are shared. */
+
+/* factorisation of any n: a smallest-prime-factor table that grows on demand (to 2^28),
+   Pollard rho beyond it; primes ascending in O_p[], exponents in O_e[] */
+static u32 *o_spf = NULL; static u64 o_spflim = 0;
+static void o_spf_grow(u64 n)
+{
+    if (n <= o_spflim) return;
+    u64 lim = o_spflim ? o_spflim : (1ULL << 24);
+    while (lim < n) lim *= 2;
+    if (lim > (1ULL << 28)) lim = 1ULL << 28;
+    if (lim <= o_spflim) return;
+    free(o_spf);
+    o_spf = calloc(lim + 1, sizeof(u32));
+    if (!o_spf) { fprintf(stderr, "spf alloc failed\n"); exit(1); }
+    for (u64 i = 2; i <= lim; i++) if (!o_spf[i]) for (u64 j = i; j <= lim; j += i) if (!o_spf[j]) o_spf[j] = (u32)i;
+    o_spflim = lim;
+}
+static u64 O_p[64]; static int O_e[64], O_n;
+static void ofac(u64 n)
+{
+    O_n = 0;
+    if (n < 2) return;
+    if (n > o_spflim && n <= (1ULL << 28)) o_spf_grow(n);
+    if (n <= o_spflim) {
+        while (n > 1) { u64 p = o_spf[n]; int e = 0; while (n % p == 0) { n /= p; e++; } O_p[O_n] = p; O_e[O_n++] = e; }
+        return;
+    }
+    factor(n);
+    O_n = g_npf;
+    for (int i = 0; i < g_npf; i++) { O_p[i] = g_pf[i]; O_e[i] = g_pe[i]; }
+    for (int i = 1; i < O_n; i++)
+        for (int j = i; j > 0 && O_p[j - 1] > O_p[j]; j--) {
+            u64 tp = O_p[j]; O_p[j] = O_p[j - 1]; O_p[j - 1] = tp;
+            int te = O_e[j]; O_e[j] = O_e[j - 1]; O_e[j - 1] = te;
+        }
+}
+static u64 o_sigma(u64 n) { ofac(n); u128 s = 1; for (int i = 0; i < O_n; i++) { u128 t = 1, pk = 1; for (int e = 0; e < O_e[i]; e++) { pk *= O_p[i]; t += pk; } s *= t; } return (u64)s; }
+static u64 o_tau(u64 n)   { ofac(n); u64 s = 1; for (int i = 0; i < O_n; i++) s *= (u64)(O_e[i] + 1); return s; }
+static u64 o_phi(u64 n)   { ofac(n); u64 s = n; for (int i = 0; i < O_n; i++) s = s / O_p[i] * (O_p[i] - 1); return s; }
+static int o_omega(u64 n) { ofac(n); return O_n; }
+static int o_Omega(u64 n) { ofac(n); int c = 0; for (int i = 0; i < O_n; i++) c += O_e[i]; return c; }
+static u64 o_usigma(u64 n){ ofac(n); u128 s = 1; for (int i = 0; i < O_n; i++) { u64 pk = 1; for (int e = 0; e < O_e[i]; e++) pk *= O_p[i]; s *= (u128)(pk + 1); } return (u64)s; }
+static u64 o_gpf(u64 n)   { ofac(n); return O_n ? O_p[O_n - 1] : 1; }
+static u64 o_lpf(u64 n)   { ofac(n); return O_n ? O_p[0] : 1; }
+static u64 o_sopf(u64 n)  { ofac(n); u64 s = 0; for (int i = 0; i < O_n; i++) s += O_p[i]; return s; }
+static u64 o_sopfr(u64 n) { ofac(n); u64 s = 0; for (int i = 0; i < O_n; i++) s += O_p[i] * (u64)O_e[i]; return s; }
+static int o_sqfree(u64 n){ ofac(n); for (int i = 0; i < O_n; i++) if (O_e[i] > 1) return 0; return 1; }
+static int o_cubefree(u64 n){ ofac(n); for (int i = 0; i < O_n; i++) if (O_e[i] > 2) return 0; return 1; }
+static int o_maxe(u64 n)  { ofac(n); int m = 0; for (int i = 0; i < O_n; i++) if (O_e[i] > m) m = O_e[i]; return m; }
+static int o_semi(u64 n)  { return n >= 4 && o_Omega(n) == 2; }
+static int o_comp(u64 n)  { return n >= 4 && !is_prime(n); }
+static u64 o_oddpart(u64 n) { while (n && !(n & 1)) n >>= 1; return n; }
+static int o_allp(u64 n, u64 m, u64 r) { ofac(n); for (int i = 0; i < O_n; i++) if (O_p[i] % m != r) return 0; return 1; }
+static int o_sum2sq(u64 n) { if (!n) return 1; ofac(n); for (int i = 0; i < O_n; i++) if (O_p[i] % 4 == 3 && (O_e[i] & 1)) return 0; return 1; }
+static u64 o_nextp(u64 n) { u64 m = n + 1; while (!is_prime(m)) m++; return m; }
+static u64 o_prevp(u64 n) { u64 m = n - 1; while (m >= 2 && !is_prime(m)) m--; return m; }
+static int o_issq(u64 n) { u64 r = isqrt_u64(n); return r * r == n; }
+static int o_istri(u64 n) { u64 r = isqrt_u64(8 * n + 1); return r * r == 8 * n + 1; }
+/* divisors of the number last passed to ofac(), ascending */
+static u64 O_d[1 << 14]; static int O_nd;
+static void o_divs(void)
+{
+    O_nd = 1; O_d[0] = 1;
+    for (int i = 0; i < O_n; i++) {
+        int m = O_nd; u64 pk = 1;
+        for (int e = 1; e <= O_e[i]; e++) { pk *= O_p[i]; for (int j = 0; j < m; j++) O_d[O_nd++] = O_d[j] * pk; }
+    }
+    qsort(O_d, (size_t)O_nd, sizeof(u64), cmp_u64);
+}
+/* multiplicative order of a mod p, p prime not dividing a */
+static u64 o_ord(u64 a, u64 p)
+{
+    u64 m = p - 1; ofac(m);
+    int n = O_n; u64 pp[64]; int ee[64];
+    for (int i = 0; i < n; i++) { pp[i] = O_p[i]; ee[i] = O_e[i]; }
+    for (int i = 0; i < n; i++) for (int e = 0; e < ee[i]; e++) { if (powmod(a, m / pp[i], p) == 1) m /= pp[i]; else break; }
+    return m;
+}
+
+/* primes by index, from a sieve that doubles on demand */
+static u64 *o_pl = NULL; static long o_pn = 0; static u64 o_plim = 0; static u8 *o_pc = NULL;
+static void o_prime_grow(u64 lim)
+{
+    if (lim <= o_plim) return;
+    free(o_pc); free(o_pl);
+    o_pc = composite_flags(lim);
+    long cap = 1024; o_pl = malloc(cap * sizeof(u64)); o_pn = 0;
+    for (u64 i = 2; i <= lim; i++) if (!o_pc[i]) { if (o_pn == cap) { cap *= 2; o_pl = realloc(o_pl, cap * sizeof(u64)); } o_pl[o_pn++] = i; }
+    o_plim = lim;
+}
+static u64 oprime(long i)                       /* i-th prime, 0-based */
+{ while (i >= o_pn) o_prime_grow(o_plim ? o_plim * 2 : (1ULL << 22)); return o_pl[i]; }
+static u64 oprime1(u64 n) { return oprime((long)n - 1); }     /* prime(n), 1-based */
+static int oisp(u64 x) { if (x <= o_plim) return x >= 2 && !o_pc[x]; return is_prime(x); }
+static u64 opi(u64 x)                           /* pi(x) */
+{
+    while (o_plim < x) o_prime_grow(o_plim ? o_plim * 2 : (1ULL << 22));
+    long lo = 0, hi = o_pn;
+    while (lo < hi) { long m = (lo + hi) / 2; if (o_pl[m] <= x) lo = m + 1; else hi = m; }
+    return (u64)lo;
+}
+/* p = i-th prime (0-based) with cond; the index form outputs i + 1 */
+#define OP_SEQ(name, cond) \
+static void name(u64 *t, long cnt) { long k = 0; for (long i = 0; k < cnt; i++) { u64 p = oprime(i); if (cond) t[k++] = p; } }
+#define OI_SEQ(name, cond) \
+static void name(u64 *t, long cnt) { long k = 0; for (long i = 0; k < cnt; i++) { u64 p = oprime(i); (void)p; if (cond) t[k++] = (u64)i + 1; } }
+
+/* values up to a bound, sorted and deduplicated; the bound doubles until there are enough */
+static u64 *o_b = NULL; static size_t o_bm = 0, o_bcap = 0;
+static void opush(u64 v) { if (o_bm == o_bcap) { o_bcap = o_bcap ? o_bcap * 2 : (1 << 16); o_b = realloc(o_b, o_bcap * sizeof(u64)); } o_b[o_bm++] = v; }
+static void o_bybound(u64 *t, long cnt, u64 B, void (*fill)(u64))
+{
+    for (;; B *= 2) {
+        o_bm = 0; fill(B);
+        qsort(o_b, o_bm, sizeof(u64), cmp_u64);
+        size_t u = 0; for (size_t i = 0; i < o_bm; i++) if (!u || o_b[i] != o_b[u - 1]) o_b[u++] = o_b[i];
+        if ((long)u > cnt) { memcpy(t, o_b, (size_t)cnt * sizeof(u64)); return; }
+    }
+}
+/* values whose number of representations lies in [lo, hi] */
+static void o_bycount(u64 *t, long cnt, u64 B, void (*fill)(u64), long lo, long hi)
+{
+    for (;; B *= 2) {
+        o_bm = 0; fill(B);
+        qsort(o_b, o_bm, sizeof(u64), cmp_u64);
+        long k = 0;
+        for (size_t i = 0; i < o_bm && k < cnt;) {
+            size_t j = i; while (j < o_bm && o_b[j] == o_b[i]) j++;
+            long c = (long)(j - i); if (c >= lo && c <= hi) t[k++] = o_b[i];
+            i = j;
+        }
+        if (k == cnt) {
+            /* the counts are complete only below the bound: stop when the last term is safely inside */
+            if (t[cnt - 1] <= B) return;
+        }
+    }
+}
+/* the complement of a set given by o_bybound-style fill, from `from` */
+static void o_complement(u64 *t, long cnt, u64 from, u64 B, void (*fill)(u64))
+{
+    for (;; B *= 2) {
+        o_bm = 0; fill(B);
+        qsort(o_b, o_bm, sizeof(u64), cmp_u64);
+        long k = 0; size_t i = 0;
+        for (u64 n = from; n <= B && k < cnt; n++) {
+            while (i < o_bm && o_b[i] < n) i++;
+            if (i < o_bm && o_b[i] == n) continue;
+            t[k++] = n;
+        }
+        if (k == cnt) return;
+    }
+}
+/* closure of a seed set under maps x -> f(x) > x, by bound */
+static u8 *o_mark = NULL;
+static void o_closure(u64 *t, long cnt, u64 B, const u64 *seed, int ns, int (*next)(u64, u64 *))
+{
+    for (;; B *= 2) {
+        free(o_mark); o_mark = calloc(B + 1, 1);
+        for (int i = 0; i < ns; i++) if (seed[i] <= B) o_mark[seed[i]] = 1;
+        long k = 0;
+        for (u64 x = 0; x <= B; x++) {
+            if (!o_mark[x]) continue;
+            if (k < cnt) t[k++] = x;
+            u64 y[8]; int m = next(x, y);
+            for (int j = 0; j < m; j++) if (y[j] > x && y[j] <= B) o_mark[y[j]] = 1;
+        }
+        if (k == cnt) return;
+    }
+}
+
+/* digits */
+static int o_nd(u64 n, u64 b) { int c = 0; do { c++; n /= b; } while (n); return c; }
+static u64 o_dmask(u64 n, u64 b) { u64 m = 0; do { m |= 1ULL << (n % b); n /= b; } while (n); return m; }
+static u64 o_rev(u64 n, u64 b) { u64 r = 0; while (n) { r = r * b + n % b; n /= b; } return r; }
+static int o_pal(u64 n, u64 b) { return n == o_rev(n, b); }
+static int o_lead(u64 n) { while (n >= 10) n /= 10; return (int)n; }
+static u64 o_cat(u64 a, u64 b) { u64 p = 10; while (p <= b) p *= 10; return a * p + b; }
+static int o_contains(u64 n, u64 s) { u64 p = 10; while (p <= s) p *= 10; do { if (n % p == s) return 1; n /= 10; } while (n >= s && n); return n == s; }
+static int o_ds128(u128 n) { int s = 0; while (n) { s += (int)(n % 10); n /= 10; } return s; }
+static u64 o_dmask128(u128 n) { u64 m = 0; do { m |= 1ULL << (int)(n % 10); n /= 10; } while (n); return m; }
+static int o_mdr(u64 n) { while (n >= 10) n = dprod10(n); return (int)n; }
+static int o_bits(u64 n) { int c = 0; while (n) { c++; n >>= 1; } return c; }
+static int o_binhas(u64 n, unsigned pat, int len)      /* bit pattern inside the binary expansion */
+{ int L = o_bits(n); if (!n) L = 1; for (int s = 0; s + len <= L; s++) if (((n >> s) & ((1u << len) - 1)) == pat) return 1; return 0; }
+
+/* numbers whose decimal digits are accepted by a small automaton, in increasing order:
+   tr(state, digit, position, length) gives the next state or -1; acc(state, length) accepts */
+typedef int (*o_trf)(int, int, int, int);
+static u64 *o_dt; static long o_dk, o_dcnt; static o_trf o_dtr; static int (*o_dacc)(int, int); static int (*o_dkeep)(u64);
+static void o_drec(int pos, int L, int st, u64 v)
+{
+    if (o_dk >= o_dcnt) return;
+    if (pos == L) { if (o_dacc(st, L) && (!o_dkeep || o_dkeep(v))) o_dt[o_dk++] = v; return; }
+    for (int d = (pos == 0 ? 1 : 0); d <= 9 && o_dk < o_dcnt; d++) { int s2 = o_dtr(st, d, pos, L); if (s2 >= 0) o_drec(pos + 1, L, s2, v * 10 + (u64)d); }
+}
+static void o_digits(u64 *t, long cnt, int with0, int st0, o_trf tr, int (*acc)(int, int), int (*keep)(u64))
+{
+    o_dt = t; o_dk = 0; o_dcnt = cnt; o_dtr = tr; o_dacc = acc; o_dkeep = keep;
+    if (with0) t[o_dk++] = 0;
+    for (int L = 1; L <= 19 && o_dk < cnt; L++) o_drec(0, L, st0, 0);
+    if (o_dk < cnt) { fprintf(stderr, "digit enumeration ran out\n"); exit(1); }
+}
+static int o_acc1(int s, int L) { (void)s; (void)L; return 1; }
+
+/* primes of a positive definite form a x^2 + b x y + c y^2 over all integers x, y */
+static u64 o_fa, o_fc; static long long o_fbs;
+static void o_fill_form(u64 B)
+{
+    long long a = (long long)o_fa, b = o_fbs, c = (long long)o_fc;
+    long double D = 4.0L * a * c - (long double)b * b;
+    long long Y = (long long)sqrtl(4.0L * a * (long double)B / D) + 2;
+    for (long long y = -Y; y <= Y; y++) {
+        long long X = (long long)sqrtl(4.0L * c * (long double)B / D) + 2 + llabs(b * y) / (2 * a);
+        for (long long x = -X; x <= X; x++) {
+            __int128 v = (__int128)a * x * x + (__int128)b * x * y + (__int128)c * y * y;
+            if (v >= 0 && v <= (__int128)B) opush((u64)v);
+        }
+    }
+}
+static int o_fprimes;
+static void o_fill_formp(u64 B)
+{
+    size_t m0 = o_bm; o_fill_form(B);
+    size_t k = m0; for (size_t i = m0; i < o_bm; i++) if (!o_fprimes || is_prime(o_b[i])) o_b[k++] = o_b[i];
+    o_bm = k;
+}
+static void o_form(u64 *t, long cnt, u64 a, long long b, u64 c, int primes)
+{ o_fa = a; o_fbs = b; o_fc = c; o_fprimes = primes; o_bybound(t, cnt, 1ULL << 20, o_fill_formp); }
+
+/* Beatty-type floor(n r + h) in long double; exact enough far below 2^53 for the r used */
+static void o_beatty(u64 *t, long cnt, long double r, long double h, u64 n1)
+{ for (long i = 0; i < cnt; i++) t[i] = (u64)floorl((long double)(n1 + (u64)i) * r + h); }
+
+/* the decomposition of a prime with its successor, as the atlas computes it */
+static int o_pdec(u64 p, u64 *k, u64 *L, u64 *d) { return decomp(p, o_nextp(p), k, L, d); }
+
+static void gen_o000062(u64 *t, long cnt) { o_beatty(t, cnt, 1.392211191177332814376552878479816528L, 0, 1); } /* F:Beatty */
+N_FILTER(gen_o001751, 2, is_prime(n) || (!(n & 1) && is_prime(n / 2)))                 /* F:primes */
+N_FILTER(gen_o001838, 1, o_phi(n + 2) == o_phi(n) + 2)                                  /* F:divisor functions */
+static void gen_o003485(u64 *t, long cnt)   /* F:powers */
+{ for (long i = 0; i < cnt; i++) t[i] = 8 * (u64)(i / 4) + (1ULL << (i % 4)); }
+static void gen_o003511(u64 *t, long cnt) { o_beatty(t, cnt, 1.366025403784438646763723170752936183L, 0, 1); } /* F:Beatty */
+static int o_inconsummate(u64 n) { for (u64 s = 1; s <= 200; s++) if (o_ds128((u128)n * s) == (int)s) return 0; return 1; }
+N_FILTER(gen_o003635, 1, o_inconsummate(n))                                             /* F:digit rule */
+N_FILTER(gen_o003726, 0, !(n & (n >> 1) & (n >> 2)))                                    /* F:binary rule */
+static int o_no000(u64 n) { if (!n) return 1; u64 m = (o_bits(n) >= 64) ? ~0ULL : ((1ULL << o_bits(n)) - 1); u64 z = ~n & m; return !(z & (z >> 1) & (z >> 2)); }
+N_FILTER(gen_o003796, 0, o_no000(n))                                                    /* F:binary rule */
+static int o_cf_odd(u64 n)                   /* the continued fraction of sqrt(n) has odd period */
+{
+    u64 a0 = isqrt_u64(n); if (a0 * a0 == n) return 0;
+    u64 m = 0, d = 1, a = a0; long per = 0;
+    do { m = d * a - m; d = (n - m * m) / d; a = (a0 + m) / d; per++; } while (a != 2 * a0);
+    return per & 1;
+}
+N_FILTER(gen_o003814, 2, o_cf_odd(n))                                                   /* F:quadratic form */
+static void o_fill_3possq(u64 B) { for (u64 x = 1; 3 * x * x <= B; x++) for (u64 y = x; x * x + 2 * y * y <= B; y++) for (u64 z = y; x * x + y * y + z * z <= B; z++) opush(x * x + y * y + z * z); }
+static void gen_o004214(u64 *t, long cnt) { o_complement(t, cnt, 1, 1 << 16, o_fill_3possq); }   /* F:quadratic form */
+N_FILTER(gen_o004611, 1, o_allp(n, 3, 1))                                                /* F:multiplicative */
+N_FILTER(gen_o004614, 1, o_allp(n, 4, 3))                                                /* F:multiplicative */
+N_FILTER(gen_o004742, 0, !o_binhas(n, 5, 3))                                             /* F:binary rule */
+N_FILTER(gen_o004743, 0, !o_binhas(n, 6, 3))                                             /* F:binary rule */
+N_FILTER(gen_o004744, 0, !o_binhas(n, 3, 3))                                             /* F:binary rule */
+N_FILTER(gen_o004745, 0, !o_binhas(n, 1, 3))                                             /* F:binary rule */
+N_FILTER(gen_o004746, 0, !o_binhas(n, 2, 3))                                             /* F:binary rule */
+static void gen_o005244(u64 *t, long cnt)   /* F:self-referential: 2, 3, then x y - 1 of two distinct earlier terms */
+{
+    for (u64 B = 1 << 16; ; B *= 2) {
+        u8 *m = calloc(B + 1, 1); u64 *v = malloc(sizeof(u64) * (B / 2 + 16)); long nv = 0, k = 0;
+        m[2] = m[3] = 1;
+        for (u64 x = 2; x <= B; x++) {
+            if (!m[x]) continue;
+            for (long j = 0; j < nv; j++) { u128 w = (u128)v[j] * x - 1; if (w > B) break; m[(u64)w] = 1; }
+            v[nv++] = x; if (k < cnt) t[k++] = x;
+        }
+        free(m); free(v); if (k == cnt) return;
+    }
+}
+static int o_close_pair(u64 n)           /* divisors d < e < 2d */
+{ ofac(n); o_divs(); for (int i = 2; i < O_nd; i++) if (O_d[i] < 2 * O_d[i - 1]) return 1; return 0; }
+N_FILTER(gen_o005279, 1, o_close_pair(n))                                                /* F:divisor functions */
+N_FILTER(gen_o005381, 2, o_comp(n) && o_comp(n - 1))                                     /* F:complement */
+N_FILTER(gen_o006073, 2, o_omega(n) == o_omega(n + 1) && o_omega(n + 1) == o_omega(n + 2)) /* F:multiplicative */
+static int o_selfnum(u64 n) { for (u64 m = n > 200 ? n - 200 : 0; m < n; m++) if (m + (u64)digitsum(m) == n) return 0; return 1; }
+OP_SEQ(gen_o006378, o_selfnum(p))                                                         /* F:primes */
+N_FILTER(gen_o006532, 1, o_issq(o_sigma(n)))                                             /* F:divisor functions */
+static void gen_o007378(u64 *t, long cnt)   /* F:self-referential: a(a(n)) = 2n, from n = 2 */
+{
+    for (long i = 0; i < cnt; i++) {
+        u64 n = (u64)i + 2; int k = o_bits(n) - 1; u64 P = 1ULL << k;
+        t[i] = (n < 3 * (P >> 1)) ? n + (P >> 1) : 2 * n - P;
+    }
+}
+OP_SEQ(gen_o007500, is_prime(reverse10(p)))                                               /* F:primes */
+static void gen_o007606(u64 *t, long cnt)   /* F:block: take 1, skip 2, take 3, ... */
+{ long k = 0; u64 n = 1; for (u64 b = 1; k < cnt; b += 2) { for (u64 j = 0; j < b && k < cnt; j++) t[k++] = n + j; n += b + (b + 1); } }
+static void o_fill_2sq_pos(u64 B) { for (u64 x = 1; 2 * x * x <= B; x++) for (u64 y = x; x * x + y * y <= B; y++) opush(x * x + y * y); }
+static void o_fill_2sq_0(u64 B) { for (u64 x = 0; 2 * x * x <= B; x++) for (u64 y = x; x * x + y * y <= B; y++) opush(x * x + y * y); }
+static void gen_o007692(u64 *t, long cnt) { o_bycount(t, cnt, 1 << 20, o_fill_2sq_pos, 2, 1L << 40); }   /* F:quadratic form */
+OP_SEQ(gen_o007700, oisp(2 * p + 1) && oisp(4 * p + 3))                                   /* F:primes */
+static int tr_123(int s, int d, int pos, int L) { (void)pos; (void)L; return (d >= 1 && d <= 3) ? s : -1; }
+static void gen_o007932(u64 *t, long cnt) { o_digits(t, cnt, 0, 0, tr_123, o_acc1, NULL); }    /* F:digit rule */
+N_FILTER(gen_o007957, 1, any_digit_in(n, 0x2AA))                                          /* F:digit rule */
+N_FILTER(gen_o008851, 0, n % 5 <= 1)                                                      /* F:residue class */
+static void o_fill_pyth_area(u64 B) { for (u64 m = 2; m * (m * m - 1) <= B; m++) for (u64 n = 1; n < m; n++) { u128 a = (u128)m * n * (m * m - n * n); if (a > B) continue; for (u64 k = 1; (u128)k * k * a <= B; k++) opush((u64)(k * k * a)); } }
+static void gen_o009112(u64 *t, long cnt) { o_bybound(t, cnt, 1 << 20, o_fill_pyth_area); }    /* F:quadratic form */
+static u64 o_hyp(u64 n) { ofac(n); u64 s = 1; for (int i = 0; i < O_n; i++) if (O_p[i] % 4 == 1) s *= (u64)(2 * O_e[i] + 1); return (s - 1) / 2; }
+N_FILTER(gen_o009177, 1, o_hyp(n) >= 2)                                                   /* F:quadratic form */
+static void gen_o013917(u64 *t, long cnt)   /* F:primes: the sum of all primes up to p is prime */
+{ long k = 0; u64 s = 0; for (long i = 0; k < cnt; i++) { u64 p = oprime(i); s += p; if (is_prime(s)) t[k++] = p; } }
+static void o_fill_cubediff(u64 B) { for (u64 d = 1; (d + 1) * (d + 1) * (d + 1) - 1 <= B; d++) for (u64 y = 1; ; y++) { u128 v = (u128)(y + d) * (y + d) * (y + d) - (u128)y * y * y; if (v > B) break; opush((u64)v); } }
+static void gen_o014439(u64 *t, long cnt) { o_bycount(t, cnt, 1 << 20, o_fill_cubediff, 1, 1); }  /* F:powers */
+static void gen_o015614(u64 *t, long cnt) { u64 s = 0; for (long i = 0; i < cnt; i++) { s += o_phi((u64)i + 1); t[i] = s - 1; } }   /* F:summatory */
+N_FILTER(gen_o015911, 1, powmod(2, n, n) & 1)                                             /* F:powers */
+static int o_strict_nonpal(u64 n)
+{
+    if (n <= 6) return n != 5;
+    if (!is_prime(n)) return 0;
+    u64 r = isqrt_u64(n) + 1;
+    for (u64 b = 2; b <= r && b <= n - 2; b++) if (o_pal(n, b)) return 0;
+    return 1;
+}
+N_FILTER(gen_o016038, 0, o_strict_nonpal(n))                                              /* F:digit rule */
+static void gen_o016885(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) t[i] = 5 * (u64)i + 3; }   /* F:arithmetic progression */
+static void gen_o018805(u64 *t, long cnt) { u64 s = 0; for (long i = 0; i < cnt; i++) { s += o_phi((u64)i + 1); t[i] = 2 * s - 1; } }   /* F:summatory */
+static void gen_o018825(u64 *t, long cnt) { o_complement(t, cnt, 1, 1 << 16, o_fill_2sq_pos); }   /* F:complement */
+static int tr_primedig(int s, int d, int pos, int L) { (void)pos; (void)L; return (d == 2 || d == 3 || d == 5 || d == 7) ? s : -1; }
+static int keep_prime(u64 v) { return is_prime(v); }
+static void gen_o019546(u64 *t, long cnt) { o_digits(t, cnt, 0, 0, tr_primedig, o_acc1, keep_prime); }   /* F:primes */
+static void gen_o022449(u64 *t, long cnt)   /* F:complement: composite(p) with p = 1, 2, 3, 5, 7, ... */
+{
+    u64 N = 1 << 20; u64 *c = NULL; long nc = 0;
+    for (long i = 0; i < cnt; i++) {
+        u64 idx = i == 0 ? 1 : oprime(i - 1);
+        while ((long)idx > nc) { free(c); N *= 2; c = malloc(N * sizeof(u64)); nc = 0; for (u64 x = 4; x < N; x++) if (!is_prime(x)) c[nc++] = x; }
+        t[i] = c[idx - 1];
+    }
+    free(c);
+}
+static void o_fill_sqcube0(u64 B) { for (u64 y = 0; y * y * y <= B; y++) for (u64 x = 0; x * x + y * y * y <= B; x++) opush(x * x + y * y * y); }
+static void o_fill_sqcube1(u64 B) { for (u64 y = 1; y * y * y <= B; y++) for (u64 x = 1; x * x + y * y * y <= B; x++) opush(x * x + y * y * y); }
+static void gen_o022549(u64 *t, long cnt) { o_bybound(t, cnt, 1 << 16, o_fill_sqcube0); }    /* F:powers */
+static u64 o_fibmod(u64 n, u64 m)            /* F(n) mod m, fast doubling */
+{
+    u64 a = 0, b = 1 % m;
+    for (int i = 63; i >= 0; i--) {
+        u64 c = mulmod(a, (2 * b % m + m - a) % m, m), d = (mulmod(a, a, m) + mulmod(b, b, m)) % m;
+        a = c; b = d;
+        if ((n >> i) & 1) { u64 e = (a + b) % m; a = b; b = e; }
+    }
+    return a;
+}
+N_FILTER(gen_o023173, 1, n == 1 || o_fibmod(n, n) == 1)                                   /* F:self-referential */
+N_FILTER(gen_o023197, 1, o_sigma(n) >= 3 * n)                                             /* F:divisor functions */
+static void gen_o023205(u64 *t, long cnt) { gen_plin(t, cnt, 2, 5); }                    /* F:primes */
+OP_SEQ(gen_o023241, oisp(p + 6) && oisp(p + 12))                                          /* F:primes */
+static void gen_o024898(u64 *t, long cnt) { long k = 0; for (u64 n = 1; k < cnt; n++) if (is_prime(6 * n - 1)) t[k++] = n; }   /* F:prime values */
+static void o_fill_3dcubes(u64 B) { for (u64 x = 1; 3 * x * x * x <= B; x++) for (u64 y = x + 1; x * x * x + 2 * y * y * y <= B; y++) for (u64 z = y + 1; ; z++) { u64 v = x * x * x + y * y * y + z * z * z; if (v > B) break; opush(v); } }
+static void gen_o024974(u64 *t, long cnt) { o_bycount(t, cnt, 1 << 20, o_fill_3dcubes, 2, 1L << 40); }   /* F:powers */
+static void gen_o024975(u64 *t, long cnt) { o_bybound(t, cnt, 1 << 16, o_fill_3dcubes); }             /* F:powers */
+static void gen_o025284(u64 *t, long cnt) { o_bycount(t, cnt, 1 << 20, o_fill_2sq_pos, 1, 1); }       /* F:quadratic form */
+OP_SEQ(gen_o025584, p < 4 || !oisp(p - 2))        /* F:primes */
+static void gen_o026351(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { u64 n = (u64)i; t[i] = (n + isqrt_u64(5 * n * n)) / 2 + 1; } }   /* F:Beatty */
+static int tr_curved(int s, int d, int pos, int L) { (void)pos; (void)L; return ((0x36D >> d) & 1) ? s : -1; }
+static void gen_o028374(u64 *t, long cnt) { o_digits(t, cnt, 1, 0, tr_curved, o_acc1, NULL); }        /* F:digit rule */
+N_FILTER(gen_o028835, 1, n % 9 == 2 || n % 9 == 3 || n % 9 == 5 || n % 9 == 7)           /* F:digit rule */
+static int tr_compdig(int s, int d, int pos, int L) { (void)pos; (void)L; return (d == 4 || d == 6 || d == 8 || d == 9) ? s : -1; }
+static void gen_o029581(u64 *t, long cnt) { o_digits(t, cnt, 0, 0, tr_compdig, o_acc1, NULL); }       /* F:digit rule */
+static int o_digsub128(u64 p) { u128 q = (u128)p * p; return (o_dmask(p, 10) & ~o_dmask128(q)) == 0; }
+OP_SEQ(gen_o030079, o_digsub128(p))                                                       /* F:primes */
+N_FILTER(gen_o030143, 0, !(n & 1) && alt_parity(n))                                        /* F:digit rule */
+static int tr_alt(int s, int d, int pos, int L) { (void)L; if (pos == 0) return d & 1; return ((d & 1) != s) ? (d & 1) : -1; }
+static void gen_o030144(u64 *t, long cnt) { o_digits(t, cnt, 0, 0, tr_alt, o_acc1, keep_prime); }    /* F:primes */
+N_FILTER(gen_o030457, 1, is_prime(o_cat(n, n + 1)))                                       /* F:digit rule */
+OP_SEQ(gen_o030459, is_prime(o_cat(p, oprime(i + 1))))                                    /* F:primes */
+static void gen_o031368(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) t[i] = oprime(2 * i); }  /* F:primes */
+OP_SEQ(gen_o031932, oprime(i + 1) - p == 14)                                              /* F:primes */
+OP_SEQ(gen_o031934, oprime(i + 1) - p == 16)                                              /* F:primes */
+OP_SEQ(gen_o031936, oprime(i + 1) - p == 18)                                              /* F:primes */
+static void gen_o031955(u64 *t, long cnt)   /* F:digit rule: exactly two distinct digits */
+{
+    long k = 0;
+    for (int L = 2; k < cnt; L++) {
+        size_t m0 = 0; o_bm = 0;
+        for (int a = 0; a <= 9; a++) for (int b = a + 1; b <= 9; b++)
+            for (u64 mask = 1; mask + 1 < (1ULL << L); mask++) {
+                if (((mask >> (L - 1)) & 1) == 0 && a == 0) continue;     /* leading digit is a = 0 */
+                u64 v = 0; for (int j = L - 1; j >= 0; j--) v = v * 10 + (u64)(((mask >> j) & 1) ? b : a);
+                opush(v);
+            }
+        qsort(o_b + m0, o_bm - m0, sizeof(u64), cmp_u64);
+        for (size_t i = 0; i < o_bm && k < cnt; i++) t[k++] = o_b[i];
+    }
+}
+N_FILTER(gen_o032352, 1, ({ int f = 1; for (u64 j = 10 * n; j <= 10 * n + 9; j++) if (is_prime(j)) { f = 0; break; } f; }))  /* F:primes */
+static int tr_step01(int s, int d, int pos, int L) { (void)L; if (pos == 0) return d; return (d == s || d == s + 1 || d + 1 == s) ? d : -1; }
+static void gen_o032981(u64 *t, long cnt) { o_digits(t, cnt, 0, 0, tr_step01, o_acc1, NULL); }       /* F:digit rule */
+static int o_runs2(u64 n) { if (!n) return 0; int prev = -1, run = 0; while (n) { int b = n & 1; if (b == prev) run++; else { if (prev >= 0 && run < 2) return 0; prev = b; run = 1; } n >>= 1; } return run >= 2; }
+N_FILTER(gen_o033015, 1, o_runs2(n))                                                      /* F:binary rule */
+static void gen_o033556(u64 *t, long cnt) { u64 a = 3; for (long i = 0; i < cnt; i++) { t[i] = a; a = 2 * a - o_prevp(a); } }   /* F:primes */
+static int o_hasproot(u64 n) { if (n <= 4) return 1; u64 m = (n & 1) ? n : n / 2; if (!(m & 1)) return 0; ofac(m); return O_n == 1; }
+N_FILTER(gen_o033948, 1, o_hasproot(n))                                                   /* F:multiplicative */
+N_FILTER(gen_o033949, 1, !o_hasproot(n))                                                  /* F:multiplicative */
+static int o_prim_loesch(u64 n) { if (n == 0 || n == 1) return 1; if (n % 9 == 0) return 0; ofac(n); for (int i = 0; i < O_n; i++) if (O_p[i] != 3 && O_p[i] % 3 != 1) return 0; return 1; }
+N_FILTER(gen_o034017, 0, o_prim_loesch(n))                                                /* F:quadratic form */
+static int o_loesch(u64 n) { if (!n) return 1; ofac(n); for (int i = 0; i < O_n; i++) if (O_p[i] % 3 == 2 && (O_e[i] & 1)) return 0; return 1; }
+N_FILTER(gen_o034020, 1, !o_loesch(n))                                                    /* F:quadratic form */
+N_FILTER(gen_o034048, 0, o_mdr(n) == 0)                                                   /* F:digit rule */
+N_FILTER(gen_o034683, 1, o_usigma(n) > 2 * n)                                             /* F:divisor functions */
+static void o_fill_consq(u64 B) { opush(0); for (u64 i = 1; i * i <= B; i++) { u64 s = 0; for (u64 j = i; ; j++) { s += j * j; if (s > B) break; opush(s); } } }
+static void gen_o034705(u64 *t, long cnt) { o_bybound(t, cnt, 1 << 16, o_fill_consq); }                /* F:summatory */
+N_FILTER(gen_o034837, 1, n % (u64)o_lead(n) == 0)                                         /* F:digit rule */
+N_FILTER(gen_o034838, 1, !has_digit(n, 0) && div_each_digit(n))                           /* F:digit rule */
+static void o_consec_prime_sums(u64 *t, long cnt, int w)
+{ long k = 0; u64 s = 0; for (int j = 0; j < w; j++) s += oprime(j); for (long i = 0; k < cnt; i++) { if (is_prime(s)) t[k++] = s; s += oprime(i + w) - oprime(i); } }
+static void gen_o034962(u64 *t, long cnt) { o_consec_prime_sums(t, cnt, 3); }            /* F:primes */
+static void gen_o034965(u64 *t, long cnt) { o_consec_prime_sums(t, cnt, 5); }            /* F:primes */
+static void o_fill_concat(u64 B) { for (u64 s = 1; o_cat(s, s + 1) <= B; s++) { u64 v = s; for (u64 j = s + 1; ; j++) { u128 w = (u128)v; u64 p = 10; while (p <= j) p *= 10; w = w * p + j; if (w > B) break; v = (u64)w; opush(v); } } }
+static void gen_o035333(u64 *t, long cnt) { o_bybound(t, cnt, 1 << 20, o_fill_concat); }               /* F:digit rule */
+static void gen_o035336(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { u64 n = (u64)i + 1; t[i] = 2 * ((n + isqrt_u64(5 * n * n)) / 2) + n - 1; } }   /* F:Beatty */
+OP_SEQ(gen_o035497, happy(p))                                                             /* F:primes */
+static void gen_o035928(u64 *t, long cnt)   /* F:binary rule: the complement of n reversed is n */
+{
+    long k = 0;
+    for (int h = 1; k < cnt; h++)
+        for (u64 x = 1ULL << (h - 1); x < (1ULL << h) && k < cnt; x++) {
+            /* low bit h-1-j is the complement of bit j of the top half */
+            u64 low = 0; for (int j = 0; j < h; j++) { int top = (int)((x >> j) & 1); low |= (u64)(1 - top) << (h - 1 - j); }
+            t[k++] = (x << h) | low;
+        }
+}
+static int o_evenodd_eq(u64 n) { int e = 0, o = 0; do { int d = (int)(n % 10); if (d & 1) o += d; else e += d; n /= 10; } while (n); return e == o; }
+N_FILTER(gen_o036301, 0, o_evenodd_eq(n))                                                 /* F:digit rule */
+N_FILTER(gen_o036433, 1, ({ u64 d = o_tau(n); d <= 9 && has_digit(n, (int)d); }))       /* F:divisor functions */
+static void gen_o036441(u64 *t, long cnt) { u64 a = 2; for (long i = 0; i < cnt; i++) { t[i] = a; u64 g = o_gpf(a); a = (a / g + 1) * g; } }   /* F:self-referential */
+N_FILTER(gen_o036455, 1, ({ u64 d = o_tau(o_tau(n)); d > 2 && is_prime(d); }))            /* F:divisor functions */
+static int o_tau_pow2(u64 n) { ofac(n); for (int i = 0; i < O_n; i++) { int e = O_e[i] + 1; if (e & (e - 1)) return 0; } return 1; }
+N_FILTER(gen_o036537, 1, o_tau_pow2(n))                                                   /* F:divisor functions */
+static int o_ones_le_zeros(u64 n) { int c = 0; while (n) { c += (n & 1) ? 1 : -1; if (c > 0) return 0; n >>= 1; } return 1; }
+N_FILTER(gen_o036990, 0, o_ones_le_zeros(n))                                              /* F:binary rule */
+N_FILTER(gen_o037144, 1, o_Omega(n) <= 3)                                                 /* F:multiplicative */
+N_FILTER(gen_o037301, 0, dsum_b(n, 2) == dsum_b(n, 3))                                    /* F:digit rule */
+N_FILTER(gen_o037308, 0, dsum_b(n, 2) == dsum_b(n, 10))                                   /* F:digit rule */
+static int o_bin_in(u64 n, u64 b) { u64 m = o_dmask(n, b), bm = o_dmask(n, 2); return (bm & ~m) == 0; }
+N_FILTER(gen_o037372, 1, o_bin_in(n, 3))                                                  /* F:digit rule */
+N_FILTER(gen_o037373, 1, o_bin_in(n, 4))                                                  /* F:digit rule */
+N_FILTER(gen_o037374, 1, o_bin_in(n, 5))                                                  /* F:digit rule */
+N_FILTER(gen_o037380, 1, (o_dmask(n, 3) & ~o_dmask(n, 4)) == 0)                            /* F:digit rule */
+N_FILTER(gen_o037386, 1, (o_dmask(n, 3) & ~o_dmask(n, 10)) == 0)                           /* F:digit rule */
+static void gen_o038599(u64 *t, long cnt) { long k = 0; for (u64 n = 1; k < cnt; n++) if (isprime_s((i128)n * n * n - 2)) t[k++] = n; }   /* F:prime values */
+OP_SEQ(gen_o038618, !has_digit(p, 0))                                                     /* F:primes */
+N_FILTER(gen_o038772, 1, !has_digit(n, 1) && !div_by_a_digit(n))                          /* F:digit rule */
+static void gen_o038812(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) t[i] = opi(1000 * ((u64)i + 1)); }   /* F:primes */
+N_FILTER(gen_o039004, 0, count_dig(n, 4, 1) == count_dig(n, 4, 2))                        /* F:digit rule */
+N_FILTER(gen_o039770, 1, o_issq(o_phi(n)))                                                /* F:divisor functions */
+static int o_adjdist(u64 n) { int last = -1; do { int d = (int)(n % 10); if (d == last) return 0; last = d; n /= 10; } while (n); return 1; }
+N_FILTER(gen_o043096, 0, o_adjdist(n))                                                    /* F:digit rule */
+N_FILTER(gen_o043489, 0, count_dig(n, 10, 0) == 1)                                        /* F:digit rule */
+static void o_fill_ppm1(u64 B) { for (u64 m = 2; m * m <= B + 1; m++) { u128 v = (u128)m * m; while (v <= (u128)B + 1) { opush((u64)v - 1); v *= m; } } }
+static void gen_o045542(u64 *t, long cnt) { o_bybound(t, cnt, 1 << 20, o_fill_ppm1); }                 /* F:powers */
+OP_SEQ(gen_o045708, o_lead(p) == 2)                                                       /* F:primes */
+N_FILTER(gen_o045746, 1, o_istri(o_sigma(n)))                                             /* F:divisor functions */
+static void gen_o045753(u64 *t, long cnt) { long k = 0; for (u64 n = 1; k < cnt; n++) if (is_prime(4 * n - 1) && is_prime(4 * n + 1)) t[k++] = n; }   /* F:prime values */
+static void gen_o045776(u64 *t, long cnt) { u64 a = 1; for (long i = 0; i < cnt; i++) { t[i] = a; u64 s = (u64)digitsum(a); a = (a / s + 1) * s; } }   /* F:self-referential */
+N_FILTER(gen_o045797, 1, gcd_u64(n, 10) == 1 && ((n / 10) % 2 == 0))                        /* F:residue class */
+N_FILTER(gen_o045798, 1, gcd_u64(n, 10) == 1 && ((n / 10) % 2 == 1))                        /* F:residue class */
+static int o_maxdig(u64 n) { int m = 0; do { int d = (int)(n % 10); if (d > m) m = d; n /= 10; } while (n); return m; }
+static void gen_o045844(u64 *t, long cnt) { u64 a = 1; for (long i = 0; i < cnt; i++) { t[i] = a; a += (u64)o_maxdig(a); } }   /* F:self-referential */
+N_FILTER(gen_o045939, 1, o_Omega(n) == o_Omega(n + 1) && o_Omega(n + 1) == o_Omega(n + 2))  /* F:multiplicative */
+static void gen_o046025(u64 *t, long cnt) { long k = 0; for (u64 n = 1; k < cnt; n++) if (is_prime(6 * n + 1) && is_prime(12 * n + 1) && is_prime(18 * n + 1)) t[k++] = n; }   /* F:prime values */
+N_FILTER(gen_o046316, 27, (n & 1) && o_Omega(n) == 3)                                     /* F:multiplicative */
+N_FILTER(gen_o046642, 1, gcd_u64(n, o_tau(n)) == 1)                                       /* F:divisor functions */
+OP_SEQ(gen_o046704, is_prime((u64)digitsum(p)))                                           /* F:primes */
+N_FILTER(gen_o046711, 1, (n % 4 == 1 || n % 4 == 2) && o_sum2sq(n))                        /* F:quadratic form */
+N_FILTER(gen_o046712, 1, (n % 4 == 1 || n % 4 == 2) && !o_sum2sq(n))                       /* F:quadratic form */
+static int o_economical(u64 n) { if (n < 2) return 0; ofac(n); int d = 0; for (int i = 0; i < O_n; i++) { d += o_nd(O_p[i], 10); if (O_e[i] > 1) d += o_nd((u64)O_e[i], 10); } return d < o_nd(n, 10); }
+N_FILTER(gen_o046759, 1, o_economical(n))                                                 /* F:digit rule */
+OP_SEQ(gen_o046869, i >= 1 && (u128)p * p > (u128)oprime(i - 1) * oprime(i + 1))          /* F:primes */
+N_FILTER(gen_o046953, 1, !is_prime(6 * n - 1))                                            /* F:complement */
+static void gen_o046992(u64 *t, long cnt) { u64 s = 0; for (long i = 0; i < cnt; i++) { s += opi((u64)i + 1); t[i] = s; } }   /* F:summatory */
+OP_SEQ(gen_o047078, i >= 1 && oprime(i + 1) == p + 2 && p - oprime(i - 1) >= 6 && oprime(i + 2) - oprime(i + 1) >= 6)   /* F:primes */
+N_FILTER(gen_o047336, 1, n % 7 == 1 || n % 7 == 6)                                        /* F:residue class */
+N_FILTER(gen_o047522, 1, n % 8 == 1 || n % 8 == 7)                                        /* F:residue class */
+N_FILTER(gen_o047791, 1, is_prime(n + (u64)digitsum(n)))                                  /* F:digit rule */
+static void gen_o047845(u64 *t, long cnt) { long k = 0; for (u64 m = 1; k < cnt; m += 2) if (!is_prime(m)) t[k++] = (m - 1) / 2; }   /* F:complement */
+N_FILTER(gen_o048098, 1, n == 1 || o_gpf(n) * o_gpf(n) <= n)                               /* F:smooth */
+static int o_nopp(u64 n) { ofac(n); for (int i = 0; i < O_n; i++) if ((u64)O_e[i] >= O_p[i]) return 0; return 1; }
+N_FILTER(gen_o048103, 1, o_nopp(n))                                                       /* F:multiplicative */
+static int o_eqsqf(u64 n) { u64 d = o_tau(n); return d == (2ULL << O_n); }
+N_FILTER(gen_o048109, 2, o_eqsqf(n))                                        /* F:divisor functions */
+OP_SEQ(gen_o048161, p > 2 && oisp((p * p + 1) / 2))                                        /* F:primes */
+OP_SEQ(gen_o048521, !o_selfnum(p))                                                          /* F:primes */
+static void gen_o048701(u64 *t, long cnt)   /* F:binary rule: binary palindromes of even length, from 0 */
+{ long k = 0; t[k++] = 0; for (int h = 1; k < cnt; h++) for (u64 x = 1ULL << (h - 1); x < (1ULL << h) && k < cnt; x++) t[k++] = (x << h) | o_rev(x, 2); }
+static void gen_o048989(u64 *t, long cnt) { long k = 0; for (u64 n = 2; k < cnt; n++) if (is_prime(opi(n))) t[k++] = n; }   /* F:primes */
+static void gen_o049039(u64 *t, long cnt)   /* F:block: 1 odd, 2 even, 4 odd, 8 even, ... */
+{ long k = 0; u64 a = 1; t[k++] = 1; for (u64 b = 2; k < cnt; b *= 2) for (u64 j = 0; j < b && k < cnt; j++) { a += (j == 0) ? 1 : 2; t[k++] = a; } }
+static void o_fill_qsq(u64 B) { for (u64 n = 0; n * n / 4 <= B; n++) opush(n * n / 4); }
+static void gen_o049068(u64 *t, long cnt) { o_complement(t, cnt, 1, 1 << 16, o_fill_qsq); }   /* F:complement */
+OP_SEQ(gen_o049282, p >= 3 && o_sqfree(p - 2) && o_sqfree(p + 2))                          /* F:primes */
+static void gen_o049532(u64 *t, long cnt) { long k = 0; for (u64 n = 1; k < cnt; n++) if (!o_sqfree(n * n + 1)) t[k++] = n; }   /* F:polynomial */
+N_FILTER(gen_o050384, 1, !is_prime(n) && gcd_u64(n, o_phi(n)) == 1)                         /* F:multiplicative */
+static void gen_o050435(u64 *t, long cnt)   /* F:complement: composite(composite(n)) */
+{
+    u64 N = 1 << 22; u64 *c = malloc(N * sizeof(u64)); long nc = 0;
+    for (u64 x = 4; x < N; x++) if (!is_prime(x)) c[nc++] = x;
+    for (long i = 0; i < cnt; i++) {
+        u64 j = c[i];
+        while ((long)j > nc) { N *= 2; c = realloc(c, N * sizeof(u64)); nc = 0; for (u64 x = 4; x < N; x++) if (!is_prime(x)) c[nc++] = x; }
+        t[i] = c[j - 1];
+    }
+    free(c);
+}
+static int o_nosubfac(u64 n) { if (n < 4 || is_prime(n)) return 0; ofac(n); u64 ps[64]; int m = O_n; for (int i = 0; i < m; i++) ps[i] = O_p[i]; for (int i = 0; i < m; i++) if (o_contains(n, ps[i])) return 0; return 1; }
+N_FILTER(gen_o050695, 4, o_nosubfac(n))                                                     /* F:digit rule */
+N_FILTER(gen_o050795, 2, o_sum2sq(n * n - 1))   /* F:quadratic form */
+static int o_nopal2to10(u64 n) { for (u64 b = 2; b <= 10; b++) if (o_pal(n, b)) return 0; return 1; }
+N_FILTER(gen_o050813, 1, o_nopal2to10(n))                                                   /* F:digit rule */
+static int o_has1mod6(u64 n) { ofac(n); for (int i = 0; i < O_n; i++) if (O_p[i] % 6 == 1) return 1; return 0; }
+N_FILTER(gen_o050931, 1, o_has1mod6(n))                                                     /* F:multiplicative */
+static void o_fill_cps(u64 B) { for (long i = 0; oprime(i) + oprime(i + 1) <= B; i++) { u64 s = oprime(i); for (long j = i + 1; ; j++) { s += oprime(j); if (s > B) break; opush(s); } } }
+static void gen_o050936(u64 *t, long cnt) { o_bybound(t, cnt, 1 << 20, o_fill_cps); }       /* F:primes */
+N_FILTER(gen_o051004, 1, !has_digit(n, 0) && div_each_digit(n) && n % (u64)digitsum(n) == 0)  /* F:digit rule */
+static int o_kp(u64 n) { ofac(n); u64 P = 0; for (int i = 0; i < O_n; i++) { u64 q = 1; for (int e = 0; e < O_e[i]; e++) q *= O_p[i]; if (q > P) P = q; } return n / P > P; }
+N_FILTER(gen_o051283, 2, o_kp(n))                                                           /* F:multiplicative */
+OP_SEQ(gen_o051507, oisp(p * oprime(i + 1) + 2))                                            /* F:primes */
+static void gen_o051677(u64 *t, long cnt)   /* F:summatory: partial sums of 1, 1,3, 1,3,6, 1,3,6,10, ... */
+{ long k = 0; u64 s = 0; for (u64 b = 1; k < cnt; b++) for (u64 j = 1; j <= b && k < cnt; j++) { s += j * (j + 1) / 2; t[k++] = s; } }
+static int o_cube_nozero(u64 p) { u128 c = (u128)p * p * p; do { if (c % 10 == 0) return 0; c /= 10; } while (c); return 1; }
+OP_SEQ(gen_o051750, o_cube_nozero(p))                                                       /* F:primes */
+N_FILTER(gen_o052018, 0, o_contains(n, (u64)digitsum(n)))                                   /* F:digit rule */
+static int o_comp_allbases(u64 n) { for (u64 b = 2; b <= 10; b++) { u64 v = read_dec_base(n, b); if (v < 4 || is_prime(v)) return 0; } return 1; }
+N_FILTER(gen_o052026, 4, o_comp_allbases(n))                                                /* F:digit rule */
+static int o_sqdig(u64 n) { int s = 0; do { int d = (int)(n % 10); s += d * d; n /= 10; } while (n); return s; }
+OP_SEQ(gen_o052034, is_prime((u64)o_sqdig(p)))                                              /* F:primes */
+static int o_sq_nozero(u64 n) { u128 c = (u128)n * n; do { if (c % 10 == 0) return 0; c /= 10; } while (c); return 1; }
+N_FILTER(gen_o052040, 1, o_sq_nozero(n))                                                    /* F:digit rule */
+OP_SEQ(gen_o052042, o_sq_nozero(p))                                                         /* F:primes */
+N_FILTER(gen_o052044, 1, o_cube_nozero(n))                                                  /* F:digit rule */
+static int o_sig_eq(u64 a, u64 b)
+{ ofac(a); int ea[64], na = O_n; for (int i = 0; i < na; i++) ea[i] = O_e[i]; ofac(b); if (O_n != na) return 0;
+  int eb[64]; for (int i = 0; i < na; i++) eb[i] = O_e[i];
+  for (int i = 1; i < na; i++) for (int j = i; j > 0 && ea[j - 1] > ea[j]; j--) { int x = ea[j]; ea[j] = ea[j - 1]; ea[j - 1] = x; }
+  for (int i = 1; i < na; i++) for (int j = i; j > 0 && eb[j - 1] > eb[j]; j--) { int x = eb[j]; eb[j] = eb[j - 1]; eb[j - 1] = x; }
+  for (int i = 0; i < na; i++) if (ea[i] != eb[i]) return 0;
+  return 1; }
+N_FILTER(gen_o052214, 2, o_sig_eq(n, n + 1) && o_sig_eq(n + 1, n + 2))                     /* F:multiplicative */
+static int tr_sum9(int s, int d, int pos, int L) { (void)pos; (void)L; return s + d <= 9 ? s + d : -1; }
+static int acc_9(int s, int L) { (void)L; return s == 9; }
+static void gen_o052223(u64 *t, long cnt) { o_digits(t, cnt, 0, 0, tr_sum9, acc_9, NULL); }   /* F:digit rule */
+static int nx_052499(u64 x, u64 *y) { y[0] = 2 * x; y[1] = 4 * x - 1; return x ? 2 : 0; }
+static void gen_o052499(u64 *t, long cnt) { u64 s[1] = {1}; o_closure(t, cnt, 1 << 20, s, 1, nx_052499); }   /* F:self-referential */
+OP_SEQ(gen_o053176, !oisp(2 * p + 1))                                                       /* F:primes */
+N_FILTER(gen_o053224, 1, o_sigma(n) < o_sigma(n + 1))                                       /* F:divisor functions */
+static const int o_alpha_rank[10] = {9, 4, 8, 7, 2, 1, 6, 5, 0, 3};   /* eight five four nine one seven six three two zero */
+static int tr_alpha(int s, int d, int pos, int L) { (void)L; int r = o_alpha_rank[d]; if (pos == 0) return r; return r >= s ? r : -1; }
+static void gen_o053432(u64 *t, long cnt) { o_digits(t, cnt, 1, 0, tr_alpha, o_acc1, NULL); }  /* F:digit rule */
+static void o_fill_repunit(u64 B) { for (u64 b = 2; 1 + b + b * b <= B; b++) { u128 v = 1 + b + (u128)b * b, pw = (u128)b * b; while (v <= B) { opush((u64)v); pw *= b; v += pw; } } }
+static void gen_o053696(u64 *t, long cnt) { o_bybound(t, cnt, 1 << 20, o_fill_repunit); }   /* F:powers */
+N_FILTER(gen_o053868, 2, (o_sigma(n) - n) & 1)                                              /* F:divisor functions */
+N_FILTER(gen_o054211, 1, is_prime(o_cat(n, n - 1)))                                         /* F:digit rule */
+static void o_kolakoski(u8 *k, long n)       /* A000002, k[1..n] */
+{ k[1] = 1; k[2] = 2; k[3] = 2; long w = 4; for (long r = 3; w <= n; r++) { u8 v = (r & 1) ? 1 : 2; for (int j = 0; j < k[r] && w <= n; j++) k[w++] = v; } }
+static void gen_o054353(u64 *t, long cnt) { u8 *k = malloc(cnt + 8); o_kolakoski(k, cnt + 4); u64 s = 0; for (long i = 0; i < cnt; i++) { s += k[i + 1]; t[i] = s; } free(k); }   /* F:summatory */
+static void gen_o054402(u64 *t, long cnt) { o_bycount(t, cnt, 1 << 20, o_fill_sqcube1, 2, 1L << 40); }   /* F:powers */
+N_FILTER(gen_o054741, 1, 2 * o_phi(n) < n)                                                  /* F:divisor functions */
+N_FILTER(gen_o055039, 1, ({ u64 x = n; int i = 0; while (!(x & 1)) { x >>= 1; i++; } (i & 1) && x % 8 == 7; }))   /* F:residue class */
+N_FILTER(gen_o055040, 1, ({ u64 x = n; int i = 0; while (x % 3 == 0) { x /= 3; i++; } (i & 1) && x % 3 == 2; }))  /* F:residue class */
+N_FILTER(gen_o055048, 1, ({ u64 x = n; while (x % 9 == 0) x /= 9; x % 3 == 2; }))          /* F:residue class */
+static void gen_o055393(u64 *t, long cnt) { o_bycount(t, cnt, 1 << 20, o_fill_sqcube0, 2, 1L << 40); }   /* F:powers */
+static void o_fill_055638(u64 B)            /* k with sigma(k^2) prime: k a prime power */
+{
+    for (long i = 0; oprime(i) <= B; i++) {
+        u64 p = oprime(i); u128 pk = p;
+        for (int e = 1; pk <= B; e++, pk *= p) {
+            u128 s = 1, q = 1; int ok = 1;
+            for (int j = 0; j < 2 * e; j++) { q *= p; s += q; if (s >= ((u128)1 << 64)) { ok = 0; break; } }
+            if (ok && is_prime((u64)s)) opush((u64)pk);
+        }
+    }
+}
+static void gen_o055638(u64 *t, long cnt) { o_bybound(t, cnt, 1 << 20, o_fill_055638); }    /* F:divisor functions */
+N_FILTER(gen_o056020, 1, n % 9 == 1 || n % 9 == 8)                                          /* F:residue class */
+static void gen_o056524(u64 *t, long cnt)   /* F:digit rule: palindromes with an even number of digits */
+{ long k = 0; for (u64 lo = 1, hi = 10; k < cnt; lo *= 10, hi *= 10) for (u64 x = lo; x < hi && k < cnt; x++) t[k++] = x * hi + reverse10(x) * (x % 10 == 0 ? 1 : 1); }
+OP_SEQ(gen_o056709, has_digit(p, 0))                                                        /* F:primes */
+N_FILTER(gen_o056809, 1, o_semi(n) && o_semi(n + 1) && o_semi(n + 2))                       /* F:multiplicative */
+static u64 o_lookandsay(u64 n)
+{ char s[24]; int L = snprintf(s, sizeof s, "%llu", (unsigned long long)n); u128 v = 0; for (int i = 0; i < L;) { int j = i; while (j < L && s[j] == s[i]) j++; v = v * 10 + (u64)(j - i); v = v * 10 + (u64)(s[i] - '0'); i = j; if (v >= ((u128)1 << 63)) return 0; } return (u64)v; }
+OP_SEQ(gen_o056815, ({ u64 v = o_lookandsay(p); v && is_prime(v); }))                       /* F:primes */
+static int o_nilpotent(u64 n)
+{
+    ofac(n); u64 p[64]; int e[64], m = O_n; for (int i = 0; i < m; i++) { p[i] = O_p[i]; e[i] = O_e[i]; }
+    for (int i = 0; i < m; i++) { u64 pk = 1; for (int k = 1; k <= e[i]; k++) { pk *= p[i]; for (int j = 0; j < m; j++) if (j != i && (pk - 1) % p[j] == 0) return 0; } }
+    return 1;
+}
+N_FILTER(gen_o056867, 1, o_nilpotent(n))                                                    /* F:multiplicative */
+N_FILTER(gen_o056868, 1, !o_nilpotent(n))                                                   /* F:multiplicative */
+static void gen_o056874(u64 *t, long cnt) { o_form(t, cnt, 1, 1, 3, 1); }                  /* F:quadratic form */
+static void gen_o057165(u64 *t, long cnt)   /* F:self-referential: steps where Recaman's sequence adds */
+{
+    for (u64 B = 1 << 24; ; B *= 2) {
+        u8 *m = calloc(B + 1, 1); u64 a = 0; long k = 0; m[0] = 1; int ok = 1;
+        t[k++] = 0;
+        for (u64 n = 1; k < cnt; n++) {
+            if (a > n && !m[a - n]) a -= n; else { a += n; t[k++] = n; }
+            if (a > B) { ok = 0; break; }
+            m[a] = 1;
+        }
+        free(m); if (ok) return;
+    }
+}
+static int tr_1to6(int s, int d, int pos, int L) { (void)pos; (void)L; return (d >= 1 && d <= 6) ? s : -1; }
+static void gen_o057436(u64 *t, long cnt) { o_digits(t, cnt, 0, 0, tr_1to6, o_acc1, NULL); }   /* F:digit rule */
+N_FILTER(gen_o058369, 0, o_ds128((u128)n) == o_ds128((u128)n * n))                          /* F:digit rule */
+N_FILTER(gen_o059269, 1, o_tau(n) % 3 == 0)                                                 /* F:divisor functions */
+static int o_diffexp(u64 n) { ofac(n); for (int i = 1; i < O_n; i++) if (O_e[i] != O_e[0]) return 1; return 0; }
+N_FILTER(gen_o059404, 1, o_diffexp(n))                                                      /* F:multiplicative */
+OP_SEQ(gen_o059456, !(p > 3 && oisp((p - 1) / 2)))                                          /* F:primes */
+static int o_sameparity(u64 n) { int par = (int)(n % 10) & 1; do { if (((int)(n % 10) & 1) != par) return 0; n /= 10; } while (n); return 1; }
+N_FILTER(gen_o059708, 0, o_sameparity(n))                                                   /* F:digit rule */
+OP_SEQ(gen_o060254, p > 5 && o_comp((p - 1) / 2) && o_comp((p + 1) / 2))                    /* F:primes */
+static int o_kpal_fill_k;
+static void o_fill_kpal(u64 B)
+{
+    int k = o_kpal_fill_k;
+    for (u64 b = 2; ; b++) {
+        u128 lo = 1; for (int j = 1; j < k; j++) lo *= b;
+        if (lo > B) break;
+        int h = (k + 1) / 2; u64 cntv = 1; for (int j = 0; j < h; j++) cntv *= b;
+        for (u64 x = cntv / b; x < cntv; x++) {                   /* first h digits, leading digit nonzero */
+            u64 dg[40]; u64 y = x; for (int j = h - 1; j >= 0; j--) { dg[j] = y % b; y /= b; }
+            for (int j = h; j < k; j++) dg[j] = dg[k - 1 - j];
+            u128 v = 0; for (int j = 0; j < k; j++) v = v * b + dg[j];
+            if (v <= B) opush((u64)v); else break;
+        }
+    }
+}
+static void gen_o060874(u64 *t, long cnt) { o_kpal_fill_k = 4; o_bybound(t, cnt, 1 << 16, o_fill_kpal); }    /* F:digit rule */
+static void gen_o060879(u64 *t, long cnt) { o_kpal_fill_k = 9; o_bybound(t, cnt, 1 << 16, o_fill_kpal); }    /* F:digit rule */
+static void gen_o060947(u64 *t, long cnt) { o_kpal_fill_k = 10; o_bybound(t, cnt, 1 << 16, o_fill_kpal); }   /* F:digit rule */
+static void gen_o061241(u64 *t, long cnt) { gen_pres(t, cnt, 9, 1ULL << 7); }             /* F:primes */
+N_FILTER(gen_o061346, 15, (n & 1) && !is_prime(n) && o_omega(n) >= 2)                        /* F:multiplicative */
+static int tr_sumle(int s, int d, int pos, int L) { (void)pos; return s + d <= L ? s + d : -1; }
+static int acc_sumL(int s, int L) { return s == L; }
+static void gen_o061384(u64 *t, long cnt) { o_digits(t, cnt, 0, 0, tr_sumle, acc_sumL, NULL); }   /* F:digit rule */
+static int tr_pow2dig(int s, int d, int pos, int L) { (void)pos; int e = d == 1 ? 0 : d == 2 ? 1 : d == 4 ? 2 : d == 8 ? 3 : -1; if (e < 0) return -1; return s + e <= L ? s + e : -1; }
+static void gen_o061426(u64 *t, long cnt) { o_digits(t, cnt, 0, 0, tr_pow2dig, acc_sumL, NULL); }  /* F:digit rule */
+N_FILTER(gen_o061673, 2, !(n & 1) && o_comp(n - 1) && o_comp(n + 1))                        /* F:complement */
+static void gen_o061681(u64 *t, long cnt) { u64 a = 1; for (long i = 0; i < cnt; i++) { t[i] = a; a += (u64)o_lead(a); } }   /* F:self-referential */
+OP_SEQ(gen_o061779, oprime(i + 1) - p == 22)                                                  /* F:primes */
+N_FILTER(gen_o062634, 1, ({ ofac(n); o_divs(); int ok = 1; for (int i = 0; i < O_nd; i++) if (!has_digit(O_d[i], 1)) { ok = 0; break; } ok; }))   /* F:divisor functions */
+N_FILTER(gen_o062721, 4, o_semi(n) && is_prime(n - 2))                                      /* F:multiplicative */
+N_FILTER(gen_o063037, 0, !(n >= 7 && (o_binhas(n, 7, 3) || o_binhas(n, 0, 3))))              /* F:binary rule */
+N_FILTER(gen_o064052, 2, o_gpf(n) * o_gpf(n) > n)                                           /* F:smooth */
+static void gen_o064194(u64 *t, long cnt)   /* F:self-referential: a(2n) = 3a(n), a(2n+1) = 2a(n+1) + a(n) */
+{ u64 *a = malloc(sizeof(u64) * (cnt + 3)); a[1] = 1; for (long n = 2; n <= cnt; n++) a[n] = (n & 1) ? 2 * a[n / 2 + 1] + a[n / 2] : 3 * a[n / 2]; for (long i = 0; i < cnt; i++) t[i] = a[i + 1]; free(a); }
+static void gen_o064437(u64 *t, long cnt)   /* F:self-referential: +3 if n is already a term, else +2 */
+{ u8 *m = calloc(4 * cnt + 16, 1); u64 a = 1; m[1] = 1; t[0] = 1; for (long n = 2; n <= cnt; n++) { a += m[n] ? 3 : 2; m[a] = 1; t[n - 1] = a; } free(m); }
+N_FILTER(gen_o064700, 1, ({ int r = o_mdr(n); r && n % (u64)r == 0; }))                       /* F:digit rule */
+static void o_prod_rec(const u64 *f, int nf, int i, u64 v, u64 B) { opush(v); for (int j = i; j < nf; j++) { if ((u128)v * f[j] > B) break; o_prod_rec(f, nf, j, v * f[j], B); } }
+static int o_perfpow(u64 x) { if (x < 4) return 0; for (int k = 2; k < 64; k++) { u64 r = (u64)powl((long double)x, 1.0L / k); for (u64 c = r > 1 ? r - 1 : 1; c <= r + 1; c++) { u128 v = 1; for (int j = 0; j < k && v <= x; j++) v *= c; if (v == x) return 1; } if (r < 2) break; } return 0; }
+N_FILTER(gen_o065496, 1, o_perfpow(o_sigma(n)))                                             /* F:divisor functions */
+N_FILTER(gen_o066031, 4, !is_prime(n) && ({ ofac(n); O_n >= 2; }) && n % o_sopf(n) == 0)   /* F:multiplicative */
+static void o_fill_066649(u64 B) { for (u64 b = 1; b * b * b < B; b++) for (u64 a = 1; a * a + b * b * b <= B; a++) { u64 v = a * a + b * b * b; if (is_prime(v)) opush(v); } }
+static void gen_o066649(u64 *t, long cnt) { o_bybound(t, cnt, 1 << 20, o_fill_066649); }   /* F:primes */
+static void o_fill_066938(u64 B) { for (long i = 0; ; i++) { u64 p = oprime(i); if (p * 3 + p + 3 > B) break; for (long j = i + 1; ; j++) { u64 q = oprime(j); u64 v = p * q + p + q; if (v > B) break; if (is_prime(v)) opush(v); } } }
+static void gen_o066938(u64 *t, long cnt) { o_bybound(t, cnt, 1 << 20, o_fill_066938); }   /* F:primes */
+N_FILTER(gen_o067251, 1, n % 10 != 0)                                                        /* F:residue class */
+OP_SEQ(gen_o067256, oisp(2 * p + 1) && oisp(3 * p + 2))                                        /* F:primes */
+N_FILTER(gen_o067259, 1, o_cubefree(n) && !o_sqfree(n))                                      /* F:multiplicative */
+N_FILTER(gen_o067611, 1, !is_prime(6 * n - 1) || !is_prime(6 * n + 1))                       /* F:complement */
+OP_SEQ(gen_o067889, p > 2 && o_tau(p - 1) == o_tau(p + 1))                                    /* F:primes */
+N_FILTER(gen_o068780, 8, o_comp(n) && o_comp(n + 1))                                         /* F:complement */
+N_FILTER(gen_o068781, 1, !o_sqfree(n) && !o_sqfree(n + 1))                                   /* F:multiplicative */
+N_FILTER(gen_o069059, 2, gcd_u64(n, o_sigma(n)) > 1)                                         /* F:divisor functions */
+static void o_fill_069346(u64 B) { for (u64 n = 2; n <= B + 64; n++) { u64 v = n - (u64)o_Omega(n); if (v <= B && is_prime(v)) opush(v); } }
+static void gen_o069346(u64 *t, long cnt) { o_bybound(t, cnt, 1 << 20, o_fill_069346); }   /* F:primes */
+N_FILTER(gen_o071139, 2, o_sopf(n) % o_gpf(n) == 0)                                          /* F:multiplicative */
+static int o_abund(u64 n) { return o_sigma(n) > 2 * n; }
+static int o_prim_abund(u64 n, int strict)
+{ if (!o_abund(n)) return 0; ofac(n); u64 ps[64]; int m = O_n; for (int i = 0; i < m; i++) ps[i] = O_p[i];
+  for (int i = 0; i < m; i++) { u64 d = n / ps[i]; u64 s = o_sigma(d); if (strict ? s >= 2 * d : s > 2 * d) return 0; } return 1; }
+N_FILTER(gen_o071395, 2, o_prim_abund(n, 1))                                                 /* F:divisor functions */
+static void gen_o071403(u64 *t, long cnt)   /* F:primes: index of prime(n) among the squarefree numbers */
+{ long k = 0; u64 c = 0; for (u64 n = 1; k < cnt; n++) { if (o_sqfree(n)) { c++; if (is_prime(n)) t[k++] = c; } } }
+OP_SEQ(gen_o071696, p > 3 && p % 4 == 3 && oisp(p - 2))                                       /* F:primes */
+OP_SEQ(gen_o071698, p % 4 == 3 && oisp(p + 2))                                                /* F:primes */
+static void gen_o072055(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) t[i] = 2 * oprime(i) + 1; }   /* F:primes */
+static int o_mod4bal(u64 n) { ofac(n); int a = 0, b = 0; for (int i = 0; i < O_n; i++) { if (O_p[i] % 4 == 1) a += O_e[i]; else if (O_p[i] % 4 == 3) b += O_e[i]; } return a == b; }
+N_FILTER(gen_o072202, 1, o_mod4bal(n))                                                       /* F:multiplicative */
+OI_SEQ(gen_o072225, is_prime(p + oprime(i + 1) + oprime(i + 2)))                              /* F:primes */
+N_FILTER(gen_o072437, 1, ({ ofac(n); int ok = 1; for (int j = 0; j < O_n; j++) if (O_p[j] % 4 == 3) { ok = 0; break; } ok; }))   /* F:multiplicative */
+N_FILTER(gen_o072587, 1, ({ ofac(n); int ok = 0; for (int j = 0; j < O_n; j++) if (!(O_e[j] & 1)) { ok = 1; break; } ok; }))   /* F:multiplicative */
+N_FILTER(gen_o072774, 1, ({ ofac(n); int ok = 1; for (int j = 1; j < O_n; j++) if (O_e[j] != O_e[0]) { ok = 0; break; } ok; }))   /* F:powers */
+OP_SEQ(gen_o072859, p > 5 && is_prime(o_ord(10, p)))                                         /* F:primes */
+static void o_fill_072978(u64 B) { opush(1); for (u64 m = 3; 2 * m <= B; m += 2) { int w = o_Omega(m); u128 v = (u128)m << w; if (v <= B) opush((u64)v); } }
+static void gen_o072978(u64 *t, long cnt) { o_bybound(t, cnt, 1 << 20, o_fill_072978); }   /* F:multiplicative */
+static void gen_o073121(u64 *t, long cnt) { u64 *a = malloc(sizeof(u64) * (cnt + 3)); a[1] = 1; for (long n = 2; n <= cnt; n++) a[n] = 2 * a[(n + 1) / 2] + 2 * a[n / 2]; for (long i = 0; i < cnt; i++) t[i] = a[i + 1]; free(a); }   /* F:self-referential */
+N_FILTER(gen_o073247, 2, o_sqfree(n) && !o_sqfree(n - 1) && !o_sqfree(n + 1))                 /* F:multiplicative */
+static int o_pgaps(u64 n) { ofac(n); u64 ps[64]; int m = O_n, g = 0; for (int i = 0; i < m; i++) ps[i] = O_p[i]; for (int i = 1; i < m; i++) if (o_nextp(ps[i - 1]) != ps[i]) g++; return g; }
+N_FILTER(gen_o073492, 2, o_pgaps(n) >= 1)                                                    /* F:multiplicative */
+N_FILTER(gen_o073493, 2, o_pgaps(n) == 1)                                                    /* F:multiplicative */
+N_FILTER(gen_o074627, 1, o_sigma(n) % 6 == 0)                                                /* F:divisor functions */
+static void gen_o074741(u64 *t, long cnt) { u64 s = 0; for (long i = 0; i < cnt; i++) { u64 g = oprime(i + 1) - oprime(i); s += g * g; t[i] = s; } }   /* F:summatory */
+OP_SEQ(gen_o074822, p % 10 == 9 && oisp(p + 4))                                              /* F:primes */
+OP_SEQ(gen_o074832, is_prime(o_rev(p, 2)))                                                    /* F:primes */
+N_FILTER(gen_o074940, 1, !nodig_b(n, 3, 2))                                                   /* F:digit rule */
+static void o_fill_oddpp(u64 B) { opush(1); for (u64 m = 3; m * m <= B; m += 2) { u128 v = (u128)m * m; while (v <= B) { opush((u64)v); v *= m; } } }
+static void gen_o075109(u64 *t, long cnt) { o_bybound(t, cnt, 1 << 20, o_fill_oddpp); }   /* F:powers */
+OP_SEQ(gen_o075432, p > 2 && !o_sqfree(p - 1) && !o_sqfree(p + 1))                          /* F:primes */
+N_FILTER(gen_o075592, 2, n % (u64)o_omega(n) == 0)                                          /* F:multiplicative */
+OP_SEQ(gen_o076056, !is_prime(reverse10(p)))                                                  /* F:primes */
+static void gen_o077064(u64 *t, long cnt) { long k = 0; for (long i = 0; k < cnt; i++) { u64 p = oprime(i); if (o_sqfree(p - 1)) t[k++] = p - 1; } }   /* F:primes */
+static void gen_o077068(u64 *t, long cnt) { long k = 0; for (long i = 0; k < cnt; i++) { u64 p = oprime(i); if (o_semi(p + 1)) t[k++] = p + 1; } }   /* F:primes */
+static void gen_o077477(u64 *t, long cnt) { u8 *x = calloc(4 * cnt + 16, 1); long k = 0; for (u64 n = 1; k < cnt; n++) { if (n < 4 * (u64)cnt + 16 && x[n]) continue; t[k++] = n; if (2 * n + 1 < 4 * (u64)cnt + 16) x[2 * n + 1] = 1; if (3 * n + 1 < 4 * (u64)cnt + 16) x[3 * n + 1] = 1; } free(x); }   /* F:self-referential */
+N_FILTER(gen_o077654, 4, o_comp(n) && o_comp(2 * n + 1))                                     /* F:complement */
+static void gen_o077717(u64 *t, long cnt) { long k = 0; for (u64 x = 1; k < cnt; x++) { u64 v = 0, pw = 1, y = x; while (y) { if (y & 1) v += pw; pw *= 3; y >>= 1; } if (is_prime(v)) t[k++] = v; } }   /* F:primes */
+N_FILTER(gen_o078358, 1, ({ u64 r = isqrt_u64(n); r * (r + 1) != n; }))                      /* F:complement */
+OP_SEQ(gen_o078494, ({ u64 b = p / 10 * 10; int c = 0; for (u64 x = b; x < b + 10; x++) if (oisp(x)) c++; c == 1; }))   /* F:primes */
+static void gen_o078633(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { u64 n = (u64)i + 1, r = isqrt_u64(4 * n); if (r * r < 4 * n) r++; t[i] = 2 * n + r; } }   /* F:polynomial */
+static void gen_o078649(u64 *t, long cnt) { long N = 4 * cnt + 64; u8 *k = malloc(N + 8); o_kolakoski(k, N + 4); long c = 0; for (long n = 1; c < cnt; n++) { if (n + 1 > N) { fprintf(stderr, "kolakoski short\n"); exit(1); } if (k[n] == k[n + 1]) t[c++] = (u64)n; } free(k); }   /* F:self-referential */
+static int o_trail1(u64 n) { int c = 0; while (n & 1) { c++; n >>= 1; } return c; }
+N_FILTER(gen_o079523, 1, o_trail1(n) & 1)                                                  /* F:binary rule */
+OP_SEQ(gen_o079545, o_sum2sq(p - 1))                                                       /* F:primes */
+static void o_fill_proth(u64 B) { for (int m = 1; m < 62; m++) { u64 P = 1ULL << m; if (P + 1 > B) break; for (u64 k = 1; k < P; k += 2) { u128 v = (u128)k * P + 1; if (v > B) break; opush((u64)v); } } }
+static void gen_o080075(u64 *t, long cnt) { o_bybound(t, cnt, 1 << 20, o_fill_proth); }    /* F:powers */
+OI_SEQ(gen_o080147, p % 4 == 1)                                                            /* F:primes */
+OP_SEQ(gen_o081092, is_prime((u64)popcount_u64(p)))                                         /* F:primes */
+static u64 o_3sm[4096]; static int o_n3sm = 0;
+static void o_3smooth_init(void) { if (o_n3sm) return; for (u128 a = 1; a < ((u128)1 << 62); a *= 2) for (u128 b = a; b < ((u128)1 << 62); b *= 3) o_3sm[o_n3sm++] = (u64)b; qsort(o_3sm, (size_t)o_n3sm, sizeof(u64), cmp_u64); }
+static int o_p_plus_3sm(u64 n) { o_3smooth_init(); for (int i = 0; i < o_n3sm && o_3sm[i] < n; i++) if (is_prime(n - o_3sm[i])) return 1; return 0; }
+N_FILTER(gen_o081311, 1, o_p_plus_3sm(n))                                                   /* F:smooth */
+static void o_fill_2x3sm(u64 B) { o_3smooth_init(); for (int i = 0; i < o_n3sm && o_3sm[i] <= B; i++) for (int j = i; j < o_n3sm && o_3sm[i] + o_3sm[j] <= B; j++) opush(o_3sm[i] + o_3sm[j]); }
+static void gen_o081330(u64 *t, long cnt) { o_bybound(t, cnt, 1 << 20, o_fill_2x3sm); }    /* F:smooth */
+static void gen_o082246(u64 *t, long cnt) { o_consec_prime_sums(t, cnt, 7); }             /* F:primes */
+OP_SEQ(gen_o082885, (long double)(oprime(i + 1) - p) > logl((long double)p))                 /* F:primes */
+static int tr_1to4(int s, int d, int pos, int L) { (void)pos; (void)L; return (d >= 1 && d <= 4) ? s : -1; }
+static int tr_1to5(int s, int d, int pos, int L) { (void)pos; (void)L; return (d >= 1 && d <= 5) ? s : -1; }
+static void gen_o084544(u64 *t, long cnt) { o_digits(t, cnt, 0, 0, tr_1to4, o_acc1, NULL); }   /* F:digit rule */
+static void gen_o084545(u64 *t, long cnt) { o_digits(t, cnt, 0, 0, tr_1to5, o_acc1, NULL); }   /* F:digit rule */
+static void o_fill_tritri(u64 B) { opush(0); for (u64 i = 1; i * (i + 1) / 2 <= B; i++) { u64 a = i * (i + 1) / 2; for (u64 j = i; ; j++) { u128 v = (u128)a * (j * (j + 1) / 2); if (v > B) break; opush((u64)v); } } }
+static void gen_o085780(u64 *t, long cnt) { o_bybound(t, cnt, 1 << 20, o_fill_tritri); }   /* F:polynomial */
+N_FILTER(gen_o086005, 5, o_semi(n - 1) && o_semi(n) && o_semi(n + 1))                       /* F:multiplicative */
+OP_SEQ(gen_o086006, o_semi(2 * p - 1) && o_semi(2 * p + 1))                                 /* F:primes */
+static void gen_o086381(u64 *t, long cnt) { long k = 0; for (u64 n = 1; k < cnt; n++) if (is_prime(n * n + 2) && is_prime(n * n + 4)) t[k++] = n; }   /* F:prime values */
+static void gen_o087057(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { u64 n = (u64)i + 1; t[i] = isqrt_u64(2 * n * n) + 1; } }   /* F:Beatty */
+N_FILTER(gen_o087248, 2, o_sqfree(n) && o_abund(n))                                         /* F:divisor functions */
+N_FILTER(gen_o087695, 4, is_prime(n - 3) && is_prime(n + 3))                                 /* F:prime values */
+OP_SEQ(gen_o088179, ({ ofac(p - 1); int ok = 1; for (int j = 0; j < O_n; j++) if (O_e[j] > 1) ok = 0; ok && !(O_n & 1); }))   /* F:primes */
+static void gen_o088485(u64 *t, long cnt) { long k = 0; for (u64 n = 1; k < cnt; n++) if (is_prime(n * n + n - 1) && is_prime(n * n + n + 1)) t[k++] = n; }   /* F:prime values */
+static int o_dd1(u64 n) { ofac(n); o_divs(); for (int i = 1; i < O_nd; i++) if (n % (O_d[i] + 1) == 0) return 1; return 0; }
+N_FILTER(gen_o088723, 1, o_dd1(n))                                                           /* F:divisor functions */
+OP_SEQ(gen_o089189, o_cubefree(p - 1))                                                        /* F:primes */
+OP_SEQ(gen_o089194, o_cubefree(p - 1) && o_cubefree(p + 1))                                   /* F:primes */
+N_FILTER(gen_o089352, 2, n % o_sopf(n) == 0)                                                  /* F:multiplicative */
+static int o_longrun(u64 n, int bit) { int best = 0, run = 0; int L = o_bits(n); for (int j = 0; j < L; j++) { if ((int)((n >> j) & 1) == bit) { run++; if (run > best) best = run; } else run = 0; } return best; }
+N_FILTER(gen_o090050, 1, o_longrun(n, 0) == o_longrun(n, 1))                                  /* F:binary rule */
+static int o_symprime(u64 p)
+{
+    ofac(p - 1); o_divs(); int nd = O_nd; u64 d[1 << 14]; for (int i = 0; i < nd; i++) d[i] = O_d[i];
+    for (int i = 0; i < nd; i++) {
+        u64 g = d[i]; if (g & 1) continue;
+        if (p > g && p - g > 2 && is_prime(p - g) && gcd_u64(p - 1, p - g - 1) == g) return 1;
+        if (is_prime(p + g) && gcd_u64(p - 1, p + g - 1) == g) return 1;
+    }
+    return 0;
+}
+OP_SEQ(gen_o090190, p > 2 && o_symprime(p))                                                   /* F:primes */
+OP_SEQ(gen_o090191, p > 2 && !o_symprime(p))                                                  /* F:primes */
+static int o_binconcat(u64 n, int parts, int need2)          /* binary expansion is a concatenation of primes */
+{
+    int L = o_bits(n); u8 ok[70] = {0}; u8 cntp[70] = {0}; ok[L] = 1;
+    for (int s = L - 1; s >= 0; s--) {                     /* suffix from bit position s (from the top) */
+        if (((n >> (L - 1 - s)) & 1) == 0) continue;      /* a part starts with a 1 */
+        u64 v = 0;
+        for (int e = s; e < L; e++) {
+            v = v * 2 + ((n >> (L - 1 - e)) & 1);
+            if (ok[e + 1] && is_prime(v)) { ok[s] = 1; u8 c = (u8)(cntp[e + 1] + 1); if (e + 1 == L) c = 1; if (c > cntp[s]) cntp[s] = c; }
+        }
+    }
+    (void)parts;
+    return ok[0] && (!need2 || cntp[0] >= 2);
+}
+N_FILTER(gen_o090421, 2, o_binconcat(n, 0, 0))                                                /* F:binary rule */
+OP_SEQ(gen_o090423, o_binconcat(p, 0, 1))                                                     /* F:primes */
+static void o_fill_polyg(u64 B) { for (u64 s = 3; 3 * s <= B + 3; s++) for (u64 n = 3; ; n++) { u128 v = ((u128)(s - 2) * n * n - (u128)(s - 4) * n) / 2; if (s < 4) v = ((u128)(s - 2) * n * n + (u128)(4 - s) * n) / 2; if (v > B) break; opush((u64)v); } }
+static void gen_o090466(u64 *t, long cnt) { o_bybound(t, cnt, 1 << 20, o_fill_polyg); }     /* F:polynomial */
+static void gen_o090693(u64 *t, long cnt) { long k = 0; for (u64 n = 1; k < cnt; n++) if (is_prime(n * n - 2 * n + 2)) t[k++] = n; }   /* F:prime values */
+static void gen_o090709(u64 *t, long cnt) { long k = 0; for (u64 m = 1; k < cnt; m++) { u64 d = read_dec_base(m, 6); if (is_prime(m) && is_prime(d)) t[k++] = d; } }   /* F:primes */
+N_FILTER(gen_o091191, 2, o_prim_abund(n, 0))                                                   /* F:divisor functions */
+N_FILTER(gen_o091300, 1, n % 6 == 1 && !is_prime(n))                                           /* F:complement */
+static void o_fill_091301(u64 B) { for (long i = 0; ; i++) { u64 p = oprime(i); if (3 * p - 2 > B) break; for (long j = 0; ; j++) { u64 q = oprime(j); if (q == p) continue; u128 v = (u128)p * q + p - q; if (v > B) break; if (is_prime((u64)v)) opush((u64)v); } } }
+static void gen_o091301(u64 *t, long cnt) { o_bybound(t, cnt, 1 << 16, o_fill_091301); }    /* F:primes */
+static void gen_o092192(u64 *t, long cnt) { long k = 0; u64 a = 4, b = 6; while (k < cnt) { if (o_semi(a + b)) t[k++] = a + b; a = b; do b++; while (!o_semi(b)); } }   /* F:multiplicative */
+N_FILTER(gen_o092207, 4, o_semi(n) && o_semi(n + 2))                                            /* F:multiplicative */
+static int o_nprimedig(u64 n) { int c = 0; do { int d = (int)(n % 10); if (d == 2 || d == 3 || d == 5 || d == 7) c++; n /= 10; } while (n); return c; }
+N_FILTER(gen_o092620, 1, o_nprimedig(n) == 1)                                                  /* F:digit rule */
+OP_SEQ(gen_o092621, o_nprimedig(p) == 1)                                                       /* F:primes */
+static void gen_o094524(u64 *t, long cnt) { long k = 0; for (long i = 0; k < cnt; i++) { u64 v = 3 * oprime(i) + 2; if (is_prime(v)) t[k++] = v; } }   /* F:primes */
+static void gen_o094589(u64 *t, long cnt)   /* F:self-referential: a(n+1) = a(n) + the largest term <= n */
+{ t[0] = 1; long j = 0; for (long n = 1; n < cnt; n++) { while (j + 1 < n && t[j + 1] <= (u64)n) j++; t[n] = t[n - 1] + t[j]; } }
+N_FILTER(gen_o095050, 1, ({ ofac(n); o_divs(); u64 m = 0; for (int j = 0; j < O_nd; j++) m |= o_dmask(O_d[j], 10); m == 0x3FF; }))   /* F:digit rule */
+static void gen_o096777(u64 *t, long cnt) { u64 a = 1, s = 0; for (long i = 0; i < cnt; i++) { t[i] = a; s += a & 1; a += s; } }   /* F:self-referential */
+static int o_prod2e1(u64 n) { ofac(n); u64 s = 1; for (int i = 0; i < O_n; i++) if (O_p[i] % 4 == 1) s *= (u64)(2 * O_e[i] + 1); return (int)s; }
+N_FILTER(gen_o097102, 1, o_prod2e1(n) == 27)                                                   /* F:quadratic form */
+N_FILTER(gen_o097103, 1, o_prod2e1(n) == 45)                                                   /* F:quadratic form */
+static void gen_o097933(u64 *t, long cnt) { gen_pres(t, cnt, 12, (1ULL << 1) | (1ULL << 11)); }   /* F:primes */
+OP_SEQ(gen_o098058, (oprime(i + 1) - p) % 4 != 0)                                               /* F:primes */
+static u64 o_semi_nth(long i)                  /* i-th semiprime, 0-based */
+{ static u64 *s = NULL; static long ns = 0, cap = 0; static u64 x = 3; while (i >= ns) { x++; if (o_semi(x)) { if (ns == cap) { cap = cap ? 2 * cap : 1024; s = realloc(s, cap * sizeof(u64)); } s[ns++] = x; } } return s[i]; }
+static void gen_o100493(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) t[i] = (u64)i + 1 + o_semi_nth(i); }   /* F:multiplicative */
+N_FILTER(gen_o100959, 1, !o_semi(n))                                                            /* F:complement */
+N_FILTER(gen_o101082, 1, o_binhas(n, 2, 2) && o_binhas(n, 1, 2))                               /* F:binary rule */
+static void gen_o101095(u64 *t, long cnt) { static const u64 f[] = {1, 28, 121}; for (long i = 0; i < cnt; i++) t[i] = i < 3 ? f[i] : 120 * (u64)(i - 1); }   /* F:polynomial */
+static void gen_o101594(u64 *t, long cnt)   /* F:digit rule: exactly two distinct digits, no 0 */
+{
+    long k = 0;
+    for (int L = 2; k < cnt; L++) {
+        o_bm = 0;
+        for (int a = 1; a <= 9; a++) for (int b = a + 1; b <= 9; b++)
+            for (u64 mask = 1; mask + 1 < (1ULL << L); mask++) { u64 v = 0; for (int j = L - 1; j >= 0; j--) v = v * 10 + (u64)(((mask >> j) & 1) ? b : a); opush(v); }
+        qsort(o_b, o_bm, sizeof(u64), cmp_u64);
+        for (size_t i = 0; i < o_bm && k < cnt; i++) t[k++] = o_b[i];
+    }
+}
+static void gen_o102487(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { u64 x = (u64)i, v = 0, pw = 1; while (x) { v += (x % 10) * pw; pw *= 12; x /= 10; } t[i] = v; } }   /* F:digit rule */
+static void gen_o102491(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) { u64 x = (u64)i, v = 0, pw = 1; while (x) { v += (x % 10) * pw; pw *= 20; x /= 10; } t[i] = v; } }   /* F:digit rule */
+OP_SEQ(gen_o103664, o_tau(p - 1) < o_tau(p + 1) || p == 2)                                      /* F:primes */
+/* Ramanujan primes: R_n = 1 + the largest x with pi(x) - pi(x/2) = n - 1 */
+static u64 *o_ram = NULL; static long o_nram = 0;
+static void o_ramanujan(long cnt)
+{
+    if (o_nram >= cnt) return;
+    u64 X = (u64)(3.2 * (double)cnt * log((double)cnt + 3) * 3.0) + 1000;
+    for (;; X *= 2) {
+        u8 *c = composite_flags(X);
+        long *last = calloc((size_t)cnt + 2, sizeof(long)); long pi = 0; u64 *pix = NULL;
+        pix = malloc((X + 1) * sizeof(u32) * 2);
+        u32 *pc = (u32 *)pix; for (u64 x = 0; x <= X; x++) { if (x >= 2 && !c[x]) pi++; pc[x] = (u32)pi; }
+        for (u64 x = 1; x <= X; x++) { long v = (long)pc[x] - (long)pc[x / 2]; if (v >= 0 && v <= cnt) last[v] = (long)x; }
+        /* valid only if pi(x) - pi(x/2) > cnt somewhere near the end */
+        long top = (long)pc[X] - (long)pc[X / 2];
+        if (top > cnt + 50) {
+            free(o_ram); o_ram = malloc(sizeof(u64) * (size_t)cnt); for (long n = 1; n <= cnt; n++) o_ram[n - 1] = (u64)last[n - 1] + 1;
+            o_nram = cnt; free(c); free(last); free(pix); return;
+        }
+        free(c); free(last); free(pix);
+    }
+}
+static void gen_o104272(u64 *t, long cnt) { o_ramanujan(cnt); memcpy(t, o_ram, (size_t)cnt * sizeof(u64)); }   /* F:primes */
+static int o_catprime(u64 p)
+{ u64 pw = 10; while (pw <= p) { u64 hi = p / pw, lo = p % pw; if (lo >= pw / 10 && hi && is_prime(hi) && is_prime(lo)) return 1; pw *= 10; } return 0; }
+OP_SEQ(gen_o105184, o_catprime(p))                                                               /* F:primes */
+N_FILTER(gen_o105441, 1, o_Omega(o_oddpart(n)) >= 2)                                             /* F:multiplicative */
+N_FILTER(gen_o105571, 3, o_semi(n - 2) && o_semi(n + 2))                                         /* F:multiplicative */
+static int o_belgian(u64 n, u64 k)
+{
+    if (n < k) return 0;
+    int dg[24], L = 0; u64 x = n; do { dg[L++] = (int)(x % 10); x /= 10; } while (x);
+    u64 S = 0; for (int i = 0; i < L; i++) S += (u64)dg[i];
+    if (S == 0) return n == k;
+    u64 pre = 0;
+    for (int j = L - 1; j >= 0; j--) { if (n - k >= pre && (n - k - pre) % S == 0) return 1; pre += (u64)dg[j]; }
+    return 0;
+}
+N_FILTER(gen_o106039, 0, o_belgian(n, 0))                                                        /* F:digit rule */
+N_FILTER(gen_o106439, 1, o_belgian(n, 1))                                                        /* F:digit rule */
+N_FILTER(gen_o106518, 2, o_belgian(n, 2))                                                        /* F:digit rule */
+N_FILTER(gen_o106596, 3, o_belgian(n, 3))                                                        /* F:digit rule */
+static void gen_o106564(u64 *t, long cnt) { long k = 0; for (u64 m = 1; k < cnt; m += 2) if (!is_prime(m * m + 2)) t[k++] = m * m; }   /* F:powers */
+static void gen_o106867(u64 *t, long cnt) { o_form(t, cnt, 2, 1, 3, 1); }                      /* F:quadratic form */
+static void gen_o106881(u64 *t, long cnt) { o_form(t, cnt, 1, 1, 9, 1); }                      /* F:quadratic form */
+static void o_fill_107006(u64 B) { for (u64 y = 0; 6 * y * y <= 2 * B + 64; y++) for (u64 x = 0; ; x++) { __int128 v = (__int128)4 * x * x - (__int128)4 * x * y + (__int128)7 * y * y; if (x > y && v > (__int128)B) break; if (v >= 0 && v <= (__int128)B && is_prime((u64)v)) opush((u64)v); } }
+static void gen_o107006(u64 *t, long cnt) { o_bybound(t, cnt, 1 << 20, o_fill_107006); }        /* F:quadratic form */
+OP_SEQ(gen_o107288, o_issq((u64)digitsum(p)))                                                   /* F:primes */
+static void gen_o108386(u64 *t, long cnt)   /* F:primes: digits exactly {1, 3, 7, 9} */
+{ static const int D[4] = {1, 3, 7, 9}; long k = 0; for (int L = 4; k < cnt; L++) { u64 N = 1; for (int j = 0; j < L; j++) N *= 4; for (u64 x = 0; x < N && k < cnt; x++) { u64 v = 0, y = x; int m = 0; u64 w[24]; for (int j = L - 1; j >= 0; j--) { w[j] = y % 4; y /= 4; } for (int j = 0; j < L; j++) { v = v * 10 + (u64)D[w[j]]; m |= 1 << w[j]; } if (m == 15 && is_prime(v)) t[k++] = v; } } }
+static int o_dupdig(u64 n) { u64 m = 0; do { u64 b = 1ULL << (n % 10); if (m & b) return 1; m |= b; n /= 10; } while (n); return 0; }
+N_FILTER(gen_o109303, 1, o_dupdig(n))                                                           /* F:digit rule */
+N_FILTER(gen_o109373, 5, o_semi(n) && o_semi(n - 1))                                            /* F:multiplicative */
+static void gen_o111046(u64 *t, long cnt) { long k = 0; for (long i = 0; k < cnt; i++) { u64 p = oprime(i); if (oisp(p + 2)) t[k++] = 4 * p + 4; } }   /* F:primes */
+static void gen_o111501(u64 *t, long cnt) { long k = 0; for (u64 n = 1; k < cnt; n++) if (isprime_s((i128)n * n * n - (i128)n * n + 1)) t[k++] = n; }   /* F:prime values */
+static int o_admirable(u64 n) { u64 s = o_sigma(n); if (s <= 2 * n) return 0; u64 e = s - 2 * n; if (e & 1) return 0; u64 d = e / 2; return d < n && n % d == 0; }
+N_FILTER(gen_o111592, 1, o_admirable(n))                                                        /* F:divisor functions */
+static int o_tridiv(u64 n) { ofac(n); o_divs(); for (int i = 1; i < O_nd; i++) if (o_istri(O_d[i])) return 1; return 0; }
+N_FILTER(gen_o112886, 1, !o_tridiv(n))                                                          /* F:divisor functions */
+N_FILTER(gen_o113502, 1, o_tridiv(n))                                                           /* F:divisor functions */
+static int o_sum2tri(u64 p) { for (u64 a = 1; a * (a + 1) / 2 < p; a++) { u64 r = p - a * (a + 1) / 2; if (r >= 1 && o_istri(r)) return 1; } return 0; }
+OP_SEQ(gen_o117048, o_sum2tri(p))                                                               /* F:primes */
+static void gen_o117804(u64 *t, long cnt) { u64 pos = 1; for (long i = 0; i < cnt; i++) { u64 n = (u64)i + 1; t[i] = pos; pos += (u64)o_nd(n, 10); } }   /* F:digit rule */
+static void gen_o118134(u64 *t, long cnt) { long k = 0; for (long i = 0; k < cnt; i++) { u64 s = oprime(i) + oprime(i + 1); if (s % 4 == 0 && is_prime(s / 4)) t[k++] = s / 4; } }   /* F:primes */
+static void gen_o118882(u64 *t, long cnt) { o_bycount(t, cnt, 1 << 20, o_fill_2sq_0, 2, 1L << 40); }   /* F:quadratic form */
+static void o_fill_loesch_rep(u64 B) { for (u64 x = 0; 3 * x * x <= B; x++) for (u64 y = x; x * x + x * y + y * y <= B; y++) opush(x * x + x * y + y * y); }
+static void gen_o118886(u64 *t, long cnt) { o_bycount(t, cnt, 1 << 20, o_fill_loesch_rep, 2, 1L << 40); }   /* F:quadratic form */
+OP_SEQ(gen_o118922, ({ u64 k, L, d; oprime(i + 1) - p == 8 && o_pdec(p, &k, &L, &d) && k == 9; }))   /* F:primes */
+N_FILTER(gen_o118950, 1, any_digit_in(n, 0xAC))                                                  /* F:digit rule */
+static int o_2kp(u64 n) { for (u64 q = 1; q < n; q *= 2) if (is_prime(n - q)) return 1; return 0; }
+N_FILTER(gen_o118954, 1, !o_2kp(n))                                                              /* F:primes */
+N_FILTER(gen_o118955, 1, o_2kp(n))                                                               /* F:primes */
+OP_SEQ(gen_o119449, !(digitsum(p) & 1))                                                          /* F:primes */
+static int o_cube_all(u64 n) { u128 c = (u128)n * n * n; return o_dmask128(c) == 0x3FF; }
+N_FILTER(gen_o119735, 1, o_cube_all(n))                                                          /* F:digit rule */
+N_FILTER(gen_o121022, 1, !(n & 1) && has_digit(n, 2))                                            /* F:digit rule */
+N_FILTER(gen_o121030, 1, n % 10 == 0 && o_contains(n, 10))                                       /* F:digit rule */
+N_FILTER(gen_o121032, 1, n % 12 == 0 && o_contains(n, 12))                                       /* F:digit rule */
+N_FILTER(gen_o121539, 0, !(o_trail1(n) & 1))                                                     /* F:binary rule */
+OP_SEQ(gen_o122094, p > 2 && is_prime(o_ord(2, p)))                                              /* F:primes */
+OP_SEQ(gen_o122535, oprime(i + 1) - p == oprime(i + 2) - oprime(i + 1))                          /* F:primes */
+static int o_isfib(u64 x) { for (u64 a = 1, b = 2; a <= x; ) { if (a == x) return 1; u64 c = a + b; a = b; b = c; } return 0; }
+N_FILTER(gen_o123193, 1, o_isfib(o_tau(n)))                                                       /* F:divisor functions */
+OP_SEQ(gen_o123239, p <= 3 || ({ u64 o2 = o_ord(2, p), o3 = o_ord(3, p); o3 % o2 != 0; }))       /* F:primes */
+static u64 o_almost_nth(int w, long i)
+{ static u64 *s[6]; static long ns[6], cap[6]; static u64 x[6]; while (i >= ns[w]) { x[w]++; if (x[w] < 2) continue; if (o_Omega(x[w]) == w) { if (ns[w] == cap[w]) { cap[w] = cap[w] ? 2 * cap[w] : 1024; s[w] = realloc(s[w], cap[w] * sizeof(u64)); } s[w][ns[w]++] = x[w]; } } return s[w][i]; }
+static void gen_o124268(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) t[i] = oprime1(o_almost_nth(3, i)); }   /* F:primes */
+static void gen_o124269(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) t[i] = o_almost_nth(3, (long)oprime(i) - 1); }   /* F:multiplicative */
+static void gen_o124282(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) t[i] = oprime1(o_almost_nth(4, i)); }   /* F:primes */
+static void gen_o124283(u64 *t, long cnt) { for (long i = 0; i < cnt; i++) t[i] = o_almost_nth(4, (long)oprime(i) - 1); }   /* F:multiplicative */
+static void gen_o125022(u64 *t, long cnt) { o_bycount(t, cnt, 1 << 20, o_fill_2sq_0, 1, 1); }       /* F:quadratic form */
+OP_SEQ(gen_o125272, p > 1 && oisp(3 * p - 2) && oisp(3 * p + 2))                                   /* F:primes */
+OP_SEQ(gen_o125830, ({ u64 k, L, d; o_pdec(p, &k, &L, &d) && L == 1; }))                          /* F:primes */
+OP_SEQ(gen_o126148, is_prime(p * oprime(i + 1) + p + oprime(i + 1)))                               /* F:primes */
+static void gen_o127340(u64 *t, long cnt) { o_consec_prime_sums(t, cnt, 11); }                   /* F:primes */
+static void gen_o127341(u64 *t, long cnt) { o_consec_prime_sums(t, cnt, 13); }                   /* F:primes */
+N_FILTER(gen_o129845, 1, (o_dmask(n, 10) & o_dmask(2 * n, 10)) != 0)                               /* F:digit rule */
+static int o_distinct_exp(u64 n) { ofac(n); for (int i = 0; i < O_n; i++) for (int j = i + 1; j < O_n; j++) if (O_e[i] == O_e[j]) return 0; return 1; }
+N_FILTER(gen_o130091, 1, o_distinct_exp(n))                                                         /* F:multiplicative */
+N_FILTER(gen_o131323, 1, (n & 1) && !(o_trail1(n) & 1))                                             /* F:binary rule */
+static int o_has666(u64 n) { while (n >= 666) { if (n % 1000 == 666) return 1; n /= 10; } return 0; }
+static void gen_o131645(u64 *t, long cnt) { long k = 0; for (u64 n = 6661; k < cnt; n += 2) if (o_has666(n) && is_prime(n)) t[k++] = n; }   /* F:primes */
+static void gen_o131835(u64 *t, long cnt) { long k = 0; for (u64 b = 1; k < cnt; b *= 10) for (u64 x = b; x < 2 * b && k < cnt; x++) t[k++] = x; }   /* F:digit rule */
+N_FILTER(gen_o132359, 1, n % 10 != 0 && n % ((n % 10) * (n % 10)) == 0)                            /* F:digit rule */
+static void gen_o134027(u64 *t, long cnt)   /* F:digit rule: palindromes in balanced ternary */
+{
+    long k = 0; t[k++] = 0;
+    for (int L = 1; k < cnt; L++) {
+        int h = (L + 1) / 2; u64 N = 1; for (int j = 1; j < h; j++) N *= 3;
+        for (u64 x = 0; x < N && k < cnt; x++) {           /* digits after the leading 1, in order -1 < 0 < 1 */
+            int dg[64]; dg[0] = 1; u64 y = x; for (int j = h - 1; j >= 1; j--) { dg[j] = (int)(y % 3) - 1; y /= 3; }
+            for (int j = h; j < L; j++) dg[j] = dg[L - 1 - j];
+            __int128 v = 0; for (int j = 0; j < L; j++) v = v * 3 + dg[j];
+            t[k++] = (u64)v;
+        }
+    }
+}
+N_FILTER(gen_o134333, 2, ({ int w = o_Omega(n); n % (u64)w == 0 && is_prime((u64)w); }))          /* F:multiplicative */
+N_FILTER(gen_o134334, 2, n % (u64)o_Omega(n) != 0)                                                  /* F:multiplicative */
+N_FILTER(gen_o134344, 4, !is_prime(n) && ({ u64 s = o_sopfr(n); int w = 0; for (int j = 0; j < O_n; j++) w += O_e[j]; s % (u64)w == 0 && is_prime(s / (u64)w); }))   /* F:multiplicative */
+N_FILTER(gen_o134376, 1, !is_prime(o_sopfr(n)))                                                     /* F:multiplicative */
+static u128 o_powsum(u64 n, int k, int *w) { ofac(n); u128 s = 0; *w = 0; for (int i = 0; i < O_n; i++) { u128 q = 1; for (int j = 0; j < k; j++) q *= O_p[i]; s += q * (u64)O_e[i]; *w += O_e[i]; } return s; }
+static int o_ps_prime(u64 n, int k, int mean) { int w; u128 s = o_powsum(n, k, &w); if (n < 2) return 0; if (mean) { if (s % (u64)w) return 0; s /= (u64)w; } return s < ((u128)1 << 64) && is_prime((u64)s); }
+N_FILTER(gen_o134616, 2, o_ps_prime(n, 2, 0))                                                        /* F:multiplicative */
+N_FILTER(gen_o134617, 4, !is_prime(n) && o_ps_prime(n, 2, 1))                                        /* F:multiplicative */
+N_FILTER(gen_o134618, 2, o_ps_prime(n, 3, 0))                                                        /* F:multiplicative */
+N_FILTER(gen_o134619, 4, !is_prime(n) && o_ps_prime(n, 3, 1))                                        /* F:multiplicative */
+static void gen_o134809(u64 *t, long cnt)   /* F:primes: cyclops primes, one 0 in the middle */
+{
+    long k = 0;
+    for (int h = 1; k < cnt; h++) {
+        u64 N = 1; for (int j = 0; j < h; j++) N *= 9;
+        u64 P = 1; for (int j = 0; j < h + 1; j++) P *= 10;
+        for (u64 x = 0; x < N && k < cnt; x++) {
+            u64 left = 0, y = x; u64 w[20]; for (int j = h - 1; j >= 0; j--) { w[j] = y % 9 + 1; y /= 9; } for (int j = 0; j < h; j++) left = left * 10 + w[j];
+            for (u64 z = 0; z < N && k < cnt; z++) {
+                u64 right = 0; y = z; for (int j = h - 1; j >= 0; j--) { w[j] = y % 9 + 1; y /= 9; } for (int j = 0; j < h; j++) right = right * 10 + w[j];
+                u64 v = left * P + right; if (is_prime(v)) t[k++] = v;
+            }
+        }
+    }
+}
+static void gen_o136072(u64 *t, long cnt) { long k = 0; for (long i = 0; k < cnt; i++) { u64 v = 7 * oprime(i) + 6; if (is_prime(v)) t[k++] = v; } }   /* F:primes */
+static int tr_1379(int s, int d, int pos, int L) { (void)pos; (void)L; return (d == 1 || d == 3 || d == 7 || d == 9) ? s : -1; }
+static void gen_o136333(u64 *t, long cnt) { o_digits(t, cnt, 0, 0, tr_1379, o_acc1, NULL); }        /* F:digit rule */
+static void gen_o136773(u64 *t, long cnt)   /* F:powers: counts of trailing zeros that n! never has in base 13 */
+{ long k = 0; u64 prev = 0; for (u64 n = 13; k < cnt; n += 13) { u64 v = 0, x = n; while (x) { x /= 13; v += x; } for (u64 j = prev + 1; j < v && k < cnt; j++) t[k++] = j; prev = v; } }
+N_FILTER(gen_o138511, 6, ({ ofac(n); O_n == 2 && O_e[0] == 1 && O_e[1] == 1 && O_p[1] > O_p[0] * O_p[0]; }))   /* F:multiplicative */
+static void gen_o147562(u64 *t, long cnt) { u64 s = 0; t[0] = 0; if (cnt > 1) t[1] = 1; s = 1; for (long n = 2; n < cnt; n++) { u64 k = (u64)n - 1, p3 = 1; for (int j = 1; j < popcount_u64(k); j++) p3 *= 3; s += 4 * p3; t[n] = s; } }   /* F:self-referential */
+static void gen_o142925(u64 *t, long cnt) { gen_pres(t, cnt, 64, 1ULL << 1); }             /* F:primes */
+static int tr_sum13(int s, int d, int pos, int L) { (void)pos; (void)L; return s + d <= 13 ? s + d : -1; }
+static int acc_13(int s, int L) { (void)L; return s == 13; }
+static void gen_o143164(u64 *t, long cnt) { o_digits(t, cnt, 0, 0, tr_sum13, acc_13, NULL); }   /* F:digit rule */
+OP_SEQ(gen_o145471, p > 2 && oisp((p + 5) / 2))                                              /* F:primes */
+N_FILTER(gen_o145749, 1, o_sigma(n) + o_phi(n) == o_sigma(n + 1) + o_phi(n + 1))            /* F:divisor functions */
+static int nx_147991(u64 x, u64 *y) { y[0] = 3 * x - 1; y[1] = 3 * x + 1; return x ? 2 : 0; }
+static void gen_o147991(u64 *t, long cnt) { u64 s[1] = {1}; o_closure(t, cnt, 1 << 20, s, 1, nx_147991); }   /* F:self-referential */
+static void gen_o152470(u64 *t, long cnt) { long k = 0; for (long i = 0; k < cnt; i++) if (is_prime(oprime(i) + oprime(i + 1) + oprime(i + 2))) t[k++] = oprime(i + 2); }   /* F:primes */
+OP_SEQ(gen_o153213, (p < 4 || !o_sqfree(p - 2)) && !o_sqfree(p + 2))                         /* F:primes */
+N_FILTER(gen_o153238, 1, !is_prime(2 * n + 3))                                              /* F:complement */
+static void gen_o153974(u64 *t, long cnt) { long k = 0; for (u64 n = 2; k < cnt; n++) if (isprime_s((i128)n * n * n - 3)) t[k++] = n; }   /* F:prime values */
+N_FILTER(gen_o154314, 0, popcount_u64(o_dmask(n, 3)) <= 2)                                   /* F:digit rule */
+static void o_fill_x2p2y2pos(u64 B) { for (u64 y = 1; 2 * y * y < B; y++) for (u64 x = 1; x * x + 2 * y * y <= B; x++) opush(x * x + 2 * y * y); }
+static void gen_o154777(u64 *t, long cnt) { o_bybound(t, cnt, 1 << 20, o_fill_x2p2y2pos); }  /* F:quadratic form */
+static int o_2legs(u64 n) { if (n % 4 == 2 || n < 3) return 0; return o_omega(n) >= 2; }
+N_FILTER(gen_o156683, 1, o_2legs(n))                                                         /* F:quadratic form */
+static void gen_o156849(u64 *t, long cnt)   /* F:residue class: k^2 == 2 (mod 529) */
+{ u64 r[2]; int nr = 0; for (u64 x = 0; x < 529 && nr < 2; x++) if (x * x % 529 == 2) r[nr++] = x; for (long i = 0; i < cnt; i++) t[i] = (u64)(i / 2) * 529 + r[i & 1]; }
+static void o_fill_157352(u64 B) { for (long i = 0; ; i++) { u64 p = oprime(i); if (p * p > B) break; if (p < 5 || !oisp((p - 1) / 2)) continue; for (long j = i + 1; ; j++) { u64 q = oprime(j); if ((u128)p * q > B) break; if (oisp((q - 1) / 2)) opush(p * q); } } }
+static void gen_o157352(u64 *t, long cnt) { o_bybound(t, cnt, 1 << 20, o_fill_157352); }     /* F:multiplicative */
+OP_SEQ(gen_o157468, is_prime((p + 1) * (p + 1) + 1))                                         /* F:primes */
+N_FILTER(gen_o157483, 2, o_Omega(n - 1) == 3 && o_Omega(n + 1) == 3)                          /* F:multiplicative */
+N_FILTER(gen_o157931, 4, o_semi(n) && (!(n & 1) || is_prime(n - 2)))                           /* F:multiplicative */
+OP_SEQ(gen_o158714, ({ u64 p1 = (p + 1) / 2 + p; u64 p2 = p1 / 2 + p1; oisp(p1) && oisp(p2); }))   /* F:primes */
+OI_SEQ(gen_o160591, p % 12 == 5)                                                               /* F:primes */
+OP_SEQ(gen_o162174, ({ u64 k, L, d; o_pdec(p, &k, &L, &d) && k > L; }))                        /* F:primes */
+OP_SEQ(gen_o162175, ({ u64 k, L, d; o_pdec(p, &k, &L, &d) && k <= L; }))                       /* F:primes */
+N_FILTER(gen_o162527, 49, ({ ofac(n); o_divs(); u64 b = 1; for (int j = 0; j < O_nd; j++) if (O_d[j] * O_d[j] <= n) b = O_d[j]; b == 7; }))   /* F:divisor functions */
+OP_SEQ(gen_o166573, o_contains(p, 13))                                                         /* F:primes */
+OP_SEQ(gen_o173626, o_gpf(p - 1) * o_gpf(p - 1) <= p || p == 2)                                /* F:primes */
+static void gen_o174635(u64 *t, long cnt)   /* F:primes: primes that are not Ramanujan primes */
+{
+    long need = cnt + 16; o_ramanujan(need);
+    for (;;) {
+        long k = 0, j = 0;
+        u64 *r = malloc(sizeof(u64) * (size_t)o_nram); memcpy(r, o_ram, sizeof(u64) * (size_t)o_nram); qsort(r, (size_t)o_nram, sizeof(u64), cmp_u64);
+        for (long i = 0; k < cnt; i++) { u64 p = oprime(i); if (p > r[o_nram - 1]) break; while (j < o_nram && r[j] < p) j++; if (j < o_nram && r[j] == p) continue; t[k++] = p; }
+        free(r); if (k == cnt) return;
+        need *= 2; o_ramanujan(need);
+    }
+}
+N_FILTER(gen_o174905, 1, !o_close_pair(n))                                                      /* F:divisor functions */
+OP_SEQ(gen_o174913, oisp(p + 2) && oisp(3 * p + 2))                                             /* F:primes */
+N_FILTER(gen_o175495, 1, o_tau(n) >= 64 || n < (1ULL << o_tau(n)))                               /* F:divisor functions */
+static void o_fill_selfimg(u64 B) { for (u64 m = 1; m <= B; m++) { u64 v = m + (u64)digitsum(m); if (v <= B) opush(v); } }
+static void gen_o176995(u64 *t, long cnt) { o_bybound(t, cnt, 1 << 20, o_fill_selfimg); }   /* F:digit rule */
+static int tr_sumleL(int s, int d, int pos, int L) { (void)pos; return s + d <= L ? s + d : -1; }
+static int acc_pos(int s, int L) { (void)L; return s >= 1; }
+static void gen_o178361(u64 *t, long cnt) { o_digits(t, cnt, 0, 0, tr_sumleL, acc_pos, NULL); }  /* F:digit rule */
+static int o_meandig(u64 n) { int L = o_nd(n, 10), s = digitsum(n); int c = (s + L - 1) / L; return has_digit(n, c); }
+N_FILTER(gen_o178403, 0, o_meandig(n))                                                          /* F:digit rule */
+N_FILTER(gen_o179188, 1, o_phi(n) == o_phi(n + 6))                                              /* F:divisor functions */
+N_FILTER(gen_o179244, 1, zeck_terms(n) == 4)                                                     /* F:digit rule */
+OP_SEQ(gen_o179336, any_digit_in(p, 0xAC))                                                       /* F:primes */
+static void o_first_of_w(u64 *t, long cnt, int w)
+{ long k = 0; u64 s = 0; for (int j = 0; j < w; j++) s += oprime(j); for (long i = 0; k < cnt; i++) { if (is_prime(s)) t[k++] = oprime(i); s += oprime(i + w) - oprime(i); } }
+static void gen_o180948(u64 *t, long cnt) { o_first_of_w(t, cnt, 7); }                        /* F:primes */
+static void gen_o180950(u64 *t, long cnt) { o_first_of_w(t, cnt, 11); }                       /* F:primes */
+static int o_fermat_liar(u64 n)
+{ if (n < 4 || is_prime(n)) return 0; ofac(n); u128 c = 1; for (int i = 0; i < O_n; i++) c *= gcd_u64(O_p[i] - 1, n - 1); return c > ((n & 1) ? 2u : 1u); }
+N_FILTER(gen_o181780, 4, o_fermat_liar(n))                                                       /* F:primes */
+static int tr_adjprime(int s, int d, int pos, int L) { (void)L; if (pos == 0) return d; int x = s + d; return (x == 2 || x == 3 || x == 5 || x == 7 || x == 11 || x == 13 || x == 17) ? d : -1; }
+static void gen_o182175(u64 *t, long cnt) { o_digits(t, cnt, 1, 0, tr_adjprime, o_acc1, NULL); }   /* F:digit rule */
+static void gen_o182760(u64 *t, long cnt) { o_beatty(t, cnt, 1.723606797749978969640917366873127624L, 0, 1); }   /* F:Beatty */
+static void gen_o184618(u64 *t, long cnt) { o_beatty(t, cnt, 1.414213562373095048801688724209698079L, 1.0L / 3.0L, 1); }   /* F:Beatty */
+static void gen_o184774(u64 *t, long cnt) { long k = 0; for (u64 n = 1; k < cnt; n++) { u64 v = isqrt_u64(2 * n * n); if (is_prime(v)) t[k++] = v; } }   /* F:Beatty */
+static void o_fill_185086(u64 B) { for (long i = 0; ; i++) { u64 p = oprime(i); if (p * p + 1 > B) break; for (u64 k = 1; k * k + p * p <= B; k++) { u64 v = k * k + p * p; if (is_prime(v)) opush(v); } } }
+static void gen_o185086(u64 *t, long cnt) { o_bybound(t, cnt, 1 << 20, o_fill_185086); }      /* F:primes */
+static int nx_190803(u64 x, u64 *y) { y[0] = 2 * x - 1; y[1] = 3 * x - 1; return x ? 2 : 0; }
+static void gen_o190803(u64 *t, long cnt) { u64 s[1] = {1}; o_closure(t, cnt, 1 << 20, s, 1, nx_190803); }   /* F:self-referential */
+static void gen_o190898(u64 *t, long cnt)   /* F:primes: least odd prime p > n^2 with (n/p) = 1 */
+{ for (long i = 0; i < cnt; i++) { u64 n = (u64)i + 1, p = n * n + 1; for (;; p++) { if (p < 3 || !is_prime(p)) continue; if (powmod(n % p, (p - 1) / 2, p) == 1) break; } t[i] = p; } }
+static int nx_191113(u64 x, u64 *y) { y[0] = 3 * x - 2; y[1] = 4 * x - 2; return x ? 2 : 0; }
+static void gen_o191113(u64 *t, long cnt) { u64 s[1] = {1}; o_closure(t, cnt, 1 << 20, s, 1, nx_191113); }   /* F:self-referential */
+static void gen_o192607(u64 *t, long cnt)   /* F:sieve: the complement of the ludic numbers */
+{
+    for (long m = 2 * cnt + 64; ; m *= 2) {
+        u64 *l = malloc(sizeof(u64) * (size_t)m); gen_ludic(l, m);
+        long k = 0, j = 0;
+        for (u64 n = 1; n <= l[m - 1] && k < cnt; n++) { while (j < m && l[j] < n) j++; if (j < m && l[j] == n) continue; t[k++] = n; }
+        free(l); if (k == cnt) return;
+    }
+}
+static int o_Om_minus_om(u64 n) { int w = o_Omega(n); return w - O_n; }
+N_FILTER(gen_o195086, 1, o_Om_minus_om(n) == 2)                                                  /* F:multiplicative */
+N_FILTER(gen_o195087, 1, o_Om_minus_om(n) == 3)                                                  /* F:multiplicative */
+OP_SEQ(gen_o195270, o_nextp(3 * p) > 3 * oprime(i + 1))                                          /* F:primes */
+N_FILTER(gen_o195943, 1, !has_digit(n, 0) && (n == 1 || o_omega(n) == 1))                         /* F:powers */
+static void gen_o198273(u64 *t, long cnt)   /* F:primes: primes not of the form p q + p + q */
+{
+    for (u64 B = 1 << 20; ; B *= 2) {
+        o_bm = 0; o_fill_066938(B); qsort(o_b, o_bm, sizeof(u64), cmp_u64);
+        long k = 0; size_t j = 0;
+        for (long i = 0; k < cnt; i++) { u64 p = oprime(i); if (p > B) break; while (j < o_bm && o_b[j] < p) j++; if (j < o_bm && o_b[j] == p) continue; t[k++] = p; }
+        if (k == cnt) return;
+    }
+}
+static void gen_o198772(u64 *t, long cnt) { o_bycount(t, cnt, 1 << 20, o_fill_loesch_rep, 1, 1); }   /* F:quadratic form */
+static void gen_o198773(u64 *t, long cnt) { o_bycount(t, cnt, 1 << 20, o_fill_loesch_rep, 2, 2); }   /* F:quadratic form */
+static const u64 o_lucas[] = {2, 3, 4, 7, 11, 18, 29, 47, 76, 123, 199, 322, 521, 843, 1364, 2207, 3571, 5778, 9349, 15127, 24476, 39603, 64079, 103682, 167761, 271443, 439204, 710647, 1149851, 1860498, 3010349, 4870847, 7881196, 12752043, 20633239, 33385282, 54018521, 87403803, 141422324, 228826127, 370248451, 599074578, 969323029, 1568397607, 2537720636ULL, 4106118243ULL};
+static void o_fill_lucprod(u64 B) { o_prod_rec(o_lucas, (int)(sizeof o_lucas / sizeof o_lucas[0]), 0, 1, B); }
+static void gen_o200995(u64 *t, long cnt) { o_complement(t, cnt, 1, 1 << 20, o_fill_lucprod); }   /* F:complement */
+static int tr_noncomp(int s, int d, int pos, int L) { (void)pos; (void)L; return ((0xAF >> d) & 1) ? s : -1; }
+static void gen_o202267(u64 *t, long cnt) { o_digits(t, cnt, 1, 0, tr_noncomp, o_acc1, NULL); }    /* F:digit rule */
+static int tr_14689(int s, int d, int pos, int L) { (void)pos; (void)L; return ((0x352 >> d) & 1) ? s : -1; }
+static void gen_o202268(u64 *t, long cnt) { o_digits(t, cnt, 0, 0, tr_14689, o_acc1, NULL); }      /* F:digit rule */
+N_FILTER(gen_o202822, 1, n % 3 == 1 && o_loesch(n))                                                 /* F:quadratic form */
+static int o_expsqf(u64 n) { ofac(n); for (int i = 0; i < O_n; i++) { int e = O_e[i]; if (e % 4 == 0 || e % 9 == 0 || e % 25 == 0 || e % 49 == 0) return 0; } return 1; }
+N_FILTER(gen_o209061, 1, o_expsqf(n))                                                                /* F:multiplicative */
+static int o_practical(u64 n)
+{ if (n == 1) return 1; if (n & 1) return 0; ofac(n); u128 s = 1; for (int i = 0; i < O_n; i++) { if (i > 0 && O_p[i] > s + 1) return 0; u128 t2 = 1, pk = 1; for (int e = 0; e < O_e[i]; e++) { pk *= O_p[i]; t2 += pk; } s *= t2; } return 1; }
+OP_SEQ(gen_o210479, p > 2 && o_practical(p - 1) && o_practical(p + 1))                               /* F:primes */
+static int o_maxe_cmp(u64 n) { int m = o_maxe(n); return m > O_n ? 1 : m == O_n ? 0 : -1; }
+N_FILTER(gen_o212164, 1, o_maxe_cmp(n) > 0)                                                            /* F:multiplicative */
+N_FILTER(gen_o212165, 1, o_maxe_cmp(n) >= 0)                                                           /* F:multiplicative */
+N_FILTER(gen_o212166, 1, o_maxe_cmp(n) == 0)                                                           /* F:multiplicative */
+N_FILTER(gen_o212168, 1, o_maxe_cmp(n) < 0)                                                            /* F:multiplicative */
+N_FILTER(gen_o213382, 1, powmod(n, n, n + 2) == n)                                                    /* F:powers */
+static int o_npal2to10(u64 n) { int c = 0; for (u64 b = 2; b <= 10; b++) if (o_pal(n, b)) c++; return c; }
+N_FILTER(gen_o214423, 1, o_npal2to10(n) == 1)                                                         /* F:digit rule */
+OP_SEQ(gen_o216838, p > 2 && !primroot(2, p) && p <= SPF_MAX ? 1 : (p > SPF_MAX && o_ord(2, p) != p - 1))   /* F:primes */
+N_FILTER(gen_o217139, 1, o_phi(n) == o_phi(n + 12))                                                   /* F:divisor functions */
+OP_SEQ(gen_o227916, p >= 10 && ({ u64 q = 1; while (q * 10 <= p) q *= 10; is_prime(p % q); }))        /* F:primes */
+static void o_fill_kwt(u64 B) { for (u64 k = 0; k <= B; k++) { u64 v = k + (u64)popcount_u64(k); if (v <= B) opush(v); } }
+static void gen_o230091(u64 *t, long cnt) { o_bycount(t, cnt, 1 << 20, o_fill_kwt, 2, 2); }          /* F:binary rule */
+static void gen_o230092(u64 *t, long cnt) { o_bycount(t, cnt, 1 << 20, o_fill_kwt, 3, 3); }          /* F:binary rule */
+OP_SEQ(gen_o230223, p > 4 && oisp(3 * p - 4) && oisp(3 * p - 10) && oisp(3 * p - 14))                 /* F:primes */
+N_FILTER(gen_o230577, 1, o_tau(o_oddpart(n)) == 6)                                                     /* F:divisor functions */
+static u64 o_dsb; static void o_fill_mds(u64 B) { for (u64 m = 0; m <= B; m++) { u64 v = m + (u64)dsum_b(m, o_dsb); if (v <= B) opush(v); } }
+static void gen_o230633(u64 *t, long cnt) { o_dsb = 4; o_bycount(t, cnt, 1 << 20, o_fill_mds, 1, 1); }   /* F:digit rule */
+static void gen_o230634(u64 *t, long cnt) { o_dsb = 4; o_bycount(t, cnt, 1 << 20, o_fill_mds, 2, 2); }   /* F:digit rule */
+static void gen_o230853(u64 *t, long cnt) { o_dsb = 3; o_bycount(t, cnt, 1 << 20, o_fill_mds, 1, 1); }   /* F:digit rule */
+static void gen_o230854(u64 *t, long cnt) { o_dsb = 3; o_bycount(t, cnt, 1 << 20, o_fill_mds, 2, 2); }   /* F:digit rule */
+static void o_fill_btpal0(u64 B)          /* 3^v times a balanced-ternary palindrome */
+{
+    u64 *pal = malloc(sizeof(u64) * 4000000); long np = 0;
+    for (int L = 1; np < 3999990; L++) {
+        int h = (L + 1) / 2; u64 N = 1; for (int j = 1; j < h; j++) N *= 3;
+        __int128 lo = 0; { __int128 m = 1; for (int j = 1; j < L; j++) m *= 3; lo = (m + 1) / 2; } if (lo > (__int128)B) break;
+        for (u64 x = 0; x < N && np < 3999990; x++) {
+            int dg[64]; dg[0] = 1; u64 y = x; for (int j = h - 1; j >= 1; j--) { dg[j] = (int)(y % 3) - 1; y /= 3; }
+            for (int j = h; j < L; j++) dg[j] = dg[L - 1 - j];
+            __int128 v = 0; for (int j = 0; j < L; j++) v = v * 3 + dg[j];
+            if (v <= (__int128)B) pal[np++] = (u64)v;
+        }
+    }
+    opush(0);
+    for (long i = 0; i < np; i++) for (u128 v = pal[i]; v <= B; v *= 3) opush((u64)v);
+    free(pal);
+}
+static void gen_o233010(u64 *t, long cnt) { o_bybound(t, cnt, 1 << 16, o_fill_btpal0); }             /* F:digit rule */
+OP_SEQ(gen_o234695, is_prime(oprime1(p) - p + 1))                                                      /* F:primes */
+N_FILTER(gen_o235592, 1, isprime_s((i128)n * (n + 1) - (i128)oprime1(n)))                               /* F:primes */
+OP_SEQ(gen_o236119, ({ u64 r = oprime1(p) - p; is_prime(r - 1) && is_prime(r + 1); }))                  /* F:primes */
+OP_SEQ(gen_o236464, ({ u64 q = oprime1(p); is_prime(q + 2) && is_prime(q + 6); }))                      /* F:primes */
+static void o_fill_ntau(u64 B) { for (u64 x = 1; x <= B + 4096; x++) { u64 v = x - o_tau(x); if (v <= B) opush(v); } }
+static void gen_o236562(u64 *t, long cnt) { o_bybound(t, cnt, 1 << 20, o_fill_ntau); }                 /* F:divisor functions */
+N_FILTER(gen_o243937, 6, !(n & 1) && o_lpf(n - 1) > o_lpf(n - 3))                                       /* F:multiplicative */
+static u128 o_shiftp(u64 n) { ofac(n); u64 p[64]; int e[64], m = O_n; for (int i = 0; i < m; i++) { p[i] = O_p[i]; e[i] = O_e[i]; } u128 s = 1; for (int i = 0; i < m; i++) { u64 q = o_nextp(p[i]); for (int j = 0; j < e[i]; j++) s *= q; } return s; }
+N_FILTER(gen_o246281, 1, o_shiftp(n) < (u128)2 * n)                                                     /* F:multiplicative */
+N_FILTER(gen_o246282, 1, o_shiftp(n) > (u128)2 * n)                                                     /* F:multiplicative */
+N_FILTER(gen_o247676, 3, (n & 1) && n % 9 == 2 && !is_prime(n))                                          /* F:residue class */
+N_FILTER(gen_o247678, 3, (n & 1) && n % 9 == 4 && !is_prime(n))                                          /* F:residue class */
+N_FILTER(gen_o247681, 1, (n & 1) && n % 9 == 1 && !is_prime(n))                                          /* F:residue class */
+OP_SEQ(gen_o249374, ({ u64 q = 10; while (q <= p) q *= 10; u128 v = ((u128)p * 10 + 1) * q + p; v < ((u128)1 << 64) && is_prime((u64)v); }))   /* F:primes */
+static int o_ftree_b, o_ftree_cop;
+static void gen_o_ftree(u64 *t, long cnt)
+{
+    for (u64 B = 1 << 22; ; B *= 2) {
+        u8 *m = calloc(B + 1, 1); long k = 0;
+        for (u64 n = 1; n <= B && k < cnt; n++) {
+            u64 q = n / (u64)o_ftree_b; int c = gcd_u64(q, n) == 1;
+            if ((o_ftree_cop ? c : !c) && (q == 0 || m[q])) { m[n] = 1; t[k++] = n; }
+        }
+        free(m); if (k == cnt) return;
+    }
+}
+static void gen_o250036(u64 *t, long cnt) { o_ftree_b = 4; o_ftree_cop = 1; gen_o_ftree(t, cnt); }   /* F:self-referential */
+static void gen_o250046(u64 *t, long cnt) { o_ftree_b = 7; o_ftree_cop = 1; gen_o_ftree(t, cnt); }   /* F:self-referential */
+static void gen_o250047(u64 *t, long cnt) { o_ftree_b = 7; o_ftree_cop = 0; gen_o_ftree(t, cnt); }   /* F:self-referential */
+static void gen_o250048(u64 *t, long cnt) { o_ftree_b = 6; o_ftree_cop = 1; gen_o_ftree(t, cnt); }   /* F:self-referential */
+static void gen_o250049(u64 *t, long cnt) { o_ftree_b = 6; o_ftree_cop = 0; gen_o_ftree(t, cnt); }   /* F:self-referential */
+static int o_gpf_lt_lpf2(u64 n) { u64 g = o_gpf(n); return g < O_p[0] * O_p[0]; }
+N_FILTER(gen_o251726, 2, o_gpf_lt_lpf2(n))                                                    /* F:smooth */
+N_FILTER(gen_o251728, 4, ({ ofac(n); int w = 0; for (int j = 0; j < O_n; j++) w += O_e[j]; w == 2 && O_p[O_n - 1] < O_p[0] * O_p[0]; }))   /* F:multiplicative */
+static int o_minmax(u128 x, int lo, int hi) { int mn = 9, mx = 0; do { int d = (int)(x % 10); if (d < mn) mn = d; if (d > mx) mx = d; x /= 10; } while (x); return mn == lo && mx == hi; }
+N_FILTER(gen_o256601, 1, o_minmax(n, 1, 9) && o_minmax((u128)n * n, 1, 9))                              /* F:digit rule */
+N_FILTER(gen_o256634, 1, o_minmax(n, 0, 7) && o_minmax((u128)n * n, 0, 7))                              /* F:digit rule */
+N_FILTER(gen_o257210, 1, o_minmax(n, 1, 7) && o_minmax((u128)n * n, 1, 7))                              /* F:digit rule */
+N_FILTER(gen_o257211, 1, o_minmax(n, 1, 8) && o_minmax((u128)n * n, 1, 8))                              /* F:digit rule */
+N_FILTER(gen_o257368, 1, o_minmax(n, 2, 8) && o_minmax((u128)n * n, 2, 8))                              /* F:digit rule */
+static int o_divdig(u64 n, int d) { ofac(n); o_divs(); for (int i = 0; i < O_nd; i++) if (has_digit(O_d[i], d)) return 1; return 0; }
+N_FILTER(gen_o257219, 1, o_divdig(n, 2))                                                                 /* F:divisor functions */
+N_FILTER(gen_o257220, 1, o_divdig(n, 3))                                                                 /* F:divisor functions */
+N_FILTER(gen_o260682, 1, n % 6 == 1 && o_loesch(n))                                                      /* F:quadratic form */
+OI_SEQ(gen_o270189, (oprime(i + 1) - p) % 3 != 0)                                                         /* F:primes */
+OI_SEQ(gen_o270190, (oprime(i + 1) - p) % 3 == 0)                                                         /* F:primes */
+static void gen_o272159(u64 *t, long cnt) { long k = 0; for (u64 n = 0; k < cnt; n++) { __int128 v = (__int128)8 * n * n - (__int128)488 * n + 7243; if (v < 0) v = -v; if (isprime_s(v)) t[k++] = n; } }   /* F:prime values */
+N_FILTER(gen_o274357, 1, o_tau(n) == 8 && o_tau(n + 1) == 8)                                              /* F:divisor functions */
+static int o_strip_mod(u64 n, u64 b, u64 r) { while (n % b == 0) n /= b; return n % b == r; }
+N_FILTER(gen_o277568, 1, o_strip_mod(n, 6, 2))                                                             /* F:residue class */
+N_FILTER(gen_o277588, 1, o_strip_mod(n, 10, 1))                                                            /* F:residue class */
+N_FILTER(gen_o277589, 1, o_strip_mod(n, 10, 2))                                                            /* F:residue class */
+N_FILTER(gen_o277590, 1, o_strip_mod(n, 10, 3))                                                            /* F:residue class */
+N_FILTER(gen_o277591, 1, o_strip_mod(n, 10, 4))                                                            /* F:residue class */
+N_FILTER(gen_o277593, 1, o_strip_mod(n, 10, 6))                                                            /* F:residue class */
+static void gen_o279607(u64 *t, long cnt) { o_beatty(t, cnt, 1.359140914229522617680143735676331249L, 0, 1); }   /* F:Beatty */
 
 /* ------------------------------------------------------------------ */
 /* catalogue                                                           */
@@ -13882,6 +15074,1506 @@ static SeqDef defs[] = {
 { "a142298", "A142298", "Primes congruent to 15 mod 44", "primes",
   "58 different gaps occur, from 44 to 2,640; the level share is 46.37 %; there are no ties.",
   100000, 1, gen_a142298 },
+{ "a000062", "A000062", "A Beatty sequence: a(n) = floor(n/(e-2))", "Beatty",
+  "The gaps are 1 and 2; the level share is 11.20 %; L = 1 holds 83 % of the level class.",
+  100000, 1, gen_o000062 },
+{ "a001751", "A001751", "Primes together with primes multiplied by 2", "primes",
+  "64 different gaps occur, from 1 to 70; the level share is 15.33 %; L = 1 holds 34 % of the level class.",
+  100000, 1, gen_o001751 },
+{ "a001838", "A001838", "Numbers k such that phi(k+2) = phi(k) + 2", "divisor functions",
+  "359 different gaps occur, from 1 to 1,458; the level share is 44.75 %.",
+  100000, 1, gen_o001838 },
+{ "a003485", "A003485", "Hurwitz-Radon function at powers of 2", "powers",
+  "The gaps are 1, 2 and 4; the level share is 4.52 %; L = 1 holds 100 % of the level class.",
+  100000, 0, gen_o003485 },
+{ "a003511", "A003511", "A Beatty sequence: floor( n * (1 + sqrt(3))/2 )", "Beatty",
+  "The gaps are 1 and 2; the level share is 11.26 %; L = 1 holds 84 % of the level class.",
+  100000, 1, gen_o003511 },
+{ "a003635", "A003635", "Inconsummate numbers in base 10: no number is this multiple of the sum of its digits (in base 10)", "digit rule",
+  "87 different gaps occur, from 1 to 135; the level share is 18.00 %; L = 1 holds 51 % of the level class.",
+  100000, 1, gen_o003635 },
+{ "a003726", "A003726", "Numbers with no 3 adjacent 1's in binary expansion", "binary rule",
+  "17 different gaps occur, from 1 to 37,450; the level share is 9.89 %; L = 1 holds 80 % of the level class.",
+  100000, 1, gen_o003726 },
+{ "a003796", "A003796", "Numbers with no 3 adjacent 0's in binary expansion", "binary rule",
+  "17 different gaps occur, from 1 to 37,450; the level share is 10.62 %; L = 1 holds 89 % of the level class.",
+  100000, 1, gen_o003796 },
+{ "a003814", "A003814", "Numbers k such that the continued fraction for sqrt(k) has odd period length", "quadratic form",
+  "50 different gaps occur, from 1 to 84; the level share is 19.11 %; L = 1 holds 34 % of the level class.",
+  100000, 1, gen_o003814 },
+{ "a004214", "A004214", "Positive numbers that are not the sum of three nonzero squares", "quadratic form",
+  "7 different gaps occur, from 1 to 8; the level share is 23.69 %; L = 1 holds 52 % of the level class.",
+  100000, 1, gen_o004214 },
+{ "a004611", "A004611", "Divisible only by primes congruent to 1 mod 3", "multiplicative",
+  "14 different gaps occur, from 6 to 84; the level share is 32.57 %; L = 1 holds 61 % of the level class.",
+  100000, 1, gen_o004611 },
+{ "a004614", "A004614", "Numbers that are divisible only by primes congruent to 3 mod 4", "multiplicative",
+  "30 different gaps occur, from 2 to 60; the level share is 23.64 %; L = 1 holds 61 % of the level class.",
+  100000, 1, gen_o004614 },
+{ "a004742", "A004742", "Numbers whose binary expansion does not contain 101", "binary rule",
+  "19 different gaps occur, from 1 to 131,073; the level share is 13.63 %; L = 1 holds 52 % of the level class.",
+  100000, 1, gen_o004742 },
+{ "a004743", "A004743", "Numbers whose binary expansion does not contain 110", "binary rule",
+  "21 different gaps occur, from 1 to 1,048,576; the level share is 11.39 %; L = 1 holds 80 % of the level class.",
+  100000, 1, gen_o004743 },
+{ "a004744", "A004744", "Numbers whose binary expansion does not contain 011", "binary rule",
+  "20 different gaps occur, from 1 to 349,526; the level share is 11.32 %; L = 1 holds 51 % of the level class.",
+  100000, 1, gen_o004744 },
+{ "a004745", "A004745", "Numbers whose binary expansion does not contain 001", "binary rule",
+  "20 different gaps occur, from 1 to 524,288; the level share is 10.11 %; L = 1 holds 56 % of the level class.",
+  100000, 1, gen_o004745 },
+{ "a004746", "A004746", "Numbers whose binary expansion does not contain 010", "binary rule",
+  "18 different gaps occur, from 1 to 65,537; the level share is 12.13 %; L = 1 holds 77 % of the level class.",
+  100000, 1, gen_o004746 },
+{ "a005244", "A005244", "A self-generating sequence: start with 2 and 3, take all products of any 2 previous elements, subtract 1 and adjoin them to the sequence", "self-referential",
+  "21 different gaps occur, from 1 to 21; the level share is 22.24 %; L = 1 holds 73 % of the level class.",
+  100000, 1, gen_o005244 },
+{ "a005279", "A005279", "Numbers having divisors d, e with d < e < 2*d", "divisor functions",
+  "6 different gaps occur, from 1 to 6; the level share is 15.20 %; L = 1 holds 43 % of the level class.",
+  100000, 1, gen_o005279 },
+{ "a005381", "A005381", "Numbers k such that k and k-1 are composite", "complement",
+  "The gaps are 1, 3 and 5; the level share is 2.46 %; L = 1 holds 59 % of the level class.",
+  100000, 1, gen_o005381 },
+{ "a006073", "A006073", "Numbers k such that k, k+1 and k+2 all have the same number of distinct prime divisors", "multiplicative",
+  "155 different gaps occur, from 1 to 187; the level share is 22.04 %; L = 1 holds 37 % of the level class.",
+  100000, 1, gen_o006073 },
+{ "a006378", "A006378", "Prime self (or Colombian) numbers: primes not expressible as the sum of an integer and its digit sum", "primes",
+  "259 different gaps occur, from 2 to 1,712; the level share is 41.71 %.",
+  100000, 1, gen_o006378 },
+{ "a006532", "A006532", "Numbers whose sum of divisors is a square", "divisor functions",
+  "3,139 different gaps occur, from 1 to 6,783; the level share is 45.38 %.",
+  100000, 1, gen_o006532 },
+{ "a007378", "A007378", "a(n), for n >= 2, is smallest positive integer which is consistent with sequence being monotonically increasing and satisfying a(a(n)) = 2n", "self-referential",
+  "The gaps are 1 and 2; the level share is 9.51 %; L = 1 holds 63 % of the level class.",
+  100000, 2, gen_o007378 },
+{ "a007500", "A007500", "Primes whose reversal in base 10 is also prime (called \"palindromic primes\" by David Wells, although that name usually refers to A002385). Also called reversible primes", "primes",
+  "255 different gaps occur, from 1 to 3,000,162; the level share is 31.51 %; 15 terms do not decompose.",
+  100000, 1, gen_o007500 },
+{ "a007606", "A007606", "Take 1, skip 2, take 3, etc", "block",
+  "317 different gaps occur, from 1 to 633; the level share is 9.27 %; L = 1 holds 98 % of the level class.",
+  100000, 1, gen_o007606 },
+{ "a007692", "A007692", "Numbers that are the sum of 2 nonzero squares in 2 or more ways", "quadratic form",
+  "66 different gaps occur, from 1 to 73; the level share is 19.97 %; L = 1 holds 31 % of the level class.",
+  100000, 1, gen_o007692 },
+{ "a007700", "A007700", "Numbers n such that n, 2n+1, and 4n+3 all prime", "primes",
+  "1,543 different gaps occur, from 3 to 27,690; the level share is 67.41 %; 4.5 % of terms are forced level (l <= d^2); L = 1 holds 31 % of the level class; there are no ties; 6 terms do not decompose.",
+  100000, 1, gen_o007700 },
+{ "a007932", "A007932", "Numbers that contain only 1's, 2's and 3's", "digit rule",
+  "11 different gaps occur, from 1 to 7,777,777,778; the level share is 10.69 %; L = 5 holds 43 % of the level class; 21 terms do not decompose.",
+  100000, 1, gen_o007932 },
+{ "a007957", "A007957", "Numbers that contain an odd digit", "digit rule",
+  "The gaps are 1 and 2; the level share is 9.88 %; L = 1 holds 100 % of the level class.",
+  100000, 1, gen_o007957 },
+{ "a008851", "A008851", "Congruent to 0 or 1 mod 5", "residue class",
+  "The gaps are 1 and 4; the level share is 17.56 %; L = 1 holds 63 % of the level class.",
+  100000, 1, gen_o008851 },
+{ "a009112", "A009112", "Areas of Pythagorean triangles: numbers which can be the area of a right triangle with integer sides", "quadratic form",
+  "4,911 different gaps occur, from 6 to 93,060; the level share is 48.29 %; 12.5 % of terms are forced level (l <= d^2).",
+  100000, 1, gen_o009112 },
+{ "a009177", "A009177", "Numbers that are the hypotenuses of more than one Pythagorean triangle", "quadratic form",
+  "25 different gaps occur, from 1 to 25; the level share is 16.52 %; L = 1 holds 51 % of the level class.",
+  100000, 1, gen_o009177 },
+{ "a013917", "A013917", "a(n) is prime and sum of all primes <= a(n) is prime", "primes",
+  "1,620 different gaps occur, from 1 to 6,310; the level share is 47.80 %; 6 terms do not decompose.",
+  100000, 1, gen_o013917 },
+{ "a014439", "A014439", "Differences between two positive cubes in exactly 1 way", "powers",
+  "2,645 different gaps occur, from 1 to 6,805; the level share is 44.31 %.",
+  100000, 1, gen_o014439 },
+{ "a015614", "A015614", "a(n) = -1 + Sum_{i=1..n} phi(i)", "summatory",
+  "18,412 different gaps occur, from 1 to 99,990; the level share is 93.28 %; 46.0 % of terms are forced level (l <= d^2).",
+  100000, 1, gen_o015614 },
+{ "a015911", "A015911", "Numbers k such that 2^k mod k is odd", "powers",
+  "24 different gaps occur, from 2 to 50; the level share is 24.35 %; L = 1 holds 70 % of the level class.",
+  100000, 1, gen_o015911 },
+{ "a016038", "A016038", "Strictly non-palindromic numbers: n is not palindromic in any base b with 2 <= b <= n-2", "digit rule",
+  "953 different gaps occur, from 1 to 3,834; the level share is 43.10 %; 7 terms do not decompose.",
+  100000, 1, gen_o016038 },
+{ "a016885", "A016885", "a(n) = 5*n + 3", "arithmetic progression",
+  "The gap is always 5; the level share is 22.64 %; L = 1 holds 46 % of the level class; there are no ties.",
+  100000, 0, gen_o016885 },
+{ "a018805", "A018805", "Number of elements in the set {(x,y): 1 <= x,y <= n, gcd(x,y)=1}", "summatory",
+  "18,412 different gaps occur, from 2 to 199,980; the level share is 98.02 %; 79.7 % of terms are forced level (l <= d^2); there are no ties.",
+  100000, 1, gen_o018805 },
+{ "a018825", "A018825", "Numbers that are not the sum of 2 nonzero squares", "complement",
+  "The gaps are 1, 2, 3 and 4; the level share is 13.46 %; L = 1 holds 79 % of the level class; there are no ties.",
+  100000, 1, gen_o018825 },
+{ "a019546", "A019546", "Primes whose digits are primes; primes having only {2, 3, 5, 7} as digits", "primes",
+  "1,942 different gaps occur, from 1 to 14,444,444,646; the level share is 34.16 %; 1.5 % of terms are forced level (l <= d^2); 13 terms do not decompose.",
+  100000, 1, gen_o019546 },
+{ "a022449", "A022449", "c(p(n)) where p(k) is k-th prime including p(1)=1 and c(k) is k-th composite number", "complement",
+  "107 different gaps occur, from 2 to 128; the level share is 24.61 %.",
+  100000, 1, gen_o022449 },
+{ "a022549", "A022549", "Sum of a square and a nonnegative cube", "powers",
+  "120 different gaps occur, from 1 to 149; the level share is 24.76 %; L = 1 holds 31 % of the level class.",
+  100000, 1, gen_o022549 },
+{ "a023173", "A023173", "Numbers k such that Fibonacci(k) == 1 (mod k)", "self-referential",
+  "122 different gaps occur, from 1 to 177; the level share is 19.56 %.",
+  100000, 1, gen_o023173 },
+{ "a023197", "A023197", "Numbers k such that sigma(k) >= 3*k", "divisor functions",
+  "31 different gaps occur, from 4 to 120; the level share is 16.80 %; there are no ties.",
+  100000, 1, gen_o023197 },
+{ "a023205", "A023205", "Numbers m such that m and 2*m + 5 are both prime", "primes",
+  "203 different gaps occur, from 4 to 1,638; the level share is 44.84 %; L = 1 holds 37 % of the level class.",
+  100000, 1, gen_o023205 },
+{ "a023241", "A023241", "Primes that remain prime through 2 iterations of function f(x) = x + 6", "primes",
+  "1,781 different gaps occur, from 2 to 11,774; the level share is 49.14 %; 1.5 % of terms are forced level (l <= d^2).",
+  100000, 1, gen_o023241 },
+{ "a024898", "A024898", "Positive integers k such that 6*k - 1 is prime", "prime values",
+  "40 different gaps occur, from 1 to 43; the level share is 18.09 %; L = 1 holds 49 % of the level class.",
+  100000, 1, gen_o024898 },
+{ "a024974", "A024974", "Numbers that are the sum of 3 distinct positive cubes in 2 or more ways", "powers",
+  "519 different gaps occur, from 1 to 908; the level share is 34.72 %.",
+  100000, 1, gen_o024974 },
+{ "a024975", "A024975", "Sums of three distinct positive cubes", "powers",
+  "87 different gaps occur, from 1 to 100; the level share is 22.41 %; L = 1 holds 36 % of the level class.",
+  100000, 1, gen_o024975 },
+{ "a025284", "A025284", "Numbers that are the sum of 2 nonzero squares in exactly 1 way", "quadratic form",
+  "80 different gaps occur, from 1 to 91; the level share is 18.18 %.",
+  100000, 1, gen_o025284 },
+{ "a025584", "A025584", "Primes p such that p-2 is not a prime", "primes",
+  "57 different gaps occur, from 1 to 132; the level share is 25.67 %; L = 1 holds 33 % of the level class.",
+  100000, 1, gen_o025584 },
+{ "a026351", "A026351", "a(n) = floor(n*phi) + 1, where phi = (1+sqrt(5))/2", "Beatty",
+  "The gaps are 1 and 2; the level share is 12.10 %; L = 1 holds 75 % of the level class.",
+  100000, 0, gen_o026351 },
+{ "a028374", "A028374", "Numbers that have only curved digits {0, 3, 6, 8, 9} or digits that are both curved and linear {2, 5}", "digit rule",
+  "7 different gaps occur, from 1 to 100,001; the level share is 13.91 %; L = 1 holds 63 % of the level class; 8 terms do not decompose.",
+  100000, 1, gen_o028374 },
+{ "a028835", "A028835", "Numbers whose iterated sum of digits is a prime", "digit rule",
+  "The gaps are 1, 2 and 4; the level share is 12.16 %; L = 1 holds 55 % of the level class.",
+  100000, 1, gen_o028835 },
+{ "a029581", "A029581", "Numbers in which all digits are composite", "digit rule",
+  "24 different gaps occur, from 1 to 344,444,445; the level share is 13.67 %; L = 2 holds 48 % of the level class; there are no ties; 9 terms do not decompose.",
+  100000, 1, gen_o029581 },
+{ "a030079", "A030079", "Primes p such that digits of p appear in p^2", "primes",
+  "401 different gaps occur, from 2 to 1,518; the level share is 33.37 %.",
+  100000, 1, gen_o030079 },
+{ "a030143", "A030143", "Even numbers in which parity of digits alternates", "digit rule",
+  "7 different gaps occur, from 2 to 1,111,112; the level share is 9.62 %; L = 2 holds 76 % of the level class; there are no ties; 9 terms do not decompose.",
+  100000, 1, gen_o030143 },
+{ "a030144", "A030144", "Primes in which parity of digits alternates", "primes",
+  "561 different gaps occur, from 1 to 111,111,126; the level share is 27.83 %; 1.1 % of terms are forced level (l <= d^2); 10 terms do not decompose.",
+  100000, 1, gen_o030144 },
+{ "a030457", "A030457", "Numbers k such that k concatenated with k+1 is prime", "digit rule",
+  "112 different gaps occur, from 2 to 294; the level share is 26.25 %; L = 2 holds 35 % of the level class; there are no ties.",
+  100000, 1, gen_o030457 },
+{ "a030459", "A030459", "Prime p concatenated with next prime is also prime", "primes",
+  "1,255 different gaps occur, from 6 to 4,200; the level share is 45.63 %.",
+  100000, 1, gen_o030459 },
+{ "a031368", "A031368", "Odd-indexed primes: a(n) = prime(2n-1)", "primes",
+  "70 different gaps occur, from 3 to 156; the level share is 31.14 %.",
+  100000, 1, gen_o031368 },
+{ "a031932", "A031932", "Lower prime of a pair of consecutive primes having a difference of 14", "primes",
+  "395 different gaps occur, from 18 to 3,042; the level share is 50.78 %; L = 1 holds 34 % of the level class; there are no ties.",
+  100000, 1, gen_o031932 },
+{ "a031934", "A031934", "Lower prime of a pair of consecutive primes having a difference of 16", "primes",
+  "538 different gaps occur, from 18 to 4,920; the level share is 52.30 %; L = 1 holds 30 % of the level class.",
+  100000, 1, gen_o031934 },
+{ "a031936", "A031936", "Lower prime of a difference of 18 between consecutive primes", "primes",
+  "819 different gaps occur, from 18 to 2,768; the level share is 43.06 %.",
+  100000, 1, gen_o031936 },
+{ "a031955", "A031955", "Numbers with exactly two distinct base-10 digits", "digit rule",
+  "128 different gaps occur, from 1 to 888,888,889; the level share is 22.86 %; 3.9 % of terms are forced level (l <= d^2).",
+  100000, 1, gen_o031955 },
+{ "a032352", "A032352", "Numbers k such that there is no prime between 10*k and 10*k+9", "primes",
+  "23 different gaps occur, from 1 to 28; the level share is 14.40 %; L = 1 holds 65 % of the level class.",
+  100000, 1, gen_o032352 },
+{ "a032981", "A032981", "Positive numbers with the property that all pairs of consecutive base-10 digits differ by 0 or 1", "digit rule",
+  "33 different gaps occur, from 1 to 865,432,101; the level share is 11.67 %; L = 1 holds 43 % of the level class; 11 terms do not decompose.",
+  100000, 1, gen_o032981 },
+{ "a033015", "A033015", "Numbers whose base-2 expansion has no run of digits with length < 2", "binary rule",
+  "24 different gaps occur, from 3 to 8,388,609; the level share is 19.10 %; L = 1 holds 32 % of the level class; 23 terms do not decompose.",
+  100000, 1, gen_o033015 },
+{ "a033556", "A033556", "a(n+1) = 2a(n) - {largest prime < a(n)}", "primes",
+  "30 different gaps occur, from 1 to 96; the level share is 100.00 %; L = 1 holds 100 % of the level class; there are no ties.",
+  100000, 0, gen_o033556 },
+{ "a033948", "A033948", "Numbers that have a primitive root (k such that the multiplicative group modulo k is cyclic)", "multiplicative",
+  "64 different gaps occur, from 1 to 70; the level share is 15.29 %; L = 1 holds 34 % of the level class.",
+  100000, 1, gen_o033948 },
+{ "a033949", "A033949", "Positive integers that do not have a primitive root", "multiplicative",
+  "The gaps are 1, 2, 3 and 4; the level share is 11.58 %; L = 1 holds 87 % of the level class.",
+  100000, 1, gen_o033949 },
+{ "a034017", "A034017", "Numbers that are primitively represented by x^2 + xy + y^2", "quadratic form",
+  "31 different gaps occur, from 1 to 62; the level share is 29.67 %; L = 1 holds 69 % of the level class.",
+  100000, 1, gen_o034017 },
+{ "a034020", "A034020", "Not of the form x^2 + x*y + y^2", "quadratic form",
+  "The gaps are 1, 2 and 3; the level share is 9.15 %; L = 1 holds 86 % of the level class.",
+  100000, 1, gen_o034020 },
+{ "a034048", "A034048", "Numbers with multiplicative digital root value 0", "digit rule",
+  "8 different gaps occur, from 1 to 10; the level share is 10.19 %; L = 1 holds 89 % of the level class.",
+  100000, 1, gen_o034048 },
+{ "a034683", "A034683", "Unitary abundant numbers: numbers k such that usigma(k) > 2*k", "divisor functions",
+  "16 different gaps occur, from 2 to 24; the level share is 14.64 %; L = 18 holds 35 % of the level class; there are no ties.",
+  100000, 1, gen_o034683 },
+{ "a034705", "A034705", "Numbers that are sums of consecutive squares", "summatory",
+  "1,128 different gaps occur, from 1 to 2,031; the level share is 38.53 %.",
+  100000, 1, gen_o034705 },
+{ "a034837", "A034837", "Numbers that are divisible by the first, i.e., the leftmost, digit", "digit rule",
+  "9 different gaps occur, from 1 to 9; the level share is 9.22 %; L = 1 holds 76 % of the level class.",
+  100000, 1, gen_o034837 },
+{ "a034838", "A034838", "Numbers k that are divisible by every digit of k", "digit rule",
+  "751 different gaps occur, from 1 to 1,111,150; the level share is 14.67 %.",
+  100000, 1, gen_o034838 },
+{ "a034962", "A034962", "Primes that are the sum of three consecutive primes", "primes",
+  "974 different gaps occur, from 8 to 3,150; the level share is 45.05 %.",
+  100000, 1, gen_o034962 },
+{ "a034965", "A034965", "Primes that are sum of five consecutive primes", "primes",
+  "1,817 different gaps occur, from 14 to 8,088; the level share is 49.66 %.",
+  100000, 1, gen_o034965 },
+{ "a035333", "A035333", "Concatenation of two or more consecutive positive integers", "digit rule",
+  "106 different gaps occur, from 10 to 2,222,121; the level share is 99.86 %; 99.6 % of terms are forced level (l <= d^2); there are no ties.",
+  100000, 1, gen_o035333 },
+{ "a035336", "A035336", "a(n) = 2*floor(n*phi) + n - 1, where phi = (1+sqrt(5))/2", "Beatty",
+  "The gaps are 3 and 5; the level share is 18.63 %; L = 1 holds 45 % of the level class.",
+  100000, 1, gen_o035336 },
+{ "a035497", "A035497", "Happy primes: primes that eventually reach 1 under iteration of \"x -> sum of squares of digits of x\"", "primes",
+  "454 different gaps occur, from 2 to 1,648; the level share is 37.84 %.",
+  100000, 1, gen_o035497 },
+{ "a035928", "A035928", "Numbers n such that BCR(n) = n, where BCR = binary-complement-and-reverse = take one's complement then reverse bit order", "binary rule",
+  "150 different gaps occur, from 2 to 4,295,163,902; the level share is 84.43 %; 50.0 % of terms are forced level (l <= d^2); 16 terms do not decompose.",
+  100000, 1, gen_o035928 },
+{ "a036301", "A036301", "Numbers whose sum of even digits and sum of odd digits are equal", "digit rule",
+  "262 different gaps occur, from 1 to 1,804; the level share is 28.84 %.",
+  100000, 1, gen_o036301 },
+{ "a036433", "A036433", "Number of divisors is a digit in the base 10 representation of n", "divisor functions",
+  "62 different gaps occur, from 1 to 70; the level share is 12.87 %; L = 1 holds 59 % of the level class.",
+  100000, 1, gen_o036433 },
+{ "a036441", "A036441", "a(n+1) = next number having largest prime dividing a(n) as a factor, with a(1) = 2", "self-referential",
+  "5,133 different gaps occur, from 2 to 49,999; the level share is 100.00 %; 60.3 % of terms are forced level (l <= d^2); there are no ties.",
+  100000, 1, gen_o036441 },
+{ "a036455", "A036455", "Numbers n such that d(d(n)) is an odd prime, where d(k) is the number of divisors of k", "divisor functions",
+  "26 different gaps occur, from 1 to 28; the level share is 14.21 %; L = 1 holds 70 % of the level class.",
+  100000, 1, gen_o036455 },
+{ "a036537", "A036537", "Numbers whose number of divisors is a power of 2", "divisor functions",
+  "7 different gaps occur, from 1 to 7; the level share is 10.24 %; L = 1 holds 96 % of the level class.",
+  100000, 1, gen_o036537 },
+{ "a036990", "A036990", "Numbers n such that, in the binary expansion of n, reading from right to left, the number of 1's never exceeds the number of 0's", "binary rule",
+  "10 different gaps occur, from 2 to 1,024; the level share is 4.72 %; L = 2 holds 99 % of the level class.",
+  100000, 1, gen_o036990 },
+{ "a037144", "A037144", "Numbers with at most 3 prime factors (counted with multiplicity)", "multiplicative",
+  "7 different gaps occur, from 1 to 7; the level share is 9.56 %; L = 1 holds 93 % of the level class.",
+  100000, 1, gen_o037144 },
+{ "a037301", "A037301", "Numbers whose base-2 and base-3 expansions have the same digit sum", "digit rule",
+  "412 different gaps occur, from 1 to 4,353; the level share is 17.90 %; L = 1 holds 42 % of the level class.",
+  100000, 1, gen_o037301 },
+{ "a037308", "A037308", "Numbers whose base-2 and base-10 expansions have the same digit sum", "digit rule",
+  "1,406 different gaps occur, from 1 to 3,989,877; the level share is 21.30 %; 2.0 % of terms are forced level (l <= d^2); L = 1 holds 33 % of the level class.",
+  100000, 1, gen_o037308 },
+{ "a037372", "A037372", "Positive numbers k such that every base-2 digit of k is a base-3 digit of k", "digit rule",
+  "5 different gaps occur, from 1 to 6; the level share is 9.48 %; L = 1 holds 99 % of the level class.",
+  100000, 1, gen_o037372 },
+{ "a037373", "A037373", "Positive numbers k such that every base-2 digit of k is a base-4 digit of k", "digit rule",
+  "8 different gaps occur, from 1 to 13; the level share is 9.73 %; L = 1 holds 94 % of the level class.",
+  100000, 1, gen_o037373 },
+{ "a037374", "A037374", "Positive numbers k such that every base-2 digit of k is a base-5 digit of k", "digit rule",
+  "9 different gaps occur, from 1 to 21; the level share is 9.99 %; L = 1 holds 86 % of the level class.",
+  100000, 1, gen_o037374 },
+{ "a037380", "A037380", "Numbers whose base-3 digits are all present among their base-4 digits", "digit rule",
+  "18 different gaps occur, from 1 to 30; the level share is 9.72 %; L = 1 holds 89 % of the level class.",
+  100000, 1, gen_o037380 },
+{ "a037386", "A037386", "Every base 3 digit of n is a base 10 digit of n", "digit rule",
+  "150 different gaps occur, from 1 to 802; the level share is 14.13 %; L = 1 holds 48 % of the level class.",
+  100000, 1, gen_o037386 },
+{ "a038599", "A038599", "Numbers k such that k^3 - 2 is prime", "prime values",
+  "175 different gaps occur, from 2 to 588; the level share is 35.38 %; L = 1 holds 45 % of the level class.",
+  100000, 1, gen_o038599 },
+{ "a038618", "A038618", "Primes not containing the digit '0'", "primes",
+  "145 different gaps occur, from 1 to 111,168; the level share is 23.57 %; L = 1 holds 31 % of the level class.",
+  100000, 1, gen_o038618 },
+{ "a038772", "A038772", "Numbers not divisible by any of their digits", "digit rule",
+  "39 different gaps occur, from 1 to 100,005; the level share is 10.89 %; L = 1 holds 64 % of the level class.",
+  100000, 1, gen_o038772 },
+{ "a038812", "A038812", "Number of primes less than 1000n", "primes",
+  "84 different gaps occur, from 34 to 135; the level share is 36.73 %.",
+  100000, 1, gen_o038812 },
+{ "a039004", "A039004", "Numbers whose base-4 representation has the same number of 1's and 2's", "digit rule",
+  "9 different gaps occur, from 3 to 768; the level share is 10.79 %; L = 3 holds 81 % of the level class.",
+  100000, 1, gen_o039004 },
+{ "a039770", "A039770", "Numbers k such that phi(k) is a perfect square", "divisor functions",
+  "2,430 different gaps occur, from 1 to 5,312; the level share is 41.30 %.",
+  100000, 1, gen_o039770 },
+{ "a043096", "A043096", "Numbers in which every pair of adjacent digits are distinct", "digit rule",
+  "10 different gaps occur, from 1 to 10,203; the level share is 9.70 %; L = 1 holds 93 % of the level class.",
+  100000, 1, gen_o043096 },
+{ "a043489", "A043489", "Numbers having one 0 in base 10", "digit rule",
+  "9 different gaps occur, from 1 to 1,121; the level share is 9.87 %; L = 1 holds 76 % of the level class.",
+  100000, 1, gen_o043489 },
+{ "a045542", "A045542", "Sub-perfect powers: perfect powers (squares, cubes etc., not including 1) minus 1", "powers",
+  "97,727 different gaps occur, from 1 to 195,605; the level share is 99.31 %; 97.8 % of terms are forced level (l <= d^2).",
+  100000, 1, gen_o045542 },
+{ "a045708", "A045708", "Primes with first digit 2", "primes",
+  "70 different gaps occur, from 2 to 17,000,004; the level share is 21.07 %; L = 1 holds 32 % of the level class; 7 terms do not decompose.",
+  100000, 1, gen_o045708 },
+{ "a045746", "A045746", "Numbers whose sum of divisors is a triangular number", "divisor functions",
+  "17,071 different gaps occur, from 1 to 75,371; the level share is 63.00 %; 8.8 % of terms are forced level (l <= d^2); 7 terms do not decompose.",
+  100000, 1, gen_o045746 },
+{ "a045753", "A045753", "Numbers n such that 4n-1 and 4n+1 are both primes", "prime values",
+  "279 different gaps occur, from 2 to 1,071; the level share is 31.88 %.",
+  100000, 1, gen_o045753 },
+{ "a045776", "A045776", "a(n+1) is smallest multiple of (sum of digits of a(n)) which is > a(n)", "self-referential",
+  "12 different gaps occur, from 1 to 45; the level share is 10.75 %; L = 18 holds 35 % of the level class.",
+  100000, 0, gen_o045776 },
+{ "a045797", "A045797", "Evenish numbers (prime to 10 and 10's digit is even)", "residue class",
+  "The gaps are 2, 4 and 12; the level share is 21.58 %; L = 1 holds 72 % of the level class.",
+  100000, 1, gen_o045797 },
+{ "a045798", "A045798", "Oddish numbers (prime to 10 and 10's digit is odd)", "residue class",
+  "The gaps are 2, 4 and 12; the level share is 21.50 %; L = 1 holds 72 % of the level class.",
+  100000, 1, gen_o045798 },
+{ "a045844", "A045844", "a(n+1) = a(n) + largest digit of a(n); a(0) = 1", "self-referential",
+  "9 different gaps occur, from 1 to 9; the level share is 16.89 %.",
+  100000, 0, gen_o045844 },
+{ "a045939", "A045939", "Numbers m such that the factorizations of m..m+2 have the same number of primes (including multiplicities)", "multiplicative",
+  "375 different gaps occur, from 1 to 501; the level share is 30.39 %.",
+  100000, 1, gen_o045939 },
+{ "a046025", "A046025", "Numbers k such that 6*k+1, 12*k+1 and 18*k+1 are all primes", "prime values",
+  "1,503 different gaps occur, from 1 to 4,810; the level share is 44.69 %.",
+  100000, 1, gen_o046025 },
+{ "a046316", "A046316", "Numbers of the form p*q*r where p,q,r are (not necessarily distinct) odd primes", "multiplicative",
+  "32 different gaps occur, from 2 to 70; the level share is 25.74 %; L = 1 holds 69 % of the level class.",
+  100000, 1, gen_o046316 },
+{ "a046642", "A046642", "Numbers k such that k and number of divisors d(k) are relatively prime", "divisor functions",
+  "5 different gaps occur, from 1 to 6; the level share is 16.67 %; L = 1 holds 82 % of the level class.",
+  100000, 1, gen_o046642 },
+{ "a046704", "A046704", "Additive primes: sum of digits is a prime", "primes",
+  "150 different gaps occur, from 1 to 362; the level share is 31.06 %.",
+  100000, 1, gen_o046704 },
+{ "a046711", "A046711", "From the Bruck-Ryser theorem: numbers n == 1 or 2 (mod 4) which are also the sum of 2 squares", "quadratic form",
+  "32 different gaps occur, from 1 to 52; the level share is 17.86 %; L = 1 holds 52 % of the level class.",
+  100000, 1, gen_o046711 },
+{ "a046712", "A046712", "From the Bruck-Ryser theorem: n == 1 or 2 (mod 4) which are not the sum of 2 squares", "quadratic form",
+  "6 different gaps occur, from 1 to 8; the level share is 15.26 %; L = 1 holds 35 % of the level class.",
+  100000, 1, gen_o046712 },
+{ "a046759", "A046759", "Economical numbers: write n as a product of primes raised to powers, let D(n) = number of digits in product, l(n) = number of digits in n; sequence gives n such that D(n) < l(n)", "digit rule",
+  "2,178 different gaps occur, from 1 to 8,438; the level share is 41.22 %.",
+  100000, 1, gen_o046759 },
+{ "a046869", "A046869", "Good primes (version 1): prime(n)^2 > prime(n-1)*prime(n+1)", "primes",
+  "82 different gaps occur, from 4 to 182; the level share is 30.85 %.",
+  100000, 1, gen_o046869 },
+{ "a046953", "A046953", "Numbers k such that 6*k - 1 is composite", "complement",
+  "5 different gaps occur, from 1 to 5; the level share is 10.30 %; L = 1 holds 86 % of the level class.",
+  100000, 1, gen_o046953 },
+{ "a046992", "A046992", "a(n) = Sum_{k=1..n} pi(k) (cf. A000720)", "summatory",
+  "9,592 different gaps occur, from 1 to 9,592; the level share is 70.29 %.",
+  100000, 1, gen_o046992 },
+{ "a047078", "A047078", "Primes at which difference pattern X2Y (X and Y >= 6) occurs in A001223", "primes",
+  "331 different gaps occur, from 12 to 3,096; the level share is 49.80 %; L = 1 holds 34 % of the level class; there are no ties.",
+  100000, 1, gen_o047078 },
+{ "a047336", "A047336", "Numbers that are congruent to {1, 6} mod 7", "residue class",
+  "The gaps are 2 and 5; the level share is 19.73 %; L = 1 holds 51 % of the level class.",
+  100000, 1, gen_o047336 },
+{ "a047522", "A047522", "Numbers that are congruent to {1, 7} mod 8", "residue class",
+  "The gaps are 2 and 6; the level share is 22.01 %; L = 1 holds 77 % of the level class; there are no ties.",
+  100000, 1, gen_o047522 },
+{ "a047791", "A047791", "Numbers n such that n plus digit sum of n (A007953) equals a prime", "digit rule",
+  "110 different gaps occur, from 1 to 132; the level share is 19.92 %.",
+  100000, 1, gen_o047791 },
+{ "a047845", "A047845", "a(n) = (m-1)/2, where m is the n-th odd nonprime (A014076(n))", "complement",
+  "The gaps are 1, 2, 3 and 4; the level share is 9.76 %; L = 1 holds 92 % of the level class.",
+  100000, 1, gen_o047845 },
+{ "a048098", "A048098", "Numbers k that are sqrt(k)-smooth: if p | k then p^2 <= k when p is prime", "smooth",
+  "27 different gaps occur, from 1 to 29; the level share is 17.64 %; L = 1 holds 41 % of the level class.",
+  100000, 1, gen_o048098 },
+{ "a048103", "A048103", "Numbers not divisible by p^p for any prime p", "multiplicative",
+  "The gaps are 1, 2, 3 and 4; the level share is 11.78 %; L = 1 holds 100 % of the level class.",
+  100000, 1, gen_o048103 },
+{ "a048109", "A048109", "Numbers having equally many squarefree and nonsquarefree divisors; number of unitary divisors of n (A034444) = number of non-unitary divisors of n (A048105)", "divisor functions",
+  "58 different gaps occur, from 1 to 80; the level share is 21.52 %.",
+  100000, 1, gen_o048109 },
+{ "a048161", "A048161", "Primes p such that q = (p^2 + 1)/2 is also a prime", "primes",
+  "505 different gaps occur, from 2 to 2,850; the level share is 45.48 %.",
+  100000, 1, gen_o048161 },
+{ "a048521", "A048521", "Primes expressible as the sum of an integer plus its digit sum", "primes",
+  "62 different gaps occur, from 2 to 138; the level share is 23.75 %; L = 1 holds 32 % of the level class.",
+  100000, 1, gen_o048521 },
+{ "a048701", "A048701", "List of binary palindromes of even length (written in base 10)", "binary rule",
+  "32 different gaps occur, from 3 to 4,294,967,298; the level share is 87.83 %; 54.1 % of terms are forced level (l <= d^2); there are no ties; 18 terms do not decompose.",
+  100000, 0, gen_o048701 },
+{ "a048989", "A048989", "Numbers k such that pi(k) is prime", "primes",
+  "288 different gaps occur, from 1 to 1,011; the level share is 11.55 %; L = 1 holds 74 % of the level class.",
+  100000, 1, gen_o048989 },
+{ "a049039", "A049039", "Geometric Connell sequence: 1 odd, 2 even, 4 odd, 8 even, ", "block",
+  "The gaps are 1 and 2; the level share is 14.26 %; L = 1 holds 70 % of the level class.",
+  100000, 1, gen_o049039 },
+{ "a049068", "A049068", "Complement of quarter-squares (A002620)", "complement",
+  "The gaps are 1 and 2; the level share is 9.61 %; L = 1 holds 99 % of the level class.",
+  100000, 1, gen_o049068 },
+{ "a049282", "A049282", "Primes p such that both p-2 and p+2 are squarefree", "primes",
+  "99 different gaps occur, from 2 to 306; the level share is 28.01 %.",
+  100000, 1, gen_o049282 },
+{ "a049532", "A049532", "Numbers k such that k^2 + 1 is not squarefree", "polynomial",
+  "14 different gaps occur, from 1 to 14; the level share is 24.99 %; L = 1 holds 36 % of the level class.",
+  100000, 1, gen_o049532 },
+{ "a050384", "A050384", "Nonprimes such that n and phi(n) are relatively prime", "multiplicative",
+  "19 different gaps occur, from 2 to 42; the level share is 19.47 %; L = 1 holds 58 % of the level class.",
+  100000, 1, gen_o050384 },
+{ "a050435", "A050435", "a(n) = composite(composite(n)), where composite = A002808, composite numbers", "complement",
+  "The gaps are 1, 2, 3 and 4; the level share is 10.95 %; L = 1 holds 83 % of the level class.",
+  100000, 1, gen_o050435 },
+{ "a050695", "A050695", "Composite numbers k such that none of the prime factors of k is a substring of k", "digit rule",
+  "30 different gaps occur, from 1 to 38; the level share is 14.08 %; L = 1 holds 62 % of the level class.",
+  100000, 1, gen_o050695 },
+{ "a050795", "A050795", "Numbers n such that n^2 - 1 is expressible as the sum of two nonzero squares in at least one way", "quadratic form",
+  "148 different gaps occur, from 2 to 490; the level share is 36.36 %; L = 1 holds 31 % of the level class.",
+  100000, 1, gen_o050795 },
+{ "a050813", "A050813", "Numbers n not palindromic in any base b, 2 <= b <= 10", "digit rule",
+  "11 different gaps occur, from 1 to 20; the level share is 9.84 %; L = 1 holds 96 % of the level class.",
+  100000, 1, gen_o050813 },
+{ "a050931", "A050931", "Numbers having a prime factor congruent to 1 mod 6", "multiplicative",
+  "7 different gaps occur, from 1 to 7; the level share is 11.64 %; L = 1 holds 83 % of the level class.",
+  100000, 1, gen_o050931 },
+{ "a050936", "A050936", "Sum of two or more consecutive prime numbers", "primes",
+  "20 different gaps occur, from 1 to 21; the level share is 13.84 %; L = 1 holds 62 % of the level class.",
+  100000, 1, gen_o050936 },
+{ "a051004", "A051004", "Numbers divisible both by their individual digits and by the sum of their digits", "digit rule",
+  "1,074 different gaps occur, from 1 to 11,111,652; the level share is 19.34 %; 1.6 % of terms are forced level (l <= d^2).",
+  100000, 1, gen_o051004 },
+{ "a051283", "A051283", "Numbers k such that if one writes k = Product p_i^e_i (p_i primes) and P = max p_i^e_i, then k/P > P", "multiplicative",
+  "30 different gaps occur, from 1 to 36; the level share is 17.90 %; L = 1 holds 39 % of the level class.",
+  100000, 1, gen_o051283 },
+{ "a051507", "A051507", "Primes p such that p*q+2 is prime, where q is next prime after p", "primes",
+  "1,330 different gaps occur, from 2 to 5,860; the level share is 45.93 %.",
+  100000, 1, gen_o051507 },
+{ "a051677", "A051677", "Tetrahedron-tree numbers: a(n)=sum(b(m),m=1..n), b(m)=1, 1,3, 1,3,6, 1,3,6,10,..., 1,2,...,i*(i+1)2", "summatory",
+  "446 different gaps occur, from 1 to 99,681; the level share is 69.42 %; 36.3 % of terms are forced level (l <= d^2).",
+  100000, 1, gen_o051677 },
+{ "a051750", "A051750", "Primes whose cubes lack zeros", "primes",
+  "829 different gaps occur, from 1 to 358,310; the level share is 34.58 %.",
+  100000, 1, gen_o051750 },
+{ "a052018", "A052018", "Numbers k with the property that the sum of the digits of k is a substring of k", "digit rule",
+  "292 different gaps occur, from 1 to 882; the level share is 20.51 %; L = 1 holds 34 % of the level class; 6 terms do not decompose.",
+  100000, 1, gen_o052018 },
+{ "a052026", "A052026", "Composites base 10 that remain composite in all bases b, 2<=b<=10, expansions interpreted as decimal numbers", "digit rule",
+  "9 different gaps occur, from 1 to 10; the level share is 11.62 %; L = 1 holds 58 % of the level class.",
+  100000, 1, gen_o052026 },
+{ "a052034", "A052034", "Primes such that the sum of the squares of their digits is also a prime", "primes",
+  "346 different gaps occur, from 2 to 1,358; the level share is 35.91 %.",
+  100000, 1, gen_o052034 },
+{ "a052040", "A052040", "Numbers whose square is zeroless", "digit rule",
+  "186 different gaps occur, from 1 to 5,517; the level share is 12.16 %; L = 1 holds 69 % of the level class.",
+  100000, 1, gen_o052040 },
+{ "a052042", "A052042", "Primes that lack the digit zero in the decimal expansion of their squares", "primes",
+  "554 different gaps occur, from 1 to 171,096; the level share is 29.50 %.",
+  100000, 1, gen_o052042 },
+{ "a052044", "A052044", "Numbers k such that k^3 lacks the digit zero in its decimal expansion", "digit rule",
+  "259 different gaps occur, from 1 to 16,598; the level share is 15.73 %; L = 1 holds 60 % of the level class.",
+  100000, 1, gen_o052044 },
+{ "a052214", "A052214", "Numbers n with prime signature(n) = prime signature(n+1) = prime signature(n+2)", "multiplicative",
+  "728 different gaps occur, from 1 to 1,476; the level share is 42.37 %; L = 1 holds 33 % of the level class.",
+  100000, 1, gen_o052214 },
+{ "a052223", "A052223", "Numbers whose sum of digits is 9", "digit rule",
+  "83 different gaps occur, from 9 to 10,000,000,008; the level share is 13.04 %; 4.0 % of terms are forced level (l <= d^2); L = 9 holds 33 % of the level class.",
+  100000, 1, gen_o052223 },
+{ "a052499", "A052499", "If n is in the sequence then so are 2n and 4n-1", "self-referential",
+  "22 different gaps occur, from 1 to 1,398,102; the level share is 11.64 %; L = 1 holds 46 % of the level class; there are no ties.",
+  100000, 0, gen_o052499 },
+{ "a053176", "A053176", "Primes p such that 2p+1 is composite", "primes",
+  "60 different gaps occur, from 2 to 132; the level share is 24.03 %; L = 1 holds 32 % of the level class.",
+  100000, 1, gen_o053176 },
+{ "a053224", "A053224", "Numbers k for which sigma(k) < sigma(k+1)", "divisor functions",
+  "The gaps are 1, 2, 3 and 4; the level share is 15.98 %; L = 1 holds 94 % of the level class.",
+  100000, 1, gen_o053224 },
+{ "a053432", "A053432", "Numbers with digits in alphabetical order (in English)", "digit rule",
+  "75 different gaps occur, from 1 to 777,777,778; the level share is 15.74 %; 2.1 % of terms are forced level (l <= d^2); L = 2 holds 31 % of the level class.",
+  100000, 1, gen_o053432 },
+{ "a053696", "A053696", "Numbers that can be represented as a string of three or more 1's in a base >= 2", "powers",
+  "96,955 different gaps occur, from 1 to 194,668; the level share is 99.40 %; 97.3 % of terms are forced level (l <= d^2).",
+  100000, 1, gen_o053696 },
+{ "a053868", "A053868", "Numbers whose sum of proper divisors is odd", "divisor functions",
+  "The gaps are 1, 2, 3 and 4; the level share is 17.91 %; L = 1 holds 100 % of the level class.",
+  100000, 1, gen_o053868 },
+{ "a054211", "A054211", "Numbers k such that k concatenated with k-1 is prime", "digit rule",
+  "116 different gaps occur, from 2 to 318; the level share is 26.34 %; L = 2 holds 35 % of the level class; there are no ties.",
+  100000, 1, gen_o054211 },
+{ "a054353", "A054353", "Partial sums of Kolakoski sequence A000002", "summatory",
+  "The gaps are 1 and 2; the level share is 11.84 %; L = 1 holds 79 % of the level class.",
+  100000, 1, gen_o054353 },
+{ "a054402", "A054402", "Numbers that are the sum of a positive square and a positive cube in more than one way", "powers",
+  "2,216 different gaps occur, from 1 to 5,552; the level share is 46.02 %.",
+  100000, 1, gen_o054402 },
+{ "a054741", "A054741", "Numbers m such that totient(m) < cototient(m)", "divisor functions",
+  "The gaps are 1, 2, 3 and 4; the level share is 10.22 %; L = 2 holds 92 % of the level class.",
+  100000, 1, gen_o054741 },
+{ "a055039", "A055039", "Numbers of the form 2^(2i+1)*(8j+7)", "residue class",
+  "5 different gaps occur, from 2 to 16; the level share is 23.71 %; L = 2 holds 52 % of the level class; there are no ties.",
+  100000, 1, gen_o055039 },
+{ "a055040", "A055040", "Numbers of the form 3^(2i+1)*(3*j+2)", "residue class",
+  "The gaps are 3, 6 and 9; the level share is 19.36 %; L = 3 holds 68 % of the level class; there are no ties.",
+  100000, 1, gen_o055040 },
+{ "a055048", "A055048", "Numbers of the form 9^i*(3*j+2)", "residue class",
+  "The gaps are 1, 2 and 3; the level share is 19.36 %; L = 1 holds 68 % of the level class.",
+  100000, 1, gen_o055048 },
+{ "a055393", "A055393", "Sum of a square and a nonnegative cube in more than one way", "powers",
+  "2,203 different gaps occur, from 1 to 5,552; the level share is 45.81 %.",
+  100000, 1, gen_o055393 },
+{ "a055638", "A055638", "Numbers k for which sigma(k^2) is prime", "divisor functions",
+  "570 different gaps occur, from 1 to 4,392; the level share is 50.40 %; L = 1 holds 31 % of the level class; there are no ties.",
+  100000, 1, gen_o055638 },
+{ "a056020", "A056020", "Numbers that are congruent to +-1 mod 9", "residue class",
+  "The gaps are 2 and 7; the level share is 10.62 %; L = 3 holds 65 % of the level class; there are no ties.",
+  100000, 1, gen_o056020 },
+{ "a056524", "A056524", "Palindromes with even number of digits", "digit rule",
+  "11 different gaps occur, from 11 to 90,000,000,002; the level share is 94.50 %; 90.0 % of terms are forced level (l <= d^2); there are no ties; 7 terms do not decompose.",
+  100000, 1, gen_o056524 },
+{ "a056709", "A056709", "Naught-y primes, primes with noughts (or zeros)", "primes",
+  "233 different gaps occur, from 2 to 942; the level share is 25.36 %.",
+  100000, 1, gen_o056709 },
+{ "a056809", "A056809", "Numbers k such that k, k+1 and k+2 are products of two primes", "multiplicative",
+  "1,510 different gaps occur, from 4 to 13,404; the level share is 54.55 %; 1.5 % of terms are forced level (l <= d^2).",
+  100000, 1, gen_o056809 },
+{ "a056815", "A056815", "Primes with prime \"look and say\" descriptions", "primes",
+  "802 different gaps occur, from 2 to 2,808; the level share is 43.04 %.",
+  100000, 1, gen_o056815 },
+{ "a056867", "A056867", "Nilpotent numbers: n such that every group of order n is nilpotent", "multiplicative",
+  "11 different gaps occur, from 1 to 14; the level share is 14.51 %; L = 1 holds 57 % of the level class.",
+  100000, 1, gen_o056867 },
+{ "a056868", "A056868", "Numbers that are not nilpotent numbers", "multiplicative",
+  "The gaps are 1, 2, 3 and 4; the level share is 12.45 %; L = 2 holds 51 % of the level class.",
+  100000, 1, gen_o056868 },
+{ "a056874", "A056874", "Primes of form x^2+xy+3y^2, discriminant -11", "quadratic form",
+  "102 different gaps occur, from 2 to 220; the level share is 30.53 %.",
+  100000, 1, gen_o056874 },
+{ "a057165", "A057165", "Indices of addition steps in Recamán's sequence A005132", "self-referential",
+  "6 different gaps occur, from 1 to 6; the level share is 13.46 %; L = 1 holds 61 % of the level class.",
+  100000, 1, gen_o057165 },
+{ "a057436", "A057436", "Contains digits 1 through 6 only", "digit rule",
+  "7 different gaps occur, from 1 to 444,445; the level share is 11.48 %; L = 1 holds 84 % of the level class; 8 terms do not decompose.",
+  100000, 1, gen_o057436 },
+{ "a058369", "A058369", "Numbers k such that k and k^2 have same digit sum", "digit rule",
+  "1,743 different gaps occur, from 1 to 54,000; the level share is 33.84 %; 2.0 % of terms are forced level (l <= d^2).",
+  100000, 1, gen_o058369 },
+{ "a059269", "A059269", "Numbers m for which the number of divisors, tau(m), is divisible by 3", "divisor functions",
+  "8 different gaps occur, from 1 to 8; the level share is 16.88 %; L = 1 holds 30 % of the level class.",
+  100000, 1, gen_o059269 },
+{ "a059404", "A059404", "Numbers with different exponents in their prime factorizations", "multiplicative",
+  "9 different gaps occur, from 1 to 12; the level share is 12.98 %; L = 1 holds 33 % of the level class.",
+  100000, 1, gen_o059404 },
+{ "a059456", "A059456", "Unsafe primes: primes not in A005385", "primes",
+  "58 different gaps occur, from 1 to 132; the level share is 23.51 %; L = 1 holds 32 % of the level class.",
+  100000, 1, gen_o059456 },
+{ "a059708", "A059708", "Numbers k such that all digits have same parity", "digit rule",
+  "13 different gaps occur, from 1 to 222,223; the level share is 15.49 %; L = 1 holds 51 % of the level class.",
+  100000, 1, gen_o059708 },
+{ "a060254", "A060254", "Primes which are the sum of two consecutive composite numbers", "primes",
+  "63 different gaps occur, from 2 to 132; the level share is 23.90 %; L = 1 holds 31 % of the level class.",
+  100000, 1, gen_o060254 },
+{ "a060874", "A060874", "Intrinsic 4-palindromes: n is an intrinsic k-palindrome if it is a k-digit palindrome in some base", "digit rule",
+  "434 different gaps occur, from 1 to 647; the level share is 29.22 %.",
+  100000, 1, gen_o060874 },
+{ "a060879", "A060879", "Intrinsic 9-palindromes: n is an intrinsic k-palindrome if it is a k-digit palindrome in some base", "digit rule",
+  "6,225 different gaps occur, from 1 to 128,483; the level share is 59.94 %.",
+  100000, 1, gen_o060879 },
+{ "a060947", "A060947", "Intrinsic 10-palindromes: n is an intrinsic k-palindrome if it is a k-digit palindrome in some base", "digit rule",
+  "23,256 different gaps occur, from 1 to 904,551; the level share is 82.34 %; 49.0 % of terms are forced level (l <= d^2).",
+  100000, 1, gen_o060947 },
+{ "a061241", "A061241", "Prime numbers == 7 (mod 9)", "primes",
+  "44 different gaps occur, from 18 to 792; the level share is 42.72 %; L = 1 holds 39 % of the level class.",
+  100000, 1, gen_o061241 },
+{ "a061346", "A061346", "Odd numbers that are neither primes nor prime powers", "multiplicative",
+  "5 different gaps occur, from 2 to 12; the level share is 21.02 %; L = 1 holds 97 % of the level class.",
+  100000, 1, gen_o061346 },
+{ "a061384", "A061384", "Numbers n such that sum of digits = number of digits", "digit rule",
+  "88 different gaps occur, from 9 to 900,000,019; the level share is 23.77 %; 3.0 % of terms are forced level (l <= d^2); there are no ties; 9 terms do not decompose.",
+  100000, 1, gen_o061384 },
+{ "a061426", "A061426", "Geometric mean of the digits = 2. In other words, the product of the digits is = 2^k where k is the number of digits", "digit rule",
+  "196 different gaps occur, from 6 to 3,227,000,177; the level share is 26.85 %; 1.9 % of terms are forced level (l <= d^2); there are no ties; 13 terms do not decompose.",
+  100000, 1, gen_o061426 },
+{ "a061673", "A061673", "Even numbers k such that k+1 and k-1 are both composite", "complement",
+  "9 different gaps occur, from 2 to 22; the level share is 11.07 %; L = 2 holds 86 % of the level class; there are no ties.",
+  100000, 1, gen_o061673 },
+{ "a061681", "A061681", "a(0)=1; a(n) = a(n-1) + lead(a(n-1)) for n > 0 where for an integer x lead(x) is the leading digit in base 10", "self-referential",
+  "9 different gaps occur, from 1 to 9; the level share is 10.35 %; L = 1 holds 72 % of the level class.",
+  100000, 0, gen_o061681 },
+{ "a061779", "A061779", "Primes p such that q-p = 22, where q is the next prime after p", "primes",
+  "660 different gaps occur, from 24 to 5,826; the level share is 54.13 %; L = 1 holds 31 % of the level class.",
+  100000, 1, gen_o061779 },
+{ "a062634", "A062634", "Numbers k such that every divisor of k contains the digit 1", "divisor functions",
+  "76 different gaps occur, from 2 to 198; the level share is 23.19 %; L = 3 holds 32 % of the level class.",
+  100000, 1, gen_o062634 },
+{ "a062721", "A062721", "Numbers k such that k is a product of two primes and k-2 is prime", "multiplicative",
+  "220 different gaps occur, from 4 to 626; the level share is 40.23 %; L = 1 holds 48 % of the level class.",
+  100000, 1, gen_o062721 },
+{ "a063037", "A063037", "Numbers without 3 consecutive equal binary digits", "binary rule",
+  "21 different gaps occur, from 1 to 1,198,373; the level share is 10.15 %; L = 1 holds 71 % of the level class.",
+  100000, 1, gen_o063037 },
+{ "a064052", "A064052", "Not sqrt(n)-smooth: some prime factor of n is > sqrt(n)", "smooth",
+  "7 different gaps occur, from 1 to 7; the level share is 9.52 %; L = 1 holds 90 % of the level class.",
+  100000, 1, gen_o064052 },
+{ "a064194", "A064194", "a(2n) = 3*a(n), a(2n+1) = 2*a(n+1)+a(n), with a(1) = 1", "self-referential",
+  "17 different gaps occur, from 2 to 131,072; the level share is 56.70 %; 3.4 % of terms are forced level (l <= d^2); L = 1 holds 32 % of the level class.",
+  100000, 1, gen_o064194 },
+{ "a064437", "A064437", "a(1)=1, a(n) = a(n-1) + 3 if n is already in the sequence, a(n) = a(n-1) + 2 otherwise", "self-referential",
+  "The gaps are 2 and 3; the level share is 14.95 %; L = 1 holds 59 % of the level class.",
+  100000, 1, gen_o064437 },
+{ "a064700", "A064700", "Numbers k that are divisible by the multiplicative digital root of k", "digit rule",
+  "455 different gaps occur, from 1 to 133,397; the level share is 20.67 %.",
+  100000, 1, gen_o064700 },
+{ "a065496", "A065496", "Numbers n such that sigma(n) is a nontrivial power, i.e., sigma(n) = a^b where a and b are greater than 1", "divisor functions",
+  "2,782 different gaps occur, from 1 to 5,394; the level share is 44.31 %.",
+  100000, 1, gen_o065496 },
+{ "a066031", "A066031", "Composite numbers n the sum of whose prime factors divides n, but which are not themselves powers of primes", "multiplicative",
+  "2,970 different gaps occur, from 1 to 7,816; the level share is 36.06 %.",
+  100000, 1, gen_o066031 },
+{ "a066649", "A066649", "Primes of the form a^2 + b^3 with a, b > 0", "primes",
+  "1,319 different gaps occur, from 2 to 4,554; the level share is 46.08 %.",
+  100000, 1, gen_o066649 },
+{ "a066938", "A066938", "Primes of the form p*q+p+q, where p and q are primes", "primes",
+  "229 different gaps occur, from 2 to 812; the level share is 38.17 %; L = 1 holds 35 % of the level class; there are no ties.",
+  100000, 1, gen_o066938 },
+{ "a067251", "A067251", "Numbers with no trailing zeros in decimal representation", "residue class",
+  "The gaps are 1 and 2; the level share is 10.57 %; L = 1 holds 100 % of the level class.",
+  100000, 1, gen_o067251 },
+{ "a067256", "A067256", "Numbers k such that k, 2*k+1, 3*k+2 are primes", "primes",
+  "1,539 different gaps occur, from 2 to 32,004; the level share is 64.31 %; 4.4 % of terms are forced level (l <= d^2); there are no ties.",
+  100000, 1, gen_o067256 },
+{ "a067259", "A067259", "Cubefree numbers which are not squarefree", "multiplicative",
+  "19 different gaps occur, from 1 to 21; the level share is 17.87 %; L = 1 holds 32 % of the level class.",
+  100000, 1, gen_o067259 },
+{ "a067611", "A067611", "Numbers of the form 6xy +- x +- y, where x, y are positive integers", "complement",
+  "The gaps are 1, 2 and 3; the level share is 9.49 %; L = 1 holds 97 % of the level class.",
+  100000, 1, gen_o067611 },
+{ "a067889", "A067889", "Primes sandwiched between two numbers having same number of divisors", "primes",
+  "1,011 different gaps occur, from 2 to 3,486; the level share is 44.09 %.",
+  100000, 1, gen_o067889 },
+{ "a068780", "A068780", "Composite numbers n such that n+1 is also composite", "complement",
+  "The gaps are 1, 3 and 5; the level share is 11.23 %; L = 1 holds 90 % of the level class.",
+  100000, 1, gen_o068780 },
+{ "a068781", "A068781", "Lesser of two consecutive numbers each divisible by a square", "multiplicative",
+  "18 different gaps occur, from 1 to 19; the level share is 24.93 %; L = 1 holds 38 % of the level class.",
+  100000, 1, gen_o068781 },
+{ "a069059", "A069059", "Numbers k such that k and sigma(k) are not relatively prime", "divisor functions",
+  "5 different gaps occur, from 1 to 6; the level share is 12.58 %; L = 2 holds 50 % of the level class.",
+  100000, 1, gen_o069059 },
+{ "a069346", "A069346", "Primes of the form n - Omega(n), where Omega(n) is the number of prime factors of n, A001222(n)", "primes",
+  "80 different gaps occur, from 2 to 176; the level share is 26.74 %; L = 1 holds 31 % of the level class.",
+  100000, 1, gen_o069346 },
+{ "a071139", "A071139", "Numbers k such that the sum of distinct primes dividing k is divisible by the largest prime dividing k", "multiplicative",
+  "83 different gaps occur, from 1 to 114; the level share is 23.05 %; L = 1 holds 34 % of the level class.",
+  100000, 1, gen_o071139 },
+{ "a071395", "A071395", "Primitive abundant numbers (abundant numbers all of whose proper divisors are deficient numbers)", "divisor functions",
+  "11,641 different gaps occur, from 1 to 59,981; the level share is 53.79 %; 6.9 % of terms are forced level (l <= d^2).",
+  100000, 1, gen_o071395 },
+{ "a071403", "A071403", "Which squarefree number is prime? a(n)-th squarefree number equals n-th prime", "primes",
+  "64 different gaps occur, from 1 to 71; the level share is 21.21 %; L = 1 holds 38 % of the level class.",
+  100000, 1, gen_o071403 },
+{ "a071696", "A071696", "Greater members of twin prime pairs of form (4*k+1,4*k+3), k>0", "primes",
+  "282 different gaps occur, from 12 to 5,088; the level share is 51.73 %; L = 1 holds 32 % of the level class; there are no ties.",
+  100000, 1, gen_o071696 },
+{ "a071698", "A071698", "Lesser members of twin prime pairs of form (4*k+3, 4*k+5), k >= 0", "primes",
+  "279 different gaps occur, from 8 to 4,284; the level share is 52.31 %; L = 1 holds 31 % of the level class; there are no ties.",
+  100000, 1, gen_o071698 },
+{ "a072055", "A072055", "a(n) = 2*prime(n)+1", "primes",
+  "54 different gaps occur, from 2 to 228; the level share is 34.62 %; L = 1 holds 52 % of the level class; there are no ties.",
+  100000, 1, gen_o072055 },
+{ "a072202", "A072202", "Same numbers of prime factors of forms 4*k+1 and 4*k+3, counted with multiplicity", "multiplicative",
+  "40 different gaps occur, from 1 to 43; the level share is 15.99 %; L = 1 holds 49 % of the level class.",
+  100000, 1, gen_o072202 },
+{ "a072225", "A072225", "Numbers k such that prime(k) + prime(k+1) + prime(k+2) is prime", "primes",
+  "57 different gaps occur, from 1 to 68; the level share is 18.99 %; L = 1 holds 44 % of the level class.",
+  100000, 1, gen_o072225 },
+{ "a072437", "A072437", "Numbers with no prime factors of form 4*k+3", "multiplicative",
+  "38 different gaps occur, from 1 to 49; the level share is 15.70 %.",
+  100000, 1, gen_o072437 },
+{ "a072587", "A072587", "Numbers having at least one prime factor with an even exponent", "multiplicative",
+  "8 different gaps occur, from 1 to 8; the level share is 15.76 %; L = 1 holds 31 % of the level class.",
+  100000, 1, gen_o072587 },
+{ "a072774", "A072774", "Powers of squarefree numbers", "powers",
+  "7 different gaps occur, from 1 to 7; the level share is 10.68 %; L = 1 holds 96 % of the level class.",
+  100000, 1, gen_o072774 },
+{ "a072859", "A072859", "Primes p for which the period of 1/p is prime", "primes",
+  "1,150 different gaps occur, from 2 to 4,516; the level share is 47.80 %; there are no ties.",
+  100000, 1, gen_o072859 },
+{ "a072978", "A072978", "Numbers of the form m * 2^bigomega(m), where m>1 is odd and bigomega(m) = A001222(m), the number of prime factors of m", "multiplicative",
+  "41 different gaps occur, from 2 to 88; the level share is 14.04 %; L = 2 holds 34 % of the level class; there are no ties.",
+  100000, 1, gen_o072978 },
+{ "a073121", "A073121", "a(n) = r*a(ceiling(n/2)) + s*a(floor(n/2)) with a(1)=1 and (r,s)=(2,2)", "self-referential",
+  "17 different gaps occur, from 3 to 196,608; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_o073121 },
+{ "a073247", "A073247", "Squarefree numbers k such that k-1 and k+1 are not squarefree", "multiplicative",
+  "56 different gaps occur, from 2 to 72; the level share is 20.43 %; L = 1 holds 42 % of the level class.",
+  100000, 1, gen_o073247 },
+{ "a073492", "A073492", "Numbers having at least one prime gap in their factorization", "multiplicative",
+  "6 different gaps occur, from 1 to 6; the level share is 10.49 %; L = 1 holds 86 % of the level class.",
+  100000, 1, gen_o073492 },
+{ "a073493", "A073493", "Numbers having exactly one prime gap in their factorization", "multiplicative",
+  "17 different gaps occur, from 1 to 17; the level share is 14.15 %; L = 1 holds 71 % of the level class.",
+  100000, 1, gen_o073493 },
+{ "a074627", "A074627", "Numbers n such that sigma(n) is divisible by 6", "divisor functions",
+  "5 different gaps occur, from 1 to 5; the level share is 9.21 %; L = 1 holds 86 % of the level class.",
+  100000, 1, gen_o074627 },
+{ "a074741", "A074741", "Sum of squares of gaps between consecutive primes", "summatory",
+  "53 different gaps occur, from 4 to 12,996; the level share is 42.96 %; 1.1 % of terms are forced level (l <= d^2).",
+  100000, 1, gen_o074741 },
+{ "a074822", "A074822", "Primes p such that p + 4 is prime and p == 9 (mod 10)", "primes",
+  "193 different gaps occur, from 30 to 7,020; the level share is 57.94 %; L = 1 holds 36 % of the level class.",
+  100000, 1, gen_o074822 },
+{ "a074832", "A074832", "Primes whose binary reversal is also prime", "primes",
+  "276 different gaps occur, from 2 to 902; the level share is 34.70 %.",
+  100000, 1, gen_o074832 },
+{ "a074940", "A074940", "Numbers having at least one 2 in their ternary representation", "digit rule",
+  "The gaps are 1 and 3; the level share is 9.69 %; L = 1 holds 99 % of the level class.",
+  100000, 1, gen_o074940 },
+{ "a075109", "A075109", "Odd perfect powers (1 together with numbers m^k, m odd, k >= 2)", "powers",
+  "99,140 different gaps occur, from 2 to 786,096; the level share is 99.74 %; 99.2 % of terms are forced level (l <= d^2); there are no ties.",
+  100000, 1, gen_o075109 },
+{ "a075432", "A075432", "Primes with no squarefree neighbors", "primes",
+  "206 different gaps occur, from 2 to 478; the level share is 33.60 %.",
+  100000, 1, gen_o075432 },
+{ "a075592", "A075592", "Numbers n such that number of distinct prime divisors of n is a divisor of n", "multiplicative",
+  "17 different gaps occur, from 1 to 17; the level share is 13.50 %; L = 1 holds 52 % of the level class.",
+  100000, 1, gen_o075592 },
+{ "a076056", "A076056", "Primes which when read backwards are composite numbers", "primes",
+  "73 different gaps occur, from 2 to 156; the level share is 24.51 %; L = 1 holds 31 % of the level class.",
+  100000, 1, gen_o076056 },
+{ "a077064", "A077064", "Squarefree numbers of form prime - 1", "primes",
+  "78 different gaps occur, from 1 to 360; the level share is 32.97 %; L = 2 holds 62 % of the level class; there are no ties.",
+  100000, 1, gen_o077064 },
+{ "a077068", "A077068", "Semiprimes of the form prime + 1", "primes",
+  "263 different gaps occur, from 2 to 4,860; the level share is 47.81 %; L = 2 holds 35 % of the level class; there are no ties.",
+  100000, 1, gen_o077068 },
+{ "a077477", "A077477", "Least positive integers not excluded by the rule that if n is present then 2n+1 and 3n+1 are not allowed", "self-referential",
+  "The gaps are 1, 2, 3 and 4; the level share is 14.36 %; L = 2 holds 53 % of the level class.",
+  100000, 1, gen_o077477 },
+{ "a077654", "A077654", "Composites k such that 2k+1 is also composite", "complement",
+  "6 different gaps occur, from 1 to 6; the level share is 10.76 %; L = 1 holds 79 % of the level class.",
+  100000, 1, gen_o077654 },
+{ "a077717", "A077717", "Primes which can be expressed as a sum of distinct powers of 3", "primes",
+  "1,685 different gaps occur, from 6 to 5,230,177,110; the level share is 38.14 %; 1.7 % of terms are forced level (l <= d^2); L = 1 holds 32 % of the level class; there are no ties; 20 terms do not decompose.",
+  100000, 1, gen_o077717 },
+{ "a078358", "A078358", "Non-oblong numbers: Complement of A002378", "complement",
+  "The gaps are 1 and 2; the level share is 9.55 %; L = 1 holds 100 % of the level class.",
+  100000, 1, gen_o078358 },
+{ "a078494", "A078494", "Primes occurring only once in their decade", "primes",
+  "91 different gaps occur, from 2 to 228; the level share is 27.11 %.",
+  100000, 1, gen_o078494 },
+{ "a078633", "A078633", "Smallest number of sticks of length 1 needed to construct n squares with sides of length 1", "polynomial",
+  "The gaps are 2 and 3; the level share is 13.76 %; L = 1 holds 65 % of the level class.",
+  100000, 1, gen_o078633 },
+{ "a078649", "A078649", "Numbers n such that A000002(n)=A000002(n+1) where A000002 is the Kolakoski sequence", "self-referential",
+  "The gaps are 2, 3 and 4; the level share is 16.20 %; L = 1 holds 53 % of the level class.",
+  100000, 1, gen_o078649 },
+{ "a079523", "A079523", "Utterly odd numbers: numbers whose binary representation ends in an odd number of ones", "binary rule",
+  "The gaps are 2 and 4; the level share is 20.56 %; L = 1 holds 84 % of the level class.",
+  100000, 1, gen_o079523 },
+{ "a079545", "A079545", "Primes of the form x^2 + y^2 + 1 with x,y >= 0", "primes",
+  "324 different gaps occur, from 1 to 972; the level share is 38.53 %.",
+  100000, 1, gen_o079545 },
+{ "a080075", "A080075", "Proth numbers: of the form k*2^m + 1 for k odd, m >= 1 and 2^m > k", "powers",
+  "17 different gaps occur, from 2 to 131,072; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_o080075 },
+{ "a080147", "A080147", "Positions of primes of the form 4*k+1 (A002144) among all primes (A000040)", "primes",
+  "12 different gaps occur, from 1 to 14; the level share is 12.97 %; L = 1 holds 70 % of the level class.",
+  100000, 1, gen_o080147 },
+{ "a081092", "A081092", "Primes having a prime number of 1's in their binary representation", "primes",
+  "211 different gaps occur, from 2 to 758; the level share is 31.38 %; L = 1 holds 31 % of the level class.",
+  100000, 1, gen_o081092 },
+{ "a081311", "A081311", "Numbers that can be written as sum of a prime and an 3-smooth number", "smooth",
+  "The gaps are 1, 2 and 3; the level share is 10.88 %; L = 1 holds 100 % of the level class.",
+  100000, 1, gen_o081311 },
+{ "a081330", "A081330", "Numbers that can be written as sum of two 3-smooth numbers", "smooth",
+  "15,806 different gaps occur, from 1 to 197,646,336; the level share is 61.61 %; 44.1 % of terms are forced level (l <= d^2).",
+  100000, 1, gen_o081330 },
+{ "a082246", "A082246", "Primes that are the sum of 7 consecutive primes", "primes",
+  "2,607 different gaps occur, from 26 to 12,782; the level share is 52.37 %; 1.4 % of terms are forced level (l <= d^2).",
+  100000, 1, gen_o082246 },
+{ "a082885", "A082885", "Primes followed by a larger-than-average prime gap", "primes",
+  "90 different gaps occur, from 1 to 218; the level share is 33.66 %.",
+  100000, 1, gen_o082885 },
+{ "a084544", "A084544", "Alternate number system in base 4", "digit rule",
+  "9 different gaps occur, from 1 to 66,666,667; the level share is 11.16 %; L = 1 holds 67 % of the level class; 11 terms do not decompose.",
+  100000, 1, gen_o084544 },
+{ "a084545", "A084545", "Alternate number system in base 5", "digit rule",
+  "8 different gaps occur, from 1 to 5,555,556; the level share is 12.87 %; L = 1 holds 82 % of the level class; 9 terms do not decompose.",
+  100000, 1, gen_o084545 },
+{ "a085780", "A085780", "Numbers that are a product of 2 triangular numbers", "polynomial",
+  "5,749 different gaps occur, from 1 to 15,457; the level share is 42.17 %.",
+  100000, 1, gen_o085780 },
+{ "a086005", "A086005", "Semiprimes sandwiched between semiprimes", "multiplicative",
+  "1,510 different gaps occur, from 4 to 13,404; the level share is 50.00 %; 1.5 % of terms are forced level (l <= d^2); there are no ties.",
+  100000, 1, gen_o086005 },
+{ "a086006", "A086006", "Primes p such that 2*p-1 and 2*p+1 are semiprimes", "primes",
+  "1,510 different gaps occur, from 2 to 6,702; the level share is 49.79 %.",
+  100000, 1, gen_o086006 },
+{ "a086381", "A086381", "Numbers k such that p=k^2+2 and p+2 are primes", "prime values",
+  "732 different gaps occur, from 2 to 6,942; the level share is 47.01 %; L = 3 holds 31 % of the level class.",
+  100000, 1, gen_o086381 },
+{ "a087057", "A087057", "Smallest number whose square is larger than 2*n^2", "Beatty",
+  "The gaps are 1 and 2; the level share is 11.26 %; L = 1 holds 82 % of the level class.",
+  100000, 1, gen_o087057 },
+{ "a087248", "A087248", "Squarefree abundant numbers", "divisor functions",
+  "27 different gaps occur, from 3 to 84; the level share is 14.99 %; L = 18 holds 48 % of the level class; there are no ties.",
+  100000, 1, gen_o087248 },
+{ "a087695", "A087695", "Numbers n such that n + 3 and n - 3 are both prime", "prime values",
+  "351 different gaps occur, from 2 to 1,044; the level share is 30.02 %.",
+  100000, 1, gen_o087695 },
+{ "a088179", "A088179", "Primes p such that mu(p-1) = 1; that is, p-1 is squarefree and has an even number of prime factors, where mu is the Moebius function", "primes",
+  "169 different gaps occur, from 4 to 860; the level share is 35.30 %; there are no ties.",
+  100000, 1, gen_o088179 },
+{ "a088485", "A088485", "Numbers n such that n^2 + n - 1 and n^2 + n + 1 are twin primes", "prime values",
+  "863 different gaps occur, from 1 to 1,460; the level share is 38.59 %.",
+  100000, 1, gen_o088485 },
+{ "a088723", "A088723", "Numbers k with at least one divisor d>1 such that d+1 also divides k", "divisor functions",
+  "The gaps are 2, 4 and 6; the level share is 14.46 %; L = 6 holds 42 % of the level class.",
+  100000, 1, gen_o088723 },
+{ "a089189", "A089189", "Primes p such that p-1 is cubefree", "primes",
+  "77 different gaps occur, from 1 to 170; the level share is 25.38 %.",
+  100000, 1, gen_o089189 },
+{ "a089194", "A089194", "Primes p such that p-1 and p+1 are cube- or higher power-free", "primes",
+  "99 different gaps occur, from 1 to 322; the level share is 29.08 %.",
+  100000, 1, gen_o089194 },
+{ "a089352", "A089352", "Numbers that are divisible by the sum of their distinct prime factors (A008472)", "multiplicative",
+  "89 different gaps occur, from 1 to 114; the level share is 23.41 %; L = 1 holds 36 % of the level class.",
+  100000, 1, gen_o089352 },
+{ "a090050", "A090050", "Numbers having equal length of longest contiguous block of zeros and ones in binary expansion", "binary rule",
+  "65 different gaps occur, from 1 to 2,045; the level share is 14.03 %; L = 1 holds 59 % of the level class.",
+  100000, 1, gen_o090050 },
+{ "a090190", "A090190", "Symmetric primes: an odd prime p is symmetric if there exists an odd prime q such that |p-q| = gcd(p-1,q-1)", "primes",
+  "75 different gaps occur, from 2 to 192; the level share is 23.82 %; L = 1 holds 31 % of the level class.",
+  100000, 1, gen_o090190 },
+{ "a090191", "A090191", "Asymmetric primes: an odd prime p is asymmetric if there is no odd prime q such that |p-q|=gcd(p-1,q-1)", "primes",
+  "315 different gaps occur, from 4 to 882; the level share is 38.63 %; L = 1 holds 33 % of the level class; there are no ties.",
+  100000, 1, gen_o090191 },
+{ "a090421", "A090421", "Numbers that can be written in binary representation as concatenation of primes", "binary rule",
+  "41 different gaps occur, from 1 to 53; the level share is 14.35 %; L = 1 holds 90 % of the level class.",
+  100000, 1, gen_o090421 },
+{ "a090423", "A090423", "Primes that can be written in binary representation as concatenation of other primes", "primes",
+  "186 different gaps occur, from 2 to 846; the level share is 25.22 %; L = 1 holds 30 % of the level class.",
+  100000, 1, gen_o090423 },
+{ "a090466", "A090466", "Regular figurative or polygonal numbers of order greater than 2", "polynomial",
+  "The gaps are 1, 2 and 3; the level share is 11.52 %; L = 1 holds 55 % of the level class; there are no ties.",
+  100000, 1, gen_o090466 },
+{ "a090693", "A090693", "Positive numbers n such that n^2 - 2n + 2 is a prime", "prime values",
+  "88 different gaps occur, from 1 to 212; the level share is 31.42 %; L = 1 holds 46 % of the level class.",
+  100000, 1, gen_o090693 },
+{ "a090709", "A090709", "Primes whose decimal representation is a valid number in base 6 and interpreted as such is again a prime", "primes",
+  "1,961 different gaps occur, from 1 to 444,446,920; the level share is 49.38 %; 3.8 % of terms are forced level (l <= d^2); 13 terms do not decompose.",
+  100000, 1, gen_o090709 },
+{ "a091191", "A091191", "Primitive abundant numbers: abundant numbers (A005101) having no abundant proper divisor", "divisor functions",
+  "268 different gaps occur, from 1 to 516; the level share is 25.31 %.",
+  100000, 1, gen_o091191 },
+{ "a091300", "A091300", "Nonprimes of the form 6k + 1", "complement",
+  "5 different gaps occur, from 6 to 30; the level share is 32.39 %; L = 1 holds 78 % of the level class.",
+  100000, 1, gen_o091300 },
+{ "a091301", "A091301", "Primes of the form p*q + p - q, where p and q are distinct primes", "primes",
+  "152 different gaps occur, from 2 to 408; the level share is 32.68 %; L = 1 holds 35 % of the level class.",
+  100000, 1, gen_o091301 },
+{ "a092192", "A092192", "Semiprimes that are the sum of two successive semiprimes", "multiplicative",
+  "605 different gaps occur, from 2 to 1,112; the level share is 34.94 %.",
+  100000, 1, gen_o092192 },
+{ "a092207", "A092207", "Semiprimes k such that k+2 is also a semiprime", "multiplicative",
+  "105 different gaps occur, from 2 to 270; the level share is 29.50 %; L = 1 holds 49 % of the level class.",
+  100000, 1, gen_o092207 },
+{ "a092620", "A092620", "Numbers with exactly one prime digit", "digit rule",
+  "12 different gaps occur, from 1 to 20,001; the level share is 16.45 %; L = 1 holds 51 % of the level class.",
+  100000, 1, gen_o092620 },
+{ "a092621", "A092621", "Primes with exactly one prime digit", "primes",
+  "533 different gaps occur, from 1 to 200,100; the level share is 33.62 %.",
+  100000, 1, gen_o092621 },
+{ "a094524", "A094524", "Primes of form 3*prime(m) + 2", "primes",
+  "357 different gaps occur, from 6 to 3,396; the level share is 49.60 %; L = 1 holds 34 % of the level class; there are no ties.",
+  100000, 1, gen_o094524 },
+{ "a094589", "A094589", "a(1) = 1; a(n+1) = a(n) + (largest element of {a} <= n)", "self-referential",
+  "456 different gaps occur, from 1 to 99,698; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_o094589 },
+{ "a095050", "A095050", "Numbers such that all ten digits are needed to write all positive divisors in decimal representation", "digit rule",
+  "36 different gaps occur, from 1 to 108; the level share is 14.31 %; L = 2 holds 40 % of the level class.",
+  100000, 1, gen_o095050 },
+{ "a096777", "A096777", "a(n) = a(n-1) + Sum_{k=1..n-1}(a(k) mod 2), a(1) = 1", "self-referential",
+  "66,667 different gaps occur, from 1 to 66,667; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_o096777 },
+{ "a097102", "A097102", "Numbers m that are the hypotenuse of exactly 13 distinct integer-sided right triangles, i.e., m^2 can be written as a sum of two squares in 13 ways", "quadratic form",
+  "231 different gaps occur, from 1 to 780; the level share is 23.64 %.",
+  100000, 1, gen_o097102 },
+{ "a097103", "A097103", "Numbers m that are the hypotenuse of exactly 22 distinct integer-sided right triangles, i.e., m^2 can be written as a sum of two squares in 22 ways", "quadratic form",
+  "848 different gaps occur, from 1 to 3,900; the level share is 25.67 %.",
+  100000, 1, gen_o097103 },
+{ "a097933", "A097933", "Primes p that divide 3^((p-1)/2) - 1", "primes",
+  "60 different gaps occur, from 2 to 288; the level share is 28.49 %.",
+  100000, 1, gen_o097933 },
+{ "a098058", "A098058", "Prime(n) such that 4 does not divide the difference between prime(n) and prime(n+1)", "primes",
+  "59 different gaps occur, from 1 to 246; the level share is 28.11 %; L = 1 holds 31 % of the level class.",
+  100000, 1, gen_o098058 },
+{ "a100493", "A100493", "a(n) = n + n-th semiprime", "multiplicative",
+  "38 different gaps occur, from 2 to 48; the level share is 19.81 %; L = 1 holds 42 % of the level class.",
+  100000, 1, gen_o100493 },
+{ "a100959", "A100959", "Non-semiprimes", "complement",
+  "The gaps are 1, 2, 3 and 4; the level share is 11.60 %; L = 1 holds 75 % of the level class.",
+  100000, 1, gen_o100959 },
+{ "a101082", "A101082", "Numbers n such that binary representation contains bit strings \"10\" and \"01\" (possibly overlapping)", "binary rule",
+  "The gaps are 1, 2 and 4; the level share is 9.58 %; L = 1 holds 100 % of the level class.",
+  100000, 1, gen_o101082 },
+{ "a101095", "A101095", "Fourth difference of fifth powers (A000584)", "polynomial",
+  "The gaps are 27, 93, 119 and 120; the level share is 9.71 %; L = 120 holds 99 % of the level class; there are no ties.",
+  100000, 1, gen_o101095 },
+{ "a101594", "A101594", "Numbers with exactly two distinct decimal digits, neither of which is 0", "digit rule",
+  "131 different gaps occur, from 1 to 1,111,111,114; the level share is 22.60 %; 3.8 % of terms are forced level (l <= d^2).",
+  100000, 1, gen_o101594 },
+{ "a102487", "A102487", "Numbers in base-12 representation that can be written with decimal digits", "digit rule",
+  "6 different gaps occur, from 1 to 45,243; the level share is 11.08 %; L = 1 holds 97 % of the level class.",
+  100000, 1, gen_o102487 },
+{ "a102491", "A102491", "Numbers whose base-20 representation can be written with decimal digits", "digit rule",
+  "6 different gaps occur, from 1 to 1,684,211; the level share is 10.91 %; L = 1 holds 71 % of the level class; 8 terms do not decompose.",
+  100000, 1, gen_o102491 },
+{ "a103664", "A103664", "Primes p such that the number of divisors of p-1 is less than the number of divisors of p+1", "primes",
+  "112 different gaps occur, from 1 to 252; the level share is 29.95 %; L = 1 holds 36 % of the level class.",
+  100000, 1, gen_o103664 },
+{ "a104272", "A104272", "Ramanujan primes R_n: a(n) is the smallest number such that if x >= a(n), then pi(x) - pi(x/2) >= n, where pi(x) is the number of primes <= x", "primes",
+  "236 different gaps occur, from 2 to 726; the level share is 26.51 %.",
+  100000, 1, gen_o104272 },
+{ "a105184", "A105184", "Primes that can be written as concatenation of two primes in decimal representation", "primes",
+  "469 different gaps occur, from 2 to 2,656; the level share is 33.96 %; L = 1 holds 33 % of the level class.",
+  100000, 1, gen_o105184 },
+{ "a105441", "A105441", "Numbers with at least two odd prime factors (not necessarily distinct)", "multiplicative",
+  "6 different gaps occur, from 1 to 6; the level share is 12.88 %; L = 1 holds 88 % of the level class.",
+  100000, 1, gen_o105441 },
+{ "a105571", "A105571", "Numbers m such that m - 2 and m + 2 are semiprimes", "multiplicative",
+  "167 different gaps occur, from 1 to 276; the level share is 27.51 %; L = 1 holds 38 % of the level class.",
+  100000, 1, gen_o105571 },
+{ "a106039", "A106039", "Belgian-0 numbers", "digit rule",
+  "36 different gaps occur, from 1 to 37; the level share is 16.66 %; L = 1 holds 48 % of the level class.",
+  100000, 1, gen_o106039 },
+{ "a106439", "A106439", "Belgian-1 numbers", "digit rule",
+  "66 different gaps occur, from 1 to 98; the level share is 17.94 %; L = 1 holds 50 % of the level class.",
+  100000, 1, gen_o106439 },
+{ "a106518", "A106518", "Belgian-2 numbers", "digit rule",
+  "53 different gaps occur, from 1 to 57; the level share is 15.66 %; L = 1 holds 46 % of the level class.",
+  100000, 1, gen_o106518 },
+{ "a106596", "A106596", "Belgian-3 numbers", "digit rule",
+  "50 different gaps occur, from 1 to 56; the level share is 17.47 %; L = 1 holds 55 % of the level class.",
+  100000, 1, gen_o106596 },
+{ "a106564", "A106564", "Perfect squares which are not the difference of two primes", "powers",
+  "96,386 different gaps occur, from 24 to 1,708,872; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_o106564 },
+{ "a106867", "A106867", "Primes of the form 2*x^2 + x*y + 3*y^2", "quadratic form",
+  "171 different gaps occur, from 1 to 460; the level share is 29.89 %.",
+  100000, 1, gen_o106867 },
+{ "a106881", "A106881", "Primes of the form x^2+xy+9y^2", "quadratic form",
+  "132 different gaps occur, from 2 to 528; the level share is 34.77 %.",
+  100000, 1, gen_o106881 },
+{ "a107006", "A107006", "Primes of the form 4x^2-4xy+7y^2, with x and y nonnegative", "quadratic form",
+  "41 different gaps occur, from 24 to 984; the level share is 44.37 %; L = 1 holds 36 % of the level class; there are no ties.",
+  100000, 1, gen_o107006 },
+{ "a107288", "A107288", "Primes whose digit sum is a square", "primes",
+  "302 different gaps occur, from 6 to 6,648; the level share is 46.65 %; L = 1 holds 34 % of the level class.",
+  100000, 1, gen_o107288 },
+{ "a108386", "A108386", "Primes p such that p's set of distinct digits is {1,3,7,9}", "primes",
+  "2,332 different gaps occur, from 2 to 3,111,111,588; the level share is 30.62 %; 1.8 % of terms are forced level (l <= d^2); 14 terms do not decompose.",
+  100000, 1, gen_o108386 },
+{ "a109303", "A109303", "Numbers k with at least one duplicate base-10 digit (A107846(k) > 0)", "digit rule",
+  "10 different gaps occur, from 1 to 11; the level share is 10.70 %; L = 1 holds 86 % of the level class.",
+  100000, 1, gen_o109303 },
+{ "a109373", "A109373", "Semiprimes of the form semiprime + 1", "multiplicative",
+  "311 different gaps occur, from 1 to 573; the level share is 30.29 %.",
+  100000, 1, gen_o109373 },
+{ "a111046", "A111046", "Difference between squares of twin prime pairs", "primes",
+  "247 different gaps occur, from 8 to 8,760; the level share is 32.33 %; 1.1 % of terms are forced level (l <= d^2); there are no ties.",
+  100000, 1, gen_o111046 },
+{ "a111501", "A111501", "Numbers k such that k^3 - k^2 + 1 is prime", "prime values",
+  "97 different gaps occur, from 1 to 122; the level share is 22.86 %; L = 1 holds 36 % of the level class.",
+  100000, 1, gen_o111501 },
+{ "a111592", "A111592", "Admirable numbers. A number n is admirable if there exists a proper divisor d' of n such that sigma(n)-2d'=2n, where sigma(n) is the sum of all divisors of n", "divisor functions",
+  "179 different gaps occur, from 2 to 516; the level share is 24.85 %; there are no ties.",
+  100000, 1, gen_o111592 },
+{ "a112886", "A112886", "Positive integers that have no triangular divisors > 1", "divisor functions",
+  "7 different gaps occur, from 1 to 7; the level share is 2.29 %; L = 1 holds 48 % of the level class.",
+  100000, 1, gen_o112886 },
+{ "a113502", "A113502", "A number n is included if at least one of its divisors > 1 is a triangular number (i.e., is of the form m(m+1)/2, m >= 2)", "divisor functions",
+  "The gaps are 1, 2 and 3; the level share is 14.46 %; L = 3 holds 42 % of the level class.",
+  100000, 1, gen_o113502 },
+{ "a117048", "A117048", "Prime numbers that are expressible as the sum of two positive triangular numbers", "primes",
+  "184 different gaps occur, from 2 to 504; the level share is 34.52 %; L = 1 holds 33 % of the level class.",
+  100000, 1, gen_o117048 },
+{ "a117804", "A117804", "Natural position of n in the string 12345678910111213", "digit rule",
+  "6 different gaps occur, from 1 to 6; the level share is 10.70 %; L = 5 holds 79 % of the level class.",
+  100000, 1, gen_o117804 },
+{ "a118134", "A118134", "Primes p such that 4p is the sum of two consecutive primes", "primes",
+  "1,432 different gaps occur, from 1 to 5,380; the level share is 46.65 %; 6 terms do not decompose.",
+  100000, 1, gen_o118134 },
+{ "a118882", "A118882", "Numbers which are the sum of two squares in two or more different ways", "quadratic form",
+  "66 different gaps occur, from 1 to 73; the level share is 19.89 %; L = 1 holds 31 % of the level class.",
+  100000, 1, gen_o118882 },
+{ "a118886", "A118886", "Numbers expressible as x^2 + x*y + y^2, 0 <= x <= y, in 2 or more ways", "quadratic form",
+  "78 different gaps occur, from 1 to 85; the level share is 29.35 %; L = 1 holds 52 % of the level class.",
+  100000, 1, gen_o118886 },
+{ "a118922", "A118922", "Primes for which the weight as defined in A117078 is 9 and the gap as defined in A001223 is 8", "primes",
+  "382 different gaps occur, from 18 to 10,170; the level share is 56.96 %; 1.5 % of terms are forced level (l <= d^2); there are no ties.",
+  100000, 1, gen_o118922 },
+{ "a118950", "A118950", "Numbers containing at least one prime digit", "digit rule",
+  "The gaps are 1, 2, 3 and 5; the level share is 10.24 %; L = 1 holds 98 % of the level class.",
+  100000, 1, gen_o118950 },
+{ "a118954", "A118954", "Numbers that cannot be written as 2^k + prime", "primes",
+  "9 different gaps occur, from 1 to 14; the level share is 8.56 %; L = 2 holds 92 % of the level class.",
+  100000, 1, gen_o118954 },
+{ "a118955", "A118955", "Numbers of the form 2^k + prime", "primes",
+  "9 different gaps occur, from 1 to 10; the level share is 32.16 %; L = 1 holds 99 % of the level class.",
+  100000, 1, gen_o118955 },
+{ "a119449", "A119449", "Primes with even digit sum", "primes",
+  "115 different gaps occur, from 2 to 276; the level share is 28.37 %.",
+  100000, 1, gen_o119449 },
+{ "a119735", "A119735", "Numbers n such that every digit occurs at least once in n^3", "digit rule",
+  "199 different gaps occur, from 1 to 778; the level share is 20.21 %; L = 1 holds 39 % of the level class.",
+  100000, 1, gen_o119735 },
+{ "a121022", "A121022", "Even numbers containing a 2 in their decimal representation", "digit rule",
+  "The gaps are 2, 4, 8 and 10; the level share is 11.45 %; L = 2 holds 80 % of the level class; there are no ties.",
+  100000, 1, gen_o121022 },
+{ "a121030", "A121030", "Multiples of 10 containing a 10 in their decimal representation", "digit rule",
+  "The gaps are 10, 90 and 100; the level share is 24.31 %; L = 10 holds 63 % of the level class; there are no ties.",
+  100000, 1, gen_o121030 },
+{ "a121032", "A121032", "Multiples of 12 containing a 12 in their decimal representation", "digit rule",
+  "12 different gaps occur, from 12 to 300; the level share is 19.55 %; L = 12 holds 39 % of the level class; there are no ties.",
+  100000, 1, gen_o121032 },
+{ "a121539", "A121539", "Numbers whose binary expansion ends in an even number of 1's", "binary rule",
+  "The gaps are 1 and 2; the level share is 12.00 %; L = 2 holds 62 % of the level class.",
+  100000, 1, gen_o121539 },
+{ "a122094", "A122094", "Prime divisors of Mersenne numbers. Primes p such that the multiplicative order of 2 modulo p is prime", "primes",
+  "1,051 different gaps occur, from 2 to 5,610; the level share is 48.93 %; there are no ties.",
+  100000, 1, gen_o122094 },
+{ "a122535", "A122535", "Smallest prime of a triple of successive primes, where the middle one is the arithmetic mean of the other two", "primes",
+  "1,838 different gaps occur, from 6 to 6,940; the level share is 46.53 %; 1.0 % of terms are forced level (l <= d^2); there are no ties.",
+  100000, 1, gen_o122535 },
+{ "a123193", "A123193", "Natural numbers with number of divisors equal to a Fibonacci number", "divisor functions",
+  "29 different gaps occur, from 1 to 36; the level share is 14.01 %; L = 1 holds 71 % of the level class.",
+  100000, 1, gen_o123193 },
+{ "a123239", "A123239", "Primes that do not divide 3^k - 2 for any k", "primes",
+  "128 different gaps occur, from 1 to 308; the level share is 29.90 %.",
+  100000, 1, gen_o123239 },
+{ "a124268", "A124268", "Primes indexed by 3-almost primes", "primes",
+  "223 different gaps occur, from 2 to 556; the level share is 33.23 %.",
+  100000, 1, gen_o124268 },
+{ "a124269", "A124269", "3-almost primes indexed by primes", "multiplicative",
+  "372 different gaps occur, from 2 to 450; the level share is 33.64 %.",
+  100000, 1, gen_o124269 },
+{ "a124282", "A124282", "Primes indexed by 4-almost primes", "primes",
+  "286 different gaps occur, from 2 to 652; the level share is 35.15 %.",
+  100000, 1, gen_o124282 },
+{ "a124283", "A124283", "4-almost primes indexed by primes", "multiplicative",
+  "423 different gaps occur, from 2 to 618; the level share is 33.68 %.",
+  100000, 1, gen_o124283 },
+{ "a125022", "A125022", "Numbers with a unique partition as the sum of 2 squares x^2 + y^2", "quadratic form",
+  "80 different gaps occur, from 1 to 91; the level share is 18.14 %.",
+  100000, 1, gen_o125022 },
+{ "a125272", "A125272", "Primes p such that 3p - 2 and 3p + 2 are also primes", "primes",
+  "1,897 different gaps occur, from 2 to 12,250; the level share is 56.75 %; 1.6 % of terms are forced level (l <= d^2); 6 terms do not decompose.",
+  100000, 1, gen_o125272 },
+{ "a125830", "A125830", "Primes for which the level is equal to 1 in A117563", "primes",
+  "952 different gaps occur, from 6 to 3,756; the level share is 49.85 %; L = 1 holds 32 % of the level class.",
+  100000, 1, gen_o125830 },
+{ "a126148", "A126148", "Primes p such that pq+p+q is prime, where q is the next prime after p", "primes",
+  "764 different gaps occur, from 1 to 2,448; the level share is 42.09 %.",
+  100000, 1, gen_o126148 },
+{ "a127340", "A127340", "Primes that are the sum of 11 consecutive primes", "primes",
+  "4,020 different gaps occur, from 38 to 22,110; the level share is 56.20 %; 2.7 % of terms are forced level (l <= d^2).",
+  100000, 1, gen_o127340 },
+{ "a127341", "A127341", "Primes that can be written as the sum of 13 consecutive primes", "primes",
+  "4,608 different gaps occur, from 68 to 20,194; the level share is 57.63 %; 3.3 % of terms are forced level (l <= d^2).",
+  100000, 1, gen_o127341 },
+{ "a129845", "A129845", "Numbers n such that n and 2n share at least one digit", "digit rule",
+  "9 different gaps occur, from 1 to 9; the level share is 9.81 %; L = 1 holds 96 % of the level class.",
+  100000, 1, gen_o129845 },
+{ "a130091", "A130091", "Numbers having in their canonical prime factorization mutually distinct exponents", "multiplicative",
+  "44 different gaps occur, from 1 to 51; the level share is 17.03 %; L = 1 holds 48 % of the level class.",
+  100000, 1, gen_o130091 },
+{ "a131323", "A131323", "Odd numbers whose binary expansion ends in an even number of 1's", "binary rule",
+  "The gaps are 4 and 8; the level share is 25.62 %; L = 1 holds 64 % of the level class; there are no ties.",
+  100000, 1, gen_o131323 },
+{ "a131645", "A131645", "Beastly primes (version 2): primes containing 666 as a substring", "primes",
+  "759 different gaps occur, from 2 to 110,000; the level share is 32.65 %; 13.2 % of terms are forced level (l <= d^2).",
+  100000, 1, gen_o131645 },
+{ "a131835", "A131835", "Numbers starting with 1", "digit rule",
+  "6 different gaps occur, from 1 to 80,001; the level share is 8.67 %; L = 1 holds 100 % of the level class.",
+  100000, 1, gen_o131835 },
+{ "a132359", "A132359", "Numbers divisible by the square of their last decimal digit", "digit rule",
+  "10 different gaps occur, from 1 to 10; the level share is 22.05 %; L = 1 holds 61 % of the level class.",
+  100000, 1, gen_o132359 },
+{ "a134027", "A134027", "Nonnegative numbers that are palindromes in balanced ternary representation", "digit rule",
+  "20 different gaps occur, from 1 to 78,732; the level share is 93.81 %; 65.5 % of terms are forced level (l <= d^2).",
+  100000, 1, gen_o134027 },
+{ "a134333", "A134333", "Numbers n whose number of prime factors (counted with multiplicity) is a prime factor of n", "multiplicative",
+  "50 different gaps occur, from 1 to 53; the level share is 17.28 %; L = 1 holds 31 % of the level class.",
+  100000, 1, gen_o134333 },
+{ "a134334", "A134334", "Numbers which are not divisible by the number of their prime factors (counted with multiplicity)", "multiplicative",
+  "11 different gaps occur, from 1 to 11; the level share is 10.82 %; L = 1 holds 83 % of the level class.",
+  100000, 1, gen_o134334 },
+{ "a134344", "A134344", "Composite numbers such that the arithmetic mean of their prime factors (counted with multiplicity) is prime", "multiplicative",
+  "176 different gaps occur, from 1 to 297; the level share is 30.26 %; L = 1 holds 39 % of the level class.",
+  100000, 1, gen_o134344 },
+{ "a134376", "A134376", "Numbers whose sum of prime factors (counted with multiplicity) is not prime", "multiplicative",
+  "7 different gaps occur, from 1 to 7; the level share is 10.65 %; L = 1 holds 83 % of the level class.",
+  100000, 1, gen_o134376 },
+{ "a134616", "A134616", "Numbers such that the sum of squares of their prime factors (taken with multiplicity) is a prime", "multiplicative",
+  "174 different gaps occur, from 1 to 240; the level share is 24.75 %.",
+  100000, 1, gen_o134616 },
+{ "a134617", "A134617", "Numbers such that the arithmetic mean of the squares of their prime factors (taken with multiplicity) is a prime", "multiplicative",
+  "149 different gaps occur, from 1 to 190; the level share is 29.33 %; L = 1 holds 43 % of the level class.",
+  100000, 1, gen_o134617 },
+{ "a134618", "A134618", "Numbers such that the sum of cubes of their prime factors (taken with multiplicity) is a prime", "multiplicative",
+  "229 different gaps occur, from 1 to 290; the level share is 28.28 %.",
+  100000, 1, gen_o134618 },
+{ "a134619", "A134619", "Numbers such that the arithmetic mean of the cubes of their prime factors (taken with multiplicity) is a prime", "multiplicative",
+  "768 different gaps occur, from 1 to 1,188; the level share is 39.49 %.",
+  100000, 1, gen_o134619 },
+{ "a134809", "A134809", "Cyclops primes", "primes",
+  "277 different gaps occur, from 2 to 101,110,132; the level share is 20.29 %; L = 1 holds 31 % of the level class; there are no ties.",
+  100000, 1, gen_o134809 },
+{ "a136072", "A136072", "Primes of the form 7*p + 6 with p prime", "primes",
+  "314 different gaps occur, from 14 to 6,804; the level share is 50.79 %; there are no ties.",
+  100000, 1, gen_o136072 },
+{ "a136333", "A136333", "Numbers containing only digits coprime to 10 in their decimal representation", "digit rule",
+  "16 different gaps occur, from 2 to 31,111,112; the level share is 17.52 %; L = 1 holds 65 % of the level class; 16 terms do not decompose.",
+  100000, 1, gen_o136333 },
+{ "a136773", "A136773", "n! never ends in this many 0's in base 13", "powers",
+  "The gaps are 1 and 14; the level share is 25.94 %.",
+  100000, 1, gen_o136773 },
+{ "a138511", "A138511", "Semiprimes where the larger prime factor is greater than the square of the smaller prime factor, short: semiprimes p*q, p^2 < q", "multiplicative",
+  "53 different gaps occur, from 1 to 70; the level share is 18.20 %; L = 1 holds 58 % of the level class.",
+  100000, 1, gen_o138511 },
+{ "a147562", "A147562", "Number of \"ON\" cells at n-th stage in the \"Ulam-Warburton\" two-dimensional cellular automaton", "self-referential",
+  "17 different gaps occur, from 1 to 57,395,628; the level share is 70.87 %; 26.9 % of terms are forced level (l <= d^2).",
+  100000, 0, gen_o147562 },
+{ "a142925", "A142925", "Primes congruent to 1 mod 64", "primes",
+  "68 different gaps occur, from 64 to 5,440; the level share is 48.02 %.",
+  100000, 1, gen_o142925 },
+{ "a143164", "A143164", "Numbers with digitsum 13, in increasing order", "digit rule",
+  "69 different gaps occur, from 9 to 6,000,039; the level share is 30.90 %; 2.2 % of terms are forced level (l <= d^2).",
+  100000, 1, gen_o143164 },
+{ "a145471", "A145471", "Primes p such that (5+p)/2 is prime", "primes",
+  "201 different gaps occur, from 12 to 3,060; the level share is 49.54 %; L = 1 holds 32 % of the level class; there are no ties.",
+  100000, 1, gen_o145471 },
+{ "a145749", "A145749", "Numbers n such that sigma(n)+phi(n)=sigma(n+1)+phi(n+1)", "divisor functions",
+  "334 different gaps occur, from 2 to 4,236; the level share is 47.31 %; L = 2 holds 36 % of the level class; there are no ties.",
+  100000, 1, gen_o145749 },
+{ "a147991", "A147991", "Sequence S such that 1 is in S and if x is in S, then 3x-1 and 3x+1 are in S", "self-referential",
+  "17 different gaps occur, from 1 to 14,348,908; the level share is 9.32 %; L = 3 holds 62 % of the level class.",
+  100000, 1, gen_o147991 },
+{ "a152470", "A152470", "Largest of three consecutive primes whose sum is a prime", "primes",
+  "371 different gaps occur, from 2 to 1,056; the level share is 36.03 %.",
+  100000, 1, gen_o152470 },
+{ "a153213", "A153213", "Primes p such that both p-2 and p+2 are not squarefree", "primes",
+  "1,137 different gaps occur, from 4 to 4,194; the level share is 48.54 %; there are no ties.",
+  100000, 1, gen_o153213 },
+{ "a153238", "A153238", "Numbers k such that 2*k + 3 is composite", "complement",
+  "The gaps are 1, 2 and 3; the level share is 11.48 %; L = 1 holds 88 % of the level class.",
+  100000, 1, gen_o153238 },
+{ "a153974", "A153974", "Numbers n such that n^3 - 3 is prime", "prime values",
+  "132 different gaps occur, from 2 to 352; the level share is 22.95 %; there are no ties.",
+  100000, 1, gen_o153974 },
+{ "a154314", "A154314", "Numbers with not more than two distinct digits in ternary representation", "digit rule",
+  "25 different gaps occur, from 1 to 797,162; the level share is 11.44 %; L = 1 holds 31 % of the level class.",
+  100000, 1, gen_o154314 },
+{ "a154777", "A154777", "Numbers of the form x^2 + 2*y^2 with positive integers x and y", "quadratic form",
+  "28 different gaps occur, from 1 to 38; the level share is 14.88 %; L = 1 holds 50 % of the level class.",
+  100000, 1, gen_o154777 },
+{ "a156683", "A156683", "Integers that can occur as either leg in more than one primitive Pythagorean triple", "quadratic form",
+  "5 different gaps occur, from 1 to 5; the level share is 13.68 %; L = 1 holds 88 % of the level class.",
+  100000, 1, gen_o156683 },
+{ "a156849", "A156849", "Numbers k such that k^2 == 2 (mod 23^2)", "residue class",
+  "The gaps are 217 and 312; the level share is 47.44 %.",
+  100000, 1, gen_o156849 },
+{ "a157352", "A157352", "Products (semiprimes) of two distinct safe primes", "multiplicative",
+  "1,089 different gaps occur, from 2 to 4,914; the level share is 49.97 %.",
+  100000, 1, gen_o157352 },
+{ "a157468", "A157468", "Primes of the form sqrt(p-1)-1, where p is a prime", "primes",
+  "524 different gaps occur, from 2 to 3,220; the level share is 42.08 %.",
+  100000, 1, gen_o157468 },
+{ "a157483", "A157483", "Numbers k such that k-1 and k+1 are divisible by exactly 3 primes, counted with multiplicity", "multiplicative",
+  "177 different gaps occur, from 1 to 209; the level share is 22.13 %.",
+  100000, 1, gen_o157483 },
+{ "a157931", "A157931", "Numbers that are both the sum and the product of two primes", "multiplicative",
+  "126 different gaps occur, from 1 to 149; the level share is 21.84 %.",
+  100000, 1, gen_o157931 },
+{ "a158714", "A158714", "Primes p such that p1 = ceiling(p/2) + p is prime and p2 = floor(p1/2) + p1 is prime", "primes",
+  "2,312 different gaps occur, from 8 to 64,408; the level share is 65.80 %; 10.0 % of terms are forced level (l <= d^2); there are no ties.",
+  100000, 1, gen_o158714 },
+{ "a160591", "A160591", "Indices of primes congruent to 5 modulo 12", "primes",
+  "31 different gaps occur, from 1 to 32; the level share is 16.73 %; L = 1 holds 50 % of the level class.",
+  100000, 1, gen_o160591 },
+{ "a162174", "A162174", "Primes classified by level", "primes",
+  "286 different gaps occur, from 4 to 940; the level share is 51.60 %.",
+  100000, 1, gen_o162174 },
+{ "a162175", "A162175", "Primes classified by weight", "primes",
+  "81 different gaps occur, from 2 to 204; the level share is 7.55 %.",
+  100000, 1, gen_o162175 },
+{ "a162527", "A162527", "Numbers k whose largest divisor <= sqrt(k) equals 7", "divisor functions",
+  "54 different gaps occur, from 7 to 798; the level share is 23.11 %; L = 7 holds 32 % of the level class.",
+  100000, 1, gen_o162527 },
+{ "a166573", "A166573", "Prime numbers containing the string 13", "primes",
+  "609 different gaps occur, from 2 to 4,006; the level share is 29.65 %.",
+  100000, 1, gen_o166573 },
+{ "a173626", "A173626", "Primes p such that p-1 has no prime factors larger than sqrt(p)", "primes",
+  "164 different gaps occur, from 2 to 422; the level share is 31.43 %.",
+  100000, 1, gen_o173626 },
+{ "a174635", "A174635", "Prime numbers that are not Ramanujan primes", "primes",
+  "100 different gaps occur, from 2 to 230; the level share is 28.42 %.",
+  100000, 1, gen_o174635 },
+{ "a174905", "A174905", "Numbers with no pair (d,e) of divisors such that d < e < 2*d", "divisor functions",
+  "12 different gaps occur, from 1 to 12; the level share is 8.56 %; L = 1 holds 88 % of the level class.",
+  100000, 1, gen_o174905 },
+{ "a174913", "A174913", "Lesser of twin primes p1 and p2 such that 2*p1+p2 is a prime number", "primes",
+  "1,469 different gaps occur, from 2 to 30,870; the level share is 64.08 %; 4.1 % of terms are forced level (l <= d^2); there are no ties; 7 terms do not decompose.",
+  100000, 1, gen_o174913 },
+{ "a175495", "A175495", "Positive integers k such that k < 2^d(k), where d(k) is the number of divisors of k", "divisor functions",
+  "23 different gaps occur, from 1 to 24; the level share is 16.64 %.",
+  100000, 1, gen_o175495 },
+{ "a176995", "A176995", "Numbers that can be written as (m + sum of digits of m) for some m", "digit rule",
+  "The gaps are 1 and 2; the level share is 9.98 %; L = 1 holds 94 % of the level class.",
+  100000, 1, gen_o176995 },
+{ "a178361", "A178361", "Numbers with rounded up arithmetic mean of digits = 1", "digit rule",
+  "73 different gaps occur, from 1 to 100,000,000; the level share is 13.77 %; 1.9 % of terms are forced level (l <= d^2); L = 1 holds 37 % of the level class; 9 terms do not decompose.",
+  100000, 1, gen_o178361 },
+{ "a178403", "A178403", "Numbers containing the rounded up arithmetic mean of their digits at least once, cf. A004427", "digit rule",
+  "10 different gaps occur, from 1 to 10; the level share is 11.73 %; L = 1 holds 73 % of the level class.",
+  100000, 1, gen_o178403 },
+{ "a179188", "A179188", "Numbers n such that phi(n) = phi(n+6), with Euler's totient function phi=A000010", "divisor functions",
+  "1,400 different gaps occur, from 1 to 2,783; the level share is 37.96 %.",
+  100000, 1, gen_o179188 },
+{ "a179244", "A179244", "Numbers that have 4 terms in their Zeckendorf representation", "digit rule",
+  "132 different gaps occur, from 1 to 24,157,829; the level share is 27.86 %; 5.7 % of terms are forced level (l <= d^2).",
+  100000, 1, gen_o179244 },
+{ "a179336", "A179336", "Primes containing at least one prime digit in base 10", "primes",
+  "59 different gaps occur, from 1 to 132; the level share is 23.35 %; L = 1 holds 32 % of the level class.",
+  100000, 1, gen_o179336 },
+{ "a180948", "A180948", "Smallest of seven (7) consecutive primes whose sum is a prime", "primes",
+  "512 different gaps occur, from 2 to 1,834; the level share is 38.40 %.",
+  100000, 1, gen_o180948 },
+{ "a180950", "A180950", "Smallest prime such that the sum of successive 11 primes is a prime", "primes",
+  "547 different gaps occur, from 2 to 2,020; the level share is 38.75 %.",
+  100000, 1, gen_o180950 },
+{ "a181780", "A181780", "Numbers n which are Fermat pseudoprimes to some base b, 2 <= b <= n-2", "primes",
+  "7 different gaps occur, from 1 to 8; the level share is 10.49 %; L = 1 holds 95 % of the level class.",
+  100000, 1, gen_o181780 },
+{ "a182175", "A182175", "Numbers with the property that every pair of adjacent digits sum to a prime number", "digit rule",
+  "87 different gaps occur, from 1 to 3,434,344; the level share is 14.51 %; L = 1 holds 46 % of the level class.",
+  100000, 1, gen_o182175 },
+{ "a182760", "A182760", "Beatty sequence for (3 + 5^(-1/2))/2", "Beatty",
+  "The gaps are 1 and 2; the level share is 12.65 %; L = 1 holds 72 % of the level class.",
+  100000, 1, gen_o182760 },
+{ "a184618", "A184618", "a(n) = floor(n*r + h), where r=sqrt(2) and h=1/3; complement of A184619", "Beatty",
+  "The gaps are 1 and 2; the level share is 11.35 %; L = 1 holds 82 % of the level class.",
+  100000, 1, gen_o184618 },
+{ "a184774", "A184774", "Primes of the form floor(k*sqrt(2))", "Beatty",
+  "78 different gaps occur, from 2 to 214; the level share is 25.77 %.",
+  100000, 1, gen_o184774 },
+{ "a185086", "A185086", "Fouvry-Iwaniec primes: Primes of the form k^2 + p^2 where p is a prime", "primes",
+  "202 different gaps occur, from 4 to 1,012; the level share is 37.67 %.",
+  100000, 1, gen_o185086 },
+{ "a190803", "A190803", "Increasing sequence generated by these rules: a(1)=1, and if x is in a then 2x-1 and 3x-1 are in a", "self-referential",
+  "512 different gaps occur, from 1 to 41,069; the level share is 26.35 %; L = 1 holds 59 % of the level class.",
+  100000, 1, gen_o190803 },
+{ "a190898", "A190898", "Least odd prime p>n^2 with (n/p) = 1, where ( / ) is the Legendre symbol", "primes",
+  "61,158 different gaps occur, from 4 to 200,098; every decomposable term is forced level (l <= d^2).",
+  100000, 1, gen_o190898 },
+{ "a191113", "A191113", "Increasing sequence generated by these rules:  a(1)=1, and if x is in a then 3x-2 and 4x-2 are in a", "self-referential",
+  "850 different gaps occur, from 1 to 14,374,958; the level share is 21.92 %; 2.8 % of terms are forced level (l <= d^2); L = 2 holds 38 % of the level class; there are no ties.",
+  100000, 1, gen_o191113 },
+{ "a192607", "A192607", "Nonludic numbers: complement of A003309", "sieve",
+  "The gaps are 1 and 2; the level share is 10.44 %; L = 1 holds 88 % of the level class.",
+  100000, 1, gen_o192607 },
+{ "a195086", "A195086", "Numbers k such that (number of prime factors of k counted with multiplicity) less (number of distinct prime factors of k) = 2", "multiplicative",
+  "56 different gaps occur, from 1 to 68; the level share is 18.75 %.",
+  100000, 1, gen_o195086 },
+{ "a195087", "A195087", "Numbers k such that (number of prime factors of k counted with multiplicity) less (number of distinct prime factors of k) = 3", "multiplicative",
+  "107 different gaps occur, from 1 to 149; the level share is 19.43 %.",
+  100000, 1, gen_o195087 },
+{ "a195270", "A195270", "3-gap primes: Prime p is a term iff there is no prime between 3*p and 3*q, where q is the next prime after p", "primes",
+  "327 different gaps occur, from 2 to 918; the level share is 34.47 %.",
+  100000, 1, gen_o195270 },
+{ "a195943", "A195943", "Zeroless prime powers: Intersection of A000961 and A052382", "powers",
+  "153 different gaps occur, from 1 to 111,168; the level share is 23.58 %; L = 1 holds 31 % of the level class.",
+  100000, 1, gen_o195943 },
+{ "a198273", "A198273", "Primes not of the form p*q + p + q for any primes p and q", "primes",
+  "71 different gaps occur, from 1 to 160; the level share is 25.71 %; L = 1 holds 32 % of the level class.",
+  100000, 1, gen_o198273 },
+{ "a198772", "A198772", "Numbers having exactly one representation by the quadratic form x^2 + xy + y^2 with 0 <= x <= y", "quadratic form",
+  "84 different gaps occur, from 1 to 107; the level share is 27.06 %; L = 1 holds 49 % of the level class.",
+  100000, 1, gen_o198772 },
+{ "a198773", "A198773", "Numbers having exactly two representations by the quadratic form x^2+xy+y^2 with 0<=x<=y", "quadratic form",
+  "117 different gaps occur, from 1 to 144; the level share is 30.37 %; L = 1 holds 48 % of the level class.",
+  100000, 1, gen_o198773 },
+{ "a200995", "A200995", "Numbers not expressible as a product of Lucas numbers", "complement",
+  "5 different gaps occur, from 1 to 5; the level share is 9.44 %; L = 1 holds 100 % of the level class.",
+  100000, 1, gen_o200995 },
+{ "a202267", "A202267", "Numbers in which all digits are noncomposites (1, 2, 3, 5, 7) or 0", "digit rule",
+  "13 different gaps occur, from 1 to 222,223; the level share is 15.68 %; L = 1 holds 81 % of the level class.",
+  100000, 1, gen_o202267 },
+{ "a202268", "A202268", "Numbers in which all digits are neither primes nor zero, i.e., are members of (1, 4, 6, 8, 9)", "digit rule",
+  "15 different gaps occur, from 1 to 2,111,112; the level share is 15.84 %; L = 1 holds 44 % of the level class; there are no ties; 8 terms do not decompose.",
+  100000, 1, gen_o202268 },
+{ "a202822", "A202822", "Numbers of the form 3*(x^2 + xy + y^2 + x + y) + 1 where x and y are integers", "quadratic form",
+  "19 different gaps occur, from 3 to 57; the level share is 28.38 %; L = 1 holds 56 % of the level class.",
+  100000, 1, gen_o202822 },
+{ "a209061", "A209061", "Exponentially squarefree numbers", "multiplicative",
+  "The gaps are 1, 2 and 3; the level share is 9.72 %; L = 1 holds 100 % of the level class.",
+  100000, 1, gen_o209061 },
+{ "a210479", "A210479", "Primes p with p-1 and p+1 both practical: \"Sandwich of the first kind\"", "primes",
+  "1,650 different gaps occur, from 2 to 11,928; the level share is 54.51 %; 1.7 % of terms are forced level (l <= d^2).",
+  100000, 1, gen_o210479 },
+{ "a212164", "A212164", "Numbers k such that the maximum exponent in its prime factorization is greater than the number of positive exponents (A051903(k) > A001221(k))", "multiplicative",
+  "47 different gaps occur, from 1 to 64; the level share is 13.94 %.",
+  100000, 1, gen_o212164 },
+{ "a212165", "A212165", "Numbers k such that the maximum exponent in its prime factorization is not less than the number of positive exponents (A051903(k) >= A001221(k))", "multiplicative",
+  "18 different gaps occur, from 1 to 19; the level share is 14.77 %; L = 1 holds 50 % of the level class.",
+  100000, 1, gen_o212165 },
+{ "a212166", "A212166", "Numbers k such that the maximum exponent in its prime factorization equals the number of positive exponents (A051903(k) = A001221(k))", "multiplicative",
+  "47 different gaps occur, from 1 to 51; the level share is 18.12 %; L = 1 holds 47 % of the level class.",
+  100000, 1, gen_o212166 },
+{ "a212168", "A212168", "Numbers n such that the maximal exponent in its prime factorization is less than the number of positive exponents (A051903(n) < A001221(n))", "multiplicative",
+  "8 different gaps occur, from 1 to 8; the level share is 11.86 %; L = 1 holds 85 % of the level class.",
+  100000, 1, gen_o212168 },
+{ "a213382", "A213382", "Numbers n such that n^n mod (n + 2) = n", "powers",
+  "81 different gaps occur, from 2 to 342; the level share is 41.42 %; L = 1 holds 53 % of the level class.",
+  100000, 1, gen_o213382 },
+{ "a214423", "A214423", "Numbers k palindromic in only one base b, 2 <= b <= 10", "digit rule",
+  "2,120 different gaps occur, from 1 to 2,744; the level share is 42.41 %.",
+  100000, 1, gen_o214423 },
+{ "a216838", "A216838", "Odd primes for which 2 is not a primitive root", "primes",
+  "90 different gaps occur, from 2 to 240; the level share is 26.77 %.",
+  100000, 1, gen_o216838 },
+{ "a217139", "A217139", "Numbers n such that phi(n) = phi(n+12), with Euler's totient function phi = A000010", "divisor functions",
+  "1,858 different gaps occur, from 1 to 5,566; the level share is 38.17 %.",
+  100000, 1, gen_o217139 },
+{ "a227916", "A227916", "Primes that remain prime when the leftmost digit is removed", "primes",
+  "263 different gaps occur, from 2 to 966; the level share is 38.48 %; L = 1 holds 34 % of the level class.",
+  100000, 1, gen_o227916 },
+{ "a230091", "A230091", "Numbers of the form k + wt(k) for exactly two distinct k, where wt(k) = A000120(k) is the binary weight of k", "binary rule",
+  "10 different gaps occur, from 1 to 11; the level share is 17.63 %; L = 1 holds 47 % of the level class.",
+  100000, 1, gen_o230091 },
+{ "a230092", "A230092", "Numbers of the form k + wt(k) for exactly three distinct k, where wt(k) = A000120(k) is the binary weight of k", "binary rule",
+  "20 different gaps occur, from 2 to 252; the level share is 30.37 %.",
+  100000, 1, gen_o230092 },
+{ "a230223", "A230223", "Primes p such that 3*p-4, 3*p-10, and 3*p-14 are all prime", "primes",
+  "9,201 different gaps occur, from 2 to 65,620; the level share is 65.47 %; 9.1 % of terms are forced level (l <= d^2).",
+  100000, 1, gen_o230223 },
+{ "a230577", "A230577", "Positive integers that have exactly 6 odd divisors", "divisor functions",
+  "173 different gaps occur, from 1 to 309; the level share is 24.86 %.",
+  100000, 1, gen_o230577 },
+{ "a230633", "A230633", "Numbers n such that m + (sum of digits in base-4 representation of m) = n has exactly one solution", "digit rule",
+  "7 different gaps occur, from 1 to 14; the level share is 11.74 %; L = 1 holds 78 % of the level class.",
+  100000, 1, gen_o230633 },
+{ "a230634", "A230634", "Numbers n such that m + (sum of digits in base-4 representation of m) = n has exactly two solutions", "digit rule",
+  "10 different gaps occur, from 1 to 13; the level share is 18.12 %; L = 1 holds 47 % of the level class.",
+  100000, 1, gen_o230634 },
+{ "a230853", "A230853", "Numbers n such that m + (sum of digits in base-3 representation of m) = n has exactly one solution", "digit rule",
+  "13 different gaps occur, from 2 to 36; the level share is 20.26 %; L = 2 holds 40 % of the level class.",
+  100000, 1, gen_o230853 },
+{ "a230854", "A230854", "Numbers n such that m + (sum of digits in base-3 representation of m) = n has exactly two solutions", "digit rule",
+  "8 different gaps occur, from 2 to 24; the level share is 11.32 %; L = 2 holds 81 % of the level class.",
+  100000, 1, gen_o230854 },
+{ "a233010", "A233010", "In balanced ternary notation, either a palindrome or becomes a palindrome if trailing 0's are omitted", "digit rule",
+  "23,046 different gaps occur, from 1 to 59,045; the level share is 68.92 %; 16.2 % of terms are forced level (l <= d^2).",
+  100000, 1, gen_o233010 },
+{ "a234695", "A234695", "Primes p with prime(p) - p + 1 also prime", "primes",
+  "460 different gaps occur, from 1 to 1,428; the level share is 38.74 %.",
+  100000, 1, gen_o234695 },
+{ "a235592", "A235592", "Numbers k such that k*(k+1) - prime(k) is prime", "primes",
+  "85 different gaps occur, from 1 to 104; the level share is 21.94 %; L = 1 holds 38 % of the level class.",
+  100000, 1, gen_o235592 },
+{ "a236119", "A236119", "Primes p with prime(p) - p - 1 and prime(p) - p + 1 both prime", "primes",
+  "4,892 different gaps occur, from 2 to 22,370; the level share is 56.99 %; 3.5 % of terms are forced level (l <= d^2); 6 terms do not decompose.",
+  100000, 1, gen_o236119 },
+{ "a236464", "A236464", "Primes p with prime(p) + 2 and prime(p) + 6 both prime", "primes",
+  "7,061 different gaps occur, from 2 to 38,304; the level share is 60.60 %; 6.0 % of terms are forced level (l <= d^2); 7 terms do not decompose.",
+  100000, 1, gen_o236464 },
+{ "a236562", "A236562", "Numbers n such that A049820(x) = n has a solution", "divisor functions",
+  "9 different gaps occur, from 1 to 9; the level share is 11.93 %; L = 1 holds 82 % of the level class.",
+  100000, 1, gen_o236562 },
+{ "a243937", "A243937", "Even numbers n>=6 for which lpf(n-1) > lpf(n-3), where lpf = least prime factor", "multiplicative",
+  "The gaps are 2, 4 and 6; the level share is 15.14 %; L = 2 holds 61 % of the level class.",
+  100000, 1, gen_o243937 },
+{ "a246281", "A246281", "Numbers k for which A003961(k) < 2*k; Numbers n such that if n = product_{k >= 1} (p_k)^(c_k), then product_{k >= 1} (p_{k+1})^(c_k) < 2*n, where p_k indicates the k-th prime, A000040(k)", "multiplicative",
+  "10 different gaps occur, from 1 to 10; the level share is 9.19 %; L = 1 holds 83 % of the level class.",
+  100000, 1, gen_o246281 },
+{ "a246282", "A246282", "Numbers k for which A003961(k) > 2*k; numbers n such that if n = Product_{k >= 1} (p_k)^(c_k), then Product_{k >= 1} (p_{k+1})^(c_k) > 2*n, where p_k indicates the k-th prime, A000040(k)", "multiplicative",
+  "The gaps are 1, 2, 3 and 4; the level share is 14.19 %; L = 2 holds 42 % of the level class.",
+  100000, 1, gen_o246282 },
+{ "a247676", "A247676", "Odd composite numbers congruent to 2 modulo 9", "residue class",
+  "5 different gaps occur, from 18 to 90; the level share is 39.49 %; L = 1 holds 59 % of the level class; there are no ties.",
+  100000, 1, gen_o247676 },
+{ "a247678", "A247678", "Odd composite numbers congruent to 4 modulo 9", "residue class",
+  "5 different gaps occur, from 18 to 90; the level share is 39.28 %; L = 1 holds 59 % of the level class.",
+  100000, 1, gen_o247678 },
+{ "a247681", "A247681", "Odd nonprimes congruent to 1 modulo 9", "residue class",
+  "5 different gaps occur, from 18 to 90; the level share is 39.41 %; L = 1 holds 59 % of the level class.",
+  100000, 1, gen_o247681 },
+{ "a249374", "A249374", "Prime numbers Q such that the concatenation Q,1,Q is prime", "primes",
+  "339 different gaps occur, from 6 to 2,844; the level share is 48.29 %; L = 1 holds 34 % of the level class; there are no ties.",
+  100000, 1, gen_o249374 },
+{ "a250036", "A250036", "Numbers n such that m = floor(n/4) is coprime to n and, if nonzero, m is also a term of the sequence", "self-referential",
+  "42 different gaps occur, from 1 to 9,786,710; the level share is 11.80 %; L = 1 holds 68 % of the level class; 12 terms do not decompose.",
+  100000, 1, gen_o250036 },
+{ "a250046", "A250046", "Numbers n such that m = floor(n/7) is coprime to n and, if nonzero, m is also a term of the sequence", "self-referential",
+  "57 different gaps occur, from 1 to 4,254,973; the level share is 9.25 %; L = 1 holds 61 % of the level class; 8 terms do not decompose.",
+  100000, 1, gen_o250046 },
+{ "a250047", "A250047", "Numbers n such that m = floor(n/7) is not coprime to n and, if nonzero, m is also a term of the sequence", "self-referential",
+  "22 different gaps occur, from 1 to 823,544; the level share is 11.24 %; L = 2 holds 41 % of the level class; 8 terms do not decompose.",
+  100000, 1, gen_o250047 },
+{ "a250048", "A250048", "Numbers n such that m = floor(n/6) is coprime to n and, if nonzero, m is also a term of the sequence", "self-referential",
+  "39 different gaps occur, from 1 to 1,175,732; the level share is 8.63 %; L = 1 holds 75 % of the level class; 8 terms do not decompose.",
+  100000, 1, gen_o250048 },
+{ "a250049", "A250049", "Numbers n such that m = floor(n/6) is not coprime to n and, if nonzero, m is also a term of the sequence", "self-referential",
+  "87 different gaps occur, from 1 to 10,077,697; the level share is 14.84 %; L = 2 holds 49 % of the level class; 10 terms do not decompose.",
+  100000, 1, gen_o250049 },
+{ "a251726", "A251726", "Numbers n > 1 for which gpf(n) < lpf(n)^2, where lpf and gpf (least and greatest prime factor of n) are given by A020639(n) and A006530(n)", "smooth",
+  "34 different gaps occur, from 1 to 64; the level share is 18.11 %; L = 1 holds 37 % of the level class.",
+  100000, 1, gen_o251726 },
+{ "a251728", "A251728", "Semiprimes p*q for which p <= q < p^2", "multiplicative",
+  "86 different gaps occur, from 2 to 184; the level share is 26.44 %; L = 1 holds 30 % of the level class.",
+  100000, 1, gen_o251728 },
+{ "a256601", "A256601", "Numbers n such that the decimal expansions of both n and n^2 have 1 as smallest digit and 9 as largest digit", "digit rule",
+  "624 different gaps occur, from 1 to 111,493; the level share is 20.20 %; L = 1 holds 49 % of the level class.",
+  100000, 1, gen_o256601 },
+{ "a256634", "A256634", "Numbers n such that the decimal expansions of both n and n^2 have 0 as smallest digit and 7 as largest digit", "digit rule",
+  "2,033 different gaps occur, from 1 to 3,847,500; the level share is 22.19 %.",
+  100000, 1, gen_o256634 },
+{ "a257210", "A257210", "Numbers n such that the decimal expansions of both n and n^2 have 1 as smallest digit and 7 as largest digit", "digit rule",
+  "7,384 different gaps occur, from 1 to 353,335,065; the level share is 34.42 %; 2.3 % of terms are forced level (l <= d^2); there are no ties.",
+  100000, 1, gen_o257210 },
+{ "a257211", "A257211", "Numbers n such that the decimal expansions of both n and n^2 have 1 as smallest digit and 8 as largest digit", "digit rule",
+  "1,845 different gaps occur, from 1 to 2,229,243; the level share is 24.20 %.",
+  100000, 1, gen_o257211 },
+{ "a257368", "A257368", "Numbers n such that the decimal expansions of both n and n^2 have 2 as smallest digit and 8 as largest digit", "digit rule",
+  "6,808 different gaps occur, from 1 to 1,397,334,049; the level share is 31.24 %; 1.7 % of terms are forced level (l <= d^2); there are no ties; 14 terms do not decompose.",
+  100000, 1, gen_o257368 },
+{ "a257219", "A257219", "Numbers that have at least one divisor containing the digit 2 in base 10", "divisor functions",
+  "The gaps are 1 and 2; the level share is 10.61 %; L = 1 holds 79 % of the level class.",
+  100000, 1, gen_o257219 },
+{ "a257220", "A257220", "Numbers that have at least one divisor containing the digit 3 in base 10", "divisor functions",
+  "The gaps are 1, 2 and 3; the level share is 11.28 %; L = 1 holds 85 % of the level class.",
+  100000, 1, gen_o257220 },
+{ "a260682", "A260682", "Löschian numbers (A003136) of the form 6*k+1", "quadratic form",
+  "12 different gaps occur, from 6 to 72; the level share is 32.25 %; L = 1 holds 64 % of the level class.",
+  100000, 1, gen_o260682 },
+{ "a270189", "A270189", "Numbers n for which (prime(n+1)-prime(n)) is not a multiple of three", "primes",
+  "13 different gaps occur, from 1 to 13; the level share is 12.34 %; L = 1 holds 75 % of the level class.",
+  100000, 1, gen_o270189 },
+{ "a270190", "A270190", "Numbers n for which prime(n+1)-prime(n) is a multiple of three", "primes",
+  "21 different gaps occur, from 1 to 21; the level share is 13.71 %; L = 1 holds 65 % of the level class.",
+  100000, 1, gen_o270190 },
+{ "a272159", "A272159", "Numbers k such that abs(8*k^2 - 488*k + 7243) is prime", "prime values",
+  "33 different gaps occur, from 1 to 38; the level share is 15.55 %; L = 1 holds 55 % of the level class.",
+  100000, 1, gen_o272159 },
+{ "a274357", "A274357", "Numbers n such that n and n+1 both have 8 divisors", "divisor functions",
+  "175 different gaps occur, from 1 to 295; the level share is 24.70 %; L = 1 holds 33 % of the level class.",
+  100000, 1, gen_o274357 },
+{ "a277568", "A277568", "Numbers k such that k/6^m == 2 (mod 6), where 6^m is the greatest power of 6 that divides k", "residue class",
+  "The gaps are 2, 4 and 6; the level share is 18.82 %; L = 2 holds 58 % of the level class.",
+  100000, 1, gen_o277568 },
+{ "a277588", "A277588", "Numbers k such that k/10^m == 1 mod 10, where 10^m is the greatest power of 10 that divides n", "residue class",
+  "The gaps are 1, 9 and 10; the level share is 30.21 %; L = 1 holds 59 % of the level class.",
+  100000, 1, gen_o277588 },
+{ "a277589", "A277589", "Numbers k such that k/10^m == 2 mod 10, where 10^m is the greatest power of 10 that divides n", "residue class",
+  "The gaps are 2, 8 and 10; the level share is 21.40 %; L = 2 holds 44 % of the level class; there are no ties.",
+  100000, 1, gen_o277589 },
+{ "a277590", "A277590", "Numbers k such that k/10^m == 3 mod 10, where 10^m is the greatest power of 10 that divides n", "residue class",
+  "The gaps are 3, 7 and 10; the level share is 30.42 %; L = 1 holds 59 % of the level class; there are no ties.",
+  100000, 1, gen_o277590 },
+{ "a277591", "A277591", "Numbers k such that k/10^m == 4 mod 10, where 10^m is the greatest power of 10 that divides n", "residue class",
+  "The gaps are 4, 6 and 10; the level share is 21.37 %; L = 2 holds 44 % of the level class.",
+  100000, 1, gen_o277591 },
+{ "a277593", "A277593", "Numbers k such that k/10^m == 6 mod 10, where 10^m is the greatest power of 10 that divides n", "residue class",
+  "The gaps are 4, 6 and 10; the level share is 21.58 %; L = 2 holds 44 % of the level class.",
+  100000, 1, gen_o277593 },
+{ "a279607", "A279607", "Beatty sequence for e/2; i.e., a(n) = floor(n*e/2)", "Beatty",
+  "The gaps are 1 and 2; the level share is 11.17 %; L = 1 holds 84 % of the level class.",
+  100000, 1, gen_o279607 },
 };
 static const int NDEF = (int)(sizeof defs / sizeof defs[0]);
 
