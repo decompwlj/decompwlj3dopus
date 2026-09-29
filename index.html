@@ -4,20 +4,20 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%230b0e14'/%3E%3Ccircle cx='10' cy='21' r='3' fill='%234c8dff'/%3E%3Ccircle cx='19' cy='13' r='3' fill='%23ff8c42'/%3E%3Ccircle cx='25' cy='7' r='2' fill='%23ffe45c'/%3E%3C/svg%3E">
-<title>decompwlj 3D · weight × level + jump for 3000 integer sequences</title>
-<meta name="description" content="Gallery and interactive 3-D atlas of the decomposition into weight × level + jump, a(n) = k·L + d, for 3000 integer sequences from the OEIS, 10⁵ terms each.">
+<title>decompwlj 3D · weight × level + jump for 3500 integer sequences</title>
+<meta name="description" content="Gallery and interactive 3-D atlas of the decomposition into weight × level + jump, a(n) = k·L + d, for 3500 integer sequences from the OEIS, 10⁵ terms each.">
 <link rel="canonical" href="https://decompwlj.net/">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="decompwlj 3D">
-<meta property="og:title" content="decompwlj 3D · weight × level + jump for 3000 integer sequences">
-<meta property="og:description" content="Gallery and interactive 3-D atlas of the decomposition into weight × level + jump, a(n) = k·L + d, for 3000 integer sequences from the OEIS, 10⁵ terms each.">
+<meta property="og:title" content="decompwlj 3D · weight × level + jump for 3500 integer sequences">
+<meta property="og:description" content="Gallery and interactive 3-D atlas of the decomposition into weight × level + jump, a(n) = k·L + d, for 3500 integer sequences from the OEIS, 10⁵ terms each.">
 <meta property="og:url" content="https://decompwlj.net/">
 <meta property="og:image" content="https://decompwlj.net/og.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
 <link rel="sitemap" type="application/xml" href="sitemap.xml">
-<script type="application/ld+json">{"@context":"https://schema.org","@type":"WebSite","name":"decompwlj 3D","url":"https://decompwlj.net/","description":"Interactive 3-D atlas of the decomposition into weight × level + jump for 3000 integer sequences from the OEIS."}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"WebSite","name":"decompwlj 3D","url":"https://decompwlj.net/","description":"Interactive 3-D atlas of the decomposition into weight × level + jump for 3500 integer sequences from the OEIS."}</script>
 <style>
 /* the base rules the claude.ai wrapper used to supply */
 [hidden] { display: none !important; }
@@ -568,7 +568,7 @@ input[type=range] { width: 100%; accent-color: var(--accent); height: 18px; }
     <header class="home-head">
       <div class="home-title">
         <a class="brand" href="#home"><span class="brand-mark" aria-hidden="true"></span><span class="brand-text">decompwlj<span class="brand-dim"> 3D</span></span></a>
-        <h1>Weight × level + jump, <span id="homeTotal">3000</span> sequences</h1>
+        <h1>Weight × level + jump, <span id="homeTotal">3500</span> sequences</h1>
         <p>Every term of a strictly increasing sequence is written <i>a</i>(n) = <i>k</i>(n)·<i>L</i>(n) + <i>d</i>(n):
           the jump <i>d</i> = a(n+1) − a(n), the weight <i>k</i> the least divisor of a − d above d, the level <i>L</i> = (a − d)/k.
           10⁵ terms per sequence. Open a plate to explore it in three dimensions; the A-number under it opens the sequence on the OEIS.</p>
@@ -578,7 +578,7 @@ input[type=range] { width: 100%; accent-color: var(--accent); height: 18px; }
         <a href="https://decompwlj.com" target="_blank" rel="noopener">decompwlj.com</a>
         <a href="https://arxiv.org/abs/0711.0865" target="_blank" rel="noopener">arXiv:0711.0865</a>
       </nav>
-      <noscript><p>The gallery and the 3-D viewer need JavaScript. The <a href="seq/">list of all 3000 sequences</a> works without it.</p></noscript>
+      <noscript><p>The gallery and the 3-D viewer need JavaScript. The <a href="seq/">list of all 3500 sequences</a> works without it.</p></noscript>
     </header>
     <div class="home-tools">
       <div class="home-search"><input id="homeSearch" type="search" placeholder="Search by name, A-number or family" autocomplete="off" spellcheck="false" aria-label="Search sequences"></div>
@@ -614,7 +614,7 @@ input[type=range] { width: 100%; accent-color: var(--accent); height: 18px; }
       <button id="catToggle" class="icon-btn" title="Hide catalogue (C)" aria-label="Hide catalogue">&#9776;</button>
     </header>
     <div class="cat-search">
-      <input id="search" type="search" placeholder="Search 3000 sequences…" autocomplete="off" spellcheck="false" aria-label="Search sequences">
+      <input id="search" type="search" placeholder="Search 3500 sequences…" autocomplete="off" spellcheck="false" aria-label="Search sequences">
       <span id="searchCount" class="search-count"></span>
     </div>
     <div id="catList" class="cat-list" aria-label="Sequences">
@@ -783,7 +783,7 @@ input[type=range] { width: 100%; accent-color: var(--accent); height: 18px; }
 <div id="boot" class="boot"><div class="boot-in"><div class="boot-dot"></div><p id="bootMsg">loading…</p><p><a id="bootHome" class="chip" href="#home" hidden>back to all sequences</a></p></div></div>
 
 <script type="module">
-/* decompwlj 3D — static build for your own server.  3000 sequences, 10^5 terms each.
+/* decompwlj 3D — static build for your own server.  3500 sequences, 10^5 terms each.
    three.js r169 (MIT) is vendored under vendor/ and imported on the first visit to the
    3-D viewer; the data and the gallery plates sit beside this file.  Serve the folder
    over HTTP(S): ES modules and fetch() do not work from file://.  */
