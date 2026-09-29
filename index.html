@@ -515,13 +515,7 @@ input[type=range] { width: 100%; accent-color: var(--accent); height: 18px; }
             display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 .card .sub2 { display: flex; align-items: baseline; gap: 8px; font-size: 11px; color: var(--fg-3); min-width: 0; }
 .card .sub2 .an { font-family: var(--mono); flex: none; }
-.card .sub2 .fam { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; min-width: 0; }
-.card .sub2 .csv {
-  flex: none; padding: 1px 6px; border: 1px solid var(--line); border-radius: 5px; background: none;
-  font: 10px var(--mono); color: var(--fg-3); cursor: pointer;
-}
-.card .sub2 .csv:hover { color: var(--accent); border-color: var(--accent); }
-.card .sub2 .csv:disabled { cursor: progress; opacity: .6; }
+.card .sub2 .fam { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .card .r2 { display: flex; align-items: center; gap: 8px; }
 .lvl-bar { flex: 1; height: 3px; border-radius: 2px; background: var(--t-weight); overflow: hidden; min-width: 30px; }
 .lvl-bar > i { display: block; height: 100%; background: var(--t-level); }
@@ -2161,8 +2155,7 @@ function card(r) {
   a.innerHTML =
     `<a class="open" href="#${r.id}"><div class="plate">${PLATE_SVG}<img alt="" loading="lazy" decoding="async" width="480" height="480">` +
     `<span class="axl k" aria-hidden="true">k</span><span class="axl L" aria-hidden="true">L</span></div>` +
-    `<div class="nm"></div></a><div class="sub2"><a class="an" target="_blank" rel="noopener"></a><span class="fam"></span>` +
-    `<button type="button" class="csv">CSV</button></div>` +
+    `<div class="nm"></div></a><div class="sub2"><a class="an" target="_blank" rel="noopener"></a><span class="fam"></span></div>` +
     `<div class="r2"><span class="lvl-bar"><i></i></span><span class="pct"></span></div>`;
   const img = a.querySelector('img');
   img.src = `${THUMBS}/${r.id}.webp`;
@@ -2174,9 +2167,6 @@ function card(r) {
   a.querySelector('.lvl-bar > i').style.width = (r.levelShare * 100).toFixed(2) + '%';
   a.querySelector('.pct').textContent = (r.levelShare * 100).toFixed(1) + '% lvl';
   a.querySelector('.open').title = `${r.name} (${r.anumber}) — ${fmt.format(r.terms)} terms, ${(r.levelShare * 100).toFixed(2)} % level-classified. Open in 3-D.`;
-  const csv = a.querySelector('.csv');
-  csv.title = `Download ${r.anumber} as CSV: n;a;weight;level;jump, one row per term`;
-  csv.addEventListener('click', () => downloadCSV(r, csv));
   return a;
 }
 

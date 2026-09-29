@@ -33,7 +33,7 @@
     <figcaption>Weight k across, level L up, both on log scales: blue in the weight class (k ≤ L), orange in the level class (k &gt; L). The dashed diagonal is k = L.</figcaption>
   </figure>
   <div>
-    <a class="cta" href="../../#A121250">Open in the 3-D viewer</a><a class="cta alt" href="https://oeis.org/A121250" rel="noopener">A121250 on the OEIS</a>
+    <a class="cta" href="../../#A121250">Open in the 3-D viewer</a><a class="cta alt" href="https://oeis.org/A121250" rel="noopener">A121250 on the OEIS</a><button type="button" class="cta alt" id="csv" data-id="a121250" data-an="A121250" data-n0="1" data-terms="100000" data-chunks="2" title="n;a;weight;level;jump, one row per term, rebuilt from the data">Download CSV</button>
     <table class="stats">
       <tr><th scope="row">Terms</th><td>100,000 <span class="dim">(n = 1 … 100,000)</span></td></tr>
       <tr><th scope="row">Decomposable (a &gt; 2d)</th><td>99,996</td></tr>
@@ -51,6 +51,7 @@
 </div>
 <h2>The decomposition</h2>
 <p class="lead">Every term of a strictly increasing sequence is written <i>a</i>(n) = <i>k</i>(n)·<i>L</i>(n) + <i>d</i>(n): the jump <i>d</i> = a(n+1) − a(n), the weight <i>k</i> the least divisor of a − d greater than d, the level <i>L</i> = (a − d)/k. A term decomposes when a &gt; 2d; it is in the level class when k &gt; L and in the weight class when k ≤ L. See <a href="https://decompwlj.com" rel="noopener">decompwlj.com</a> and <a href="https://arxiv.org/abs/0711.0865" rel="noopener">arXiv:0711.0865</a>.</p>
+<script src="../csv.js" defer></script>
 <nav class="pn" aria-label="Neighbouring sequences"><a class="prev" href="../A121068/" title="Numbers k such that 8*k^2 + 7 is prime">← A121068 Numbers k such that 8*k^2 + 7 is prime</a><a class="next" href="../A121283/" title="a(n) = floor(n*Pi*e)">A121283 a(n) = floor(n*Pi*e) →</a></nav>
 </main>
 <footer class="foot">

@@ -146,7 +146,8 @@ not index. `tools/seo.py` therefore writes plain HTML pages that they can index,
 
 | Path | Contents |
 |---|---|
-| `seq/A000040/` | One page per sequence: OEIS name, plate, counts, note, links to the 3-D viewer, the OEIS and the neighbouring sequences |
+| `seq/A000040/` | One page per sequence: OEIS name, plate, counts, note, links to the 3-D viewer, the OEIS and the neighbouring sequences, and a **Download CSV** button |
+| `seq/csv.js` | The script behind that button: it rebuilds the CSV from the data chunks in the browser |
 | `seq/` | The list of all sequences, by A-number |
 | `family/<family>/` | The sequences of one family |
 | `404.html` | Not-found page; short URLs such as `/A000040` redirect to `/seq/A000040/` |
@@ -218,7 +219,7 @@ needs it.
 - **Gallery keys:** `/` focuses the search; `Home` (or the **Up** button that appears while
   scrolling) returns to the top; `R` opens a random sequence (within the selected family and
   search); `T` switches the theme.
-- **CSV:** the **CSV** button on a gallery card, or **download CSV** in the viewer, saves
+- **CSV:** **Download CSV** on a sequence's page (`…/seq/A000040/`), or **download CSV** in the viewer, saves
   `decompwlj_<A-number>.csv` with one row per term: `n;a;weight;level;jump`, where a
   is the term a(n) and weight and level are empty when the term does not decompose. The file is
   rebuilt in the browser from the data chunks; nothing extra is stored on the server.

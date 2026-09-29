@@ -90,3 +90,6 @@ footer.foot { max-width: 1080px; margin: 0 auto; padding: 18px 16px 30px; border
 footer.foot a { color: var(--fg-2); text-decoration: none; }
 footer.foot a:hover { color: var(--accent); }
 .dim { color: var(--fg-3); }
+button.cta { font: inherit; font-weight: 600; cursor: pointer; }
+button.cta.alt { background: transparent; }
+button.cta:disabled { cursor: progress; opacity: .7; }

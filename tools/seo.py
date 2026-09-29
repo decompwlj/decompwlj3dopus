@@ -116,6 +116,65 @@ ABOUT = ('<h2>The decomposition</h2>\n<p class="lead">Every term of a strictly i
          'class when k &gt; L and in the weight class when k ≤ L. See <a href="https://decompwlj.com" rel="noopener">decompwlj.com</a> '
          'and <a href="https://arxiv.org/abs/0711.0865" rel="noopener">arXiv:0711.0865</a>.</p>')
 
+CSV_JS = r"""/* decompwlj 3D, written by tools/seo.py: the "Download CSV" button of a sequence page.
+   Rebuilds n;a;weight;level;jump from the data chunks (the dwj1 format of tools/compact.py),
+   checking every division as the viewer does; nothing is stored. */
+(function () {
+  var btn = document.getElementById('csv');
+  if (!btn) return;
+  function inflate(bytes) {
+    if (bytes.length > 2 && bytes[0] === 0x1f && bytes[1] === 0x8b) {
+      var s = new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'));
+      return new Response(s).arrayBuffer().then(function (b) { return new Uint8Array(b); });
+    }
+    return Promise.resolve(bytes);
+  }
+  function rows(b, url, out) {
+    if (!(b[0] === 0x64 && b[1] === 0x77 && b[2] === 0x6a && b[3] === 0x31)) throw new Error(url + ': not a dwj1 chunk');
+    var i = 4;
+    function rd() { var v = 0, m = 1, c; do { if (i >= b.length) throw new Error(url + ': truncated'); c = b[i++]; v += (c & 127) * m; m *= 128; } while (c & 128); return v; }
+    var n = rd(), a = rd(), d = new Array(n);
+    for (var r = 0; r < n; r++) d[r] = rd();
+    for (r = 0; r < n; r++) {
+      var s = rd(), k = 0, L = 0;
+      if (s) {
+        var h = Math.floor(s / 2), q = (a - d[r]) / h;
+        k = s % 2 ? q : h; L = s % 2 ? h : q;
+        if (!Number.isInteger(q) || q * h !== a - d[r] || k <= d[r]) throw new Error(url + ': row ' + r + ' does not fit');
+      }
+      out.push([a, k, L, d[r]]);
+      a += d[r];
+    }
+  }
+  btn.addEventListener('click', function () {
+    var id = btn.dataset.id, an = btn.dataset.an, n0 = +btn.dataset.n0, nc = +btn.dataset.chunks;
+    var label = btn.textContent; btn.disabled = true; btn.textContent = 'Building…';
+    var jobs = [];
+    for (var c = 0; c < nc; c++) {
+      (function (c) {
+        var url = '../../data/seq/' + id + '/chunk-' + String(c).padStart(3, '0') + '.bin.gz';
+        jobs.push(fetch(url).then(function (res) { if (!res.ok) throw new Error(res.status + ' ' + url); return res.arrayBuffer(); })
+          .then(function (buf) { return inflate(new Uint8Array(buf)); })
+          .then(function (b) { var out = []; rows(b, url, out); return out; }));
+      })(c);
+    }
+    Promise.all(jobs).then(function (parts) {
+      var text = ['n;a;weight;level;jump\n'], buf = '', n = n0;
+      parts.forEach(function (p) { p.forEach(function (r) {
+        buf += n++ + ';' + r[0] + ';' + (r[1] || '') + ';' + (r[1] ? r[2] : '') + ';' + r[3] + '\n';
+        if (buf.length > 65536) { text.push(buf); buf = ''; }
+      }); });
+      text.push(buf);
+      var url = URL.createObjectURL(new Blob(text, { type: 'text/csv' }));
+      var a = document.createElement('a'); a.href = url; a.download = 'decompwlj_' + an + '.csv';
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(function () { URL.revokeObjectURL(url); }, 30000);
+    }).catch(function (e) { alert('Could not build the CSV: ' + e.message); })
+      .then(function () { btn.disabled = false; btn.textContent = label; });
+  });
+})();
+"""
+
 written = []
 def write(rel, text):
     p = ROOT / rel
@@ -154,13 +213,14 @@ for i, r in enumerate(rows):
     <figcaption>Weight k across, level L up, both on log scales: blue in the weight class (k ≤ L), orange in the level class (k &gt; L). The dashed diagonal is k = L.</figcaption>
   </figure>
   <div>
-    <a class="cta" href="{up}#{A}">Open in the 3-D viewer</a><a class="cta alt" href="https://oeis.org/{A}" rel="noopener">{A} on the OEIS</a>
+    <a class="cta" href="{up}#{A}">Open in the 3-D viewer</a><a class="cta alt" href="https://oeis.org/{A}" rel="noopener">{A} on the OEIS</a><button type="button" class="cta alt" id="csv" data-id="{r['id']}" data-an="{A}" data-n0="{n0}" data-terms="{terms}" data-chunks="{r['chunks']}" title="n;a;weight;level;jump, one row per term, rebuilt from the data">Download CSV</button>
     <table class="stats">
 {''.join(f'      <tr><th scope="row">{k}</th><td>{v}</td></tr>{chr(10)}' for k, v in stats)}    </table>
     <p class="note">{e(r['note'])}</p>
   </div>
 </div>
 {ABOUT}
+<script src="../csv.js" defer></script>
 <nav class="pn" aria-label="Neighbouring sequences">{f'<a class="prev" href="../{prev_r["anumber"]}/" title="{e(prev_r["name"])}">← {prev_r["anumber"]} {e(clip(prev_r["name"], 50))}</a>' if prev_r else ''}{f'<a class="next" href="../{next_r["anumber"]}/" title="{e(next_r["name"])}">{next_r["anumber"]} {e(clip(next_r["name"], 50))} →</a>' if next_r else ''}</nav>'''
     ld = [{'@context': 'https://schema.org', '@type': 'Dataset', 'name': f'{A}: {name} — weight × level + jump',
            'description': desc if len(desc) >= 50 else desc + ' Decomposition into weight × level + jump.',
@@ -253,6 +313,7 @@ for u, im in urls:
     sm.append(f'<url><loc>{e(u)}</loc>' + (f'<image:image><image:loc>{e(im)}</image:loc></image:image>' if im else '') + '</url>')
 sm.append('</urlset>')
 write('sitemap.xml', '\n'.join(sm) + '\n')
+write('seq/csv.js', CSV_JS)
 write('robots.txt', f'# {SITE}: everything may be crawled.\nUser-agent: *\nAllow: /\n\nSitemap: {BASE}/sitemap.xml\n')
 
 # ── social preview: a mosaic of plates ──────────────────────────────────────
