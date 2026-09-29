@@ -218,6 +218,10 @@ needs it.
 - **Gallery keys:** `/` focuses the search; `Home` (or the **Top** button that appears while
   scrolling) returns to the top; `R` opens a random sequence (within the selected family and
   search); `T` switches the theme.
+- **CSV:** the **CSV** button on a gallery card, or **download CSV** in the viewer, saves
+  `decompwlj_<A-number>.csv` with one row per term: `n;Anumber;weight;level;jump`, where Anumber
+  is the term a(n) and weight and level are empty when the term does not decompose. The file is
+  rebuilt in the browser from the data chunks; nothing extra is stored on the server.
 - **Compare** (panel on the right): pick a second sequence by A-number or name, or **random**.
   **overlay** draws both clouds in one scene, the second in violet and green; **side by side**
   shows two views turned by one camera (stacked on a tall screen). Both share one box, so their
