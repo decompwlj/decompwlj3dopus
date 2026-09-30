@@ -211,8 +211,8 @@ needs it.
 ## Using the site
 
 - `…/` or `…/#home` opens the gallery. `…/#primes` or `…/#A000040` opens a sequence.
-- Opened from a gallery card, a sequence first shows the flat k–L view, like the card; the first
-  movement of the mouse over the plot (or a touch) turns it into the 3-D view. A link that names
+- Opened from a gallery card, a sequence first shows the flat k–L view, like the card; grabbing
+  the plot and dragging it (mouse button held, or a finger) turns it into the 3-D view. A link that names
   a view, or a view chosen with the buttons or keys `1`–`5`, is kept.
 - `…/seq/A000040/` is the sequence's own page (also reached from `…/A000040`), `…/seq/` lists
   all sequences, and `…/family/primes/` lists one family.

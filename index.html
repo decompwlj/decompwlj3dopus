@@ -2215,24 +2215,28 @@ function ensureViewer() {
 }
 
 /* Opened from a gallery card, a sequence first shows the flat k–L view, the same picture
-   as the card; the first movement of the pointer over the plot (or a touch) turns it into
-   the 3-D view.  Links that carry a view, and moves inside the viewer, keep their own. */
+   as the card; the first grab-and-drag on the plot (mouse button held, or a finger) turns it
+   into the 3-D view.  Hovering and the wheel leave it flat.  Links that carry a view, and
+   views picked by hand, keep their own. */
 let introFlat = false, introArm = null;
 function disarmIntro() { if (introArm) { introArm(); introArm = null; } }
 function startIntro() {
   disarmIntro();
   if (state.view !== 'xy') document.querySelector('[data-view="xy"]').click();
-  const gl = $('#gl'), t0 = performance.now();
-  let x0 = null, y0 = null;
+  const gl = $('#gl');
+  let x0 = null, y0 = null;                                 /* where the grab started */
   const to3d = () => { disarmIntro(); if (state.view === 'xy') document.querySelector('[data-view="iso"]').click(); };
-  const onMove = (e) => {
-    if (performance.now() - t0 < 350) return;            /* the click that opened the viewer */
-    if (x0 === null) { x0 = e.clientX; y0 = e.clientY; return; }
-    if (Math.hypot(e.clientX - x0, e.clientY - y0) >= 6) to3d();
-  };
+  const onDown = (e) => { if (e.button === 0 || e.pointerType !== 'mouse') { x0 = e.clientX; y0 = e.clientY; } };
+  const onMove = (e) => { if (x0 !== null && e.buttons && Math.hypot(e.clientX - x0, e.clientY - y0) >= 6) to3d(); };
+  const onUp = () => { x0 = y0 = null; };
+  gl.addEventListener('pointerdown', onDown);
   gl.addEventListener('pointermove', onMove);
-  gl.addEventListener('pointerdown', to3d);
-  introArm = () => { gl.removeEventListener('pointermove', onMove); gl.removeEventListener('pointerdown', to3d); };
+  addEventListener('pointerup', onUp);
+  addEventListener('pointercancel', onUp);
+  introArm = () => {
+    gl.removeEventListener('pointerdown', onDown); gl.removeEventListener('pointermove', onMove);
+    removeEventListener('pointerup', onUp); removeEventListener('pointercancel', onUp);
+  };
 }
 
 async function showViewer(t) {
