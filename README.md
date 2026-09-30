@@ -1,357 +1,257 @@
 # decompwlj 3D
 
-An interactive atlas of Rémi Eismann's **decomposition into weight × level + jump**, built as a
-static website: 5000 integer sequences from the OEIS, 10⁵ terms each, shown as a browsable gallery
-of 2-D plates and an explorable 3-D point cloud (three.js / WebGL).
+**An interactive atlas of integer sequences, seen through one simple decomposition.**
+5000 sequences from the [OEIS](https://oeis.org), 10⁵ terms each, as a gallery of plates and an
+explorable 3-D point cloud.
 
-**Live site:** <https://decompwlj.net/> (also <https://decompwlj.github.io/decompwlj3dopus/>)
+**▶ Live site: [decompwlj.net](https://decompwlj.net/)** · [How it works](https://decompwlj.net/learn/) ·
+[All sequences](https://decompwlj.net/seq/) · [![checks](https://github.com/decompwlj/decompwlj3dopus/actions/workflows/checks.yml/badge.svg)](https://github.com/decompwlj/decompwlj3dopus/actions/workflows/checks.yml)
 
-Every term of a strictly increasing sequence is written
+![The 3-D viewer: the prime numbers, weight class in blue and level class in orange](docs/img/viewer.webp)
 
-    a(n) = k(n) · L(n) + d(n)
+## The idea in one line
 
-where the **jump** d(n) = a(n+1) − a(n), the **weight** k(n) is the least divisor of a(n) − d(n)
-greater than d(n), and the **level** L(n) = (a(n) − d(n)) / k(n). A term is level-classified when
-k > L and weight-classified otherwise. Background: [decompwlj.com](https://decompwlj.com) and
+Every term of a strictly increasing sequence is written as a product plus a jump:
+
+> **a(n) = k · L + d**   jump **d** = a(n+1) − a(n) · weight **k** = the least divisor of a − d above d · level **L** = (a − d)/k
+
+For example, the prime 113 is followed by 127, so d = 14 and a − d = 99. The least divisor of 99
+above 14 is 33, so **113 = 33 × 3 + 14**. A term is in the **level class** when k > L (orange) and in
+the **weight class** when k ≤ L (blue). It is a Euclidean division of a by k whose remainder is the
+jump; for the natural numbers the weight is the smallest prime factor of a − 1, the sieve of
+Eratosthenes. The [How it works](https://decompwlj.net/learn/) page explains it step by step with a
+live example. Background: [decompwlj.com](https://decompwlj.com) and
 [arXiv:0711.0865](https://arxiv.org/abs/0711.0865).
 
-The site is plain files: one HTML page, compressed data files and WebP previews. There is no server
-code, database, build step or third-party request, so it runs on any static host.
+## A quick tour
 
----
+| | |
+|---|---|
+| ![Gallery](docs/img/gallery.webp) | ![k–L view](docs/img/klview.webp) |
+| **Gallery** — 5000 plates, search by name, A-number or family, random sequence. | **k–L view** — a card opens the flat plate; drag it and it tilts smoothly into 3-D. Here the natural numbers: the sieve of Eratosthenes. |
+| ![Compare](docs/img/compare.webp) | ![Sequence page](docs/img/seqpage.webp) |
+| **Compare** two sequences, overlaid or side by side, with one camera. | **A page per sequence** — counts, notes, OEIS link and a CSV of all 10⁵ terms. |
 
-## Contents
-
-- [Features](#features)
-- [Quick start](#quick-start)
-- [Deploying](#deploying)
-  - [GitHub Pages](#github-pages)
-  - [A custom domain with HTTPS](#a-custom-domain-with-https)
-  - [Any other static host](#any-other-static-host)
-  - [Search engines and link previews](#search-engines-and-link-previews)
-  - [Updating a deployment](#updating-a-deployment)
-- [Requirements](#requirements)
-- [Repository layout](#repository-layout)
-- [Using the site](#using-the-site)
-- [Data format](#data-format)
-- [Rebuilding the data](#rebuilding-the-data)
-- [Troubleshooting](#troubleshooting)
-- [Credits and licences](#credits-and-licences)
-
----
+![How it works: the live example](docs/img/learn.webp)
 
 ## Features
 
-- **Gallery** of 5000 weight–level plates, sorted by A-number, with full-text search, a
-  **family selector** (primes, polynomial, digit rule, Beatty, sieve, …) and a
-  **Random sequence** button.
-- **Progressive loading**: the gallery builds cards thirty at a time as you scroll, and each preview
-  image is requested only when its card nears the screen.
-- **3-D viewer** of log k, log L, log d with preset views (3D, k–L, k–d, L–d, edge), point size and
-  opacity, a density mode, the L = 1 highlight, filters on n and d, and an animated sweep along n.
-- **OEIS integration**: each sequence is shown under its official OEIS name, and every A-number
-  links to its OEIS entry. `#A000040`-style links open a sequence directly.
-- **Shareable views**: the URL fragment records the sequence, view and point mode.
-- Light and dark themes, keyboard shortcuts, PNG snapshots.
-- **How it works** (`learn/`): the decomposition step by step, three primes worked by hand, and a
-  live example where you type your own terms and see the table and the plate.
-- **Link previews**: every sequence page has its own share image (the plate and the A-number), so
-  a link posted on a social site or in a chat shows that sequence.
+- 🖼️ **Gallery** of 5000 weight–level plates with search, a family selector and a random button;
+  cards and images load as you scroll.
+- 🧊 **3-D viewer** (three.js / WebGL) of log k, log L, log d: preset views (3D, k–L, k–d, L–d,
+  edge), point size and opacity, density mode, the L = 1 line, filters on n and d, a sweep along n.
+- ⚖️ **Compare** two sequences, overlaid or side by side.
+- 🔗 **Shareable links** — the URL records the sequence, view, mode and comparison.
+- 📄 **Static page per sequence** for search engines, with a **CSV download** (`n;a;weight;level;jump`,
+  rebuilt in the browser) and its own link-preview image.
+- 🎓 **How it works** page with theory and a live example.
+- 🌗 Light and dark themes, keyboard shortcuts, PNG snapshots.
+- 📦 Plain static files: no server code, no database, no build step, no third-party requests.
 
-## Quick start
-
-To preview the site on your own computer, serve the repository root over HTTP:
+## Run it locally
 
 ```sh
 git clone https://github.com/decompwlj/decompwlj3dopus.git
 cd decompwlj3dopus
-python3 -m http.server 8000
+python3 -m http.server 8000        # then open http://localhost:8000/
 ```
 
-Then open <http://localhost:8000/>. Any static server works (`npx serve`, `php -S`, …).
+Any static server works (`npx serve`, `php -S localhost:8000`, …). Opening `index.html` straight
+from disk does not: browsers block `fetch()` on `file://`, and the page says so.
 
-> Opening `index.html` directly from disk (`file://…`) does not work: browsers block ES modules
-> and `fetch()` for local files. The page detects this and says so.
+Visitors need a current browser with WebGL, import maps and `DecompressionStream`
+(Chrome/Edge 111+, Firefox 113+, Safari 16.4+). The gallery works without WebGL.
 
-## Deploying
+## Deploy
 
-The deployable site is the repository root: `index.html`, `data/`, `thumbs/`, `vendor/` and the
-empty `.nojekyll` file. Paths are relative, so the site works at a domain root or in any
+The site is the repository root. All paths are relative, so it works at a domain root or in a
 subfolder.
 
-### GitHub Pages
+### On GitHub Pages
 
-1. Push the repository to GitHub (or fork this one).
-2. Open **Settings → Pages**.
-3. Under **Build and deployment**, set **Source** to **Deploy from a branch**, choose **main** and
-   **/ (root)**, and click **Save**.
-4. After one or two minutes the site is live at `https://<user>.github.io/<repository>/`. The
-   **Actions** tab shows each publication.
+1. Push the repository to GitHub (or fork it).
+2. **Settings → Pages → Build and deployment**: Source **Deploy from a branch**, branch **main**,
+   folder **/ (root)**, **Save**.
+3. A minute or two later the site is at `https://<user>.github.io/<repository>/`
+   (the **Actions** tab shows each publication). Every push to `main` republishes it.
 
-Every push to `main` republishes the site. `.nojekyll` tells GitHub Pages to serve the files as
-they are, without running Jekyll.
+The empty `.nojekyll` file makes Pages serve the files as they are. The site is about **975 MB**
+against Pages' **1 GB** limit (soft bandwidth limit: 100 GB a month), which leaves room for about a
+hundred more sequences; beyond that the data would have to live on another host.
 
-The site is about 975 MB, within GitHub Pages' limits: 1 GB per published site, with a soft
-bandwidth limit of 100 GB per month. That leaves room for about a hundred more sequences; beyond
-that the data would have to be hosted elsewhere.
+### With a custom domain and HTTPS
 
-### A custom domain with HTTPS
+This repository serves **decompwlj.net** through its `CNAME` file. For your own domain, put its
+name in `CNAME` (or set it in **Settings → Pages → Custom domain**), then add the DNS records
+below at your registrar. When the DNS check passes, GitHub issues a Let's Encrypt certificate
+(minutes, sometimes up to 24 h); then tick **Enforce HTTPS**.
 
-This repository is configured for **decompwlj.net** through the `CNAME` file. To use your own
-domain, replace the name in `CNAME` (or set it under **Settings → Pages → Custom domain**, which
-rewrites the file), then create these DNS records at your registrar:
+<details>
+<summary><b>DNS records for GitHub Pages</b></summary>
 
 | Type | Name | Value |
 |---|---|---|
-| A | @ (apex) | `185.199.108.153` |
-| A | @ | `185.199.109.153` |
-| A | @ | `185.199.110.153` |
-| A | @ | `185.199.111.153` |
-| AAAA | @ | `2606:50c0:8000::153` |
-| AAAA | @ | `2606:50c0:8001::153` |
-| AAAA | @ | `2606:50c0:8002::153` |
-| AAAA | @ | `2606:50c0:8003::153` |
+| A | @ | `185.199.108.153`, `185.199.109.153`, `185.199.110.153`, `185.199.111.153` (four records) |
+| AAAA | @ | `2606:50c0:8000::153`, `2606:50c0:8001::153`, `2606:50c0:8002::153`, `2606:50c0:8003::153` (four records) |
 | CNAME | www | `<user>.github.io.` |
 
-Also:
-
-- Remove any other A or AAAA records on the apex. Registrars often add a default parking or hosting
-  record, and also a web "redirection", which prevents HTTPS.
+- Remove any other A/AAAA record on the apex, and any registrar "web redirection" or parking
+  page: they block HTTPS.
 - If the zone has a CAA record, it must allow `letsencrypt.org`.
+- Recommended: verify the domain under your account's **Settings → Pages** (a TXT record), so no
+  one else can use it on GitHub Pages.
 
-Once the DNS check in **Settings → Pages** passes, GitHub requests a Let's Encrypt certificate.
-This usually takes minutes, sometimes up to 24 hours. Then tick **Enforce HTTPS**.
+</details>
 
-It is also recommended to verify the domain under your account's **Settings → Pages**. This adds a
-TXT record and prevents anyone else from using the domain with GitHub Pages.
+### On any other static host
 
-### Any other static host
+Upload the repository root (at least `index.html`, `data/`, `thumbs/`, `vendor/`, plus `seq/`,
+`family/`, `learn/`, `share/` for the static pages) to Apache, nginx, Caddy, Netlify, Cloudflare
+Pages, S3 + CDN… The server must:
 
-Upload the repository root, or at least `index.html`, `data/`, `thumbs/` and `vendor/`, to any
-host that serves static files over HTTP(S): Apache, nginx, Caddy, Netlify, Cloudflare Pages, an S3
-bucket with a CDN, and so on.
+- serve `data/seq/**/chunk-NNN.bin.gz` either as a raw gzip file or with `Content-Encoding: gzip`
+  (the page handles both);
+- return **404** for missing files, not `index.html`;
+- not put authentication in front of the data.
 
-Server requirements:
-
-- Serve `.js` as JavaScript. Standard MIME tables already do.
-- Serve `data/seq/**/chunk-NNN.bin.gz` as the raw gzip file (any content type), **or** with
-  `Content-Encoding: gzip`. The page handles both.
-- Do not rewrite missing files to `index.html`. A missing chunk must return 404.
-- No authentication in front of the data files.
-
-Ready-made examples are in [`deploy/`](deploy/): `apache-vhost.conf` covers a subfolder or a
-virtual host, and `nginx.conf` a subfolder or a server block. Long cache lifetimes for `data/`,
-`thumbs/` and `vendor/` are safe. Chunk files do not change when other sequences are added.
+Ready-made configurations are in [`deploy/`](deploy/) (`apache-vhost.conf`, `nginx.conf`).
+Long cache lifetimes for `data/`, `thumbs/`, `share/` and `vendor/` are safe.
 
 ### Search engines and link previews
 
-The gallery and viewer run from one page and a URL fragment (`#A000040`), which search engines do
-not index. `tools/seo.py` therefore writes plain HTML pages that they can index, all from
-`data/catalog.csv`:
+`tools/seo.py` writes the static pages that search engines can index (the app itself lives in a
+URL fragment): one page per sequence, the full list, one page per family, the How it works page,
+`404.html` (which redirects `/A000040` to `/seq/A000040/`), `sitemap.xml`, `robots.txt`, `og.png`
+and a 600 × 315 share image per sequence. The base URL comes from `CNAME`; without one, pass
+`python3 tools/seo.py --base https://<user>.github.io/<repo>`.
 
-| Path | Contents |
-|---|---|
-| `seq/A000040/` | One page per sequence: OEIS name, plate, counts, note, links to the 3-D viewer, the OEIS and the neighbouring sequences, and a **Download CSV** button |
-| `seq/csv.js` | The script behind that button: it rebuilds the CSV from the data chunks in the browser |
-| `share/<id>.jpg` | The 600 × 315 preview of each sequence page when its link is shared (the plate and the A-number, about 7 kB) |
-| `learn/` | How it works: the decomposition explained, with a live example (`learn.js`) |
-| `seq/` | The list of all sequences, by A-number |
-| `family/<family>/` | The sequences of one family |
-| `404.html` | Not-found page; short URLs such as `/A000040` redirect to `/seq/A000040/` |
-| `sitemap.xml`, `robots.txt` | Every page for the crawlers (with the plates as images); everything may be crawled |
-| `og.png` | The 1200 × 630 preview shown when a link to the gallery is shared |
+To get indexed: add the domain to **Google Search Console** (verify with a DNS TXT record) and
+submit `https://<domain>/sitemap.xml`; do the same in **Bing Webmaster Tools** (it also feeds
+DuckDuckGo and Yahoo). On GitHub, fill the repository's **About** box (description, website,
+topics) and upload `og.png` under **Settings → General → Social preview**.
 
-Every page carries a canonical URL, a description, Open Graph tags and schema.org data
-(`Dataset` and `BreadcrumbList`). The base URL comes from `CNAME`; a site without a custom domain
-passes it: `python3 seo.py --base https://<user>.github.io/<repo>`. The 404 page's links assume the
-site is at the root of its domain.
+### Updating
 
-To get the site indexed:
-
-1. **Google Search Console** (search.google.com/search-console): add a *Domain* property for the
-   domain and verify it with the TXT record it gives, added at your DNS provider (for OVH:
-   *Web Cloud → Domain names → DNS zone → Add an entry → TXT*). Then open **Sitemaps** and submit
-   `https://<domain>/sitemap.xml`.
-2. **Bing Webmaster Tools** (bing.com/webmasters): sign in and import the site from Search
-   Console, or verify it the same way and submit the sitemap. Bing also feeds DuckDuckGo and
-   Yahoo.
-3. On GitHub, fill in the repository's **About** box (gear icon on the repository page): a
-   description, the website URL and topics such as `oeis`, `integer-sequences`, `number-theory`,
-   `prime-numbers`, `mathematics`, `visualization`, `threejs` and `webgl`. Under **Settings →
-   General → Social preview**, upload `og.png`.
-
-Indexing takes days to weeks. Search Console's **Pages** report shows progress.
-
-### Updating a deployment
-
-Replace the files and ask visitors to reload (Ctrl+F5, or Cmd+Shift+R on a Mac) if their browser
-cached the previous `index.html` or `data/catalog.csv`. For GitHub Pages, merging into `main` is
-enough.
-
-## Requirements
-
-**Visitors** need a current browser with WebGL, import maps and `DecompressionStream`:
-Chrome/Edge 111+, Firefox 113+ or Safari 16.4+. The gallery works without WebGL; the 3-D viewer
-needs it.
-
-**Rebuilding the data** (optional) needs a C compiler (gcc or clang), Python 3.9+ with `numpy` and
-`Pillow`, about 2 GB of RAM, 13 GB of free disk space and about 120 minutes of CPU time for the full pipeline.
-
-## Repository layout
-
-| Path | Contents |
-|---|---|
-| `index.html` | The whole application: gallery, viewer, CSS and JavaScript (~110 kB) |
-| `data/catalog.csv` | One row per sequence: id, A-number, OEIS name, family, index range, counts, ranges, note |
-| `data/seq/<id>/chunk-000.bin.gz`, `chunk-001.bin.gz` | The sequence data, 50,000 terms per chunk, compact binary, gzip-compressed |
-| `thumbs/<id>.webp` | Gallery previews (480 × 480, transparent, lossless WebP) |
-| `share/<id>.jpg` | Link previews of the sequence pages (600 × 315 JPEG), written by `tools/seo.py` |
-| `vendor/` | three.js r169 and OrbitControls, unmodified (MIT licence included) |
-| `deploy/` | Example Apache and nginx configurations |
-| `tools/` | Data generator, OEIS metadata and verification scripts (not needed at runtime) |
-| `docs/SEQUENCES.md` | All 5000 sequences by family, and how the data was verified |
-| `CNAME`, `.nojekyll` | GitHub Pages settings: custom domain; serve files as they are |
-| `seq/`, `family/`, `learn/`, `404.html` | Static pages for search engines, written by `tools/seo.py` |
-| `.github/workflows/checks.yml`, `tests/smoke.mjs` | Automatic checks on every pull request (see below) |
-| `sitemap.xml`, `robots.txt`, `og.png` | Sitemap, crawler rules and link preview image |
-| `css/pages.css` | The static pages' stylesheet |
-| `js/`, `css/app.css` | Earlier modular sources, kept for reference; the page does not load them |
+Merge into `main` (GitHub Pages) or replace the files. If a visitor still sees the old version,
+a hard reload (Ctrl+F5, Cmd+Shift+R) clears the cached `index.html` and `data/catalog.csv`.
 
 ## Using the site
 
-- `…/` or `…/#home` opens the gallery. `…/#primes` or `…/#A000040` opens a sequence.
-- Opened from a gallery card, a sequence first shows the flat k–L view, like the card; grabbing
-  the plot and dragging it (mouse button held, or a finger) tilts it smoothly out of the plane into the 3-D view. A link that names
-  a view, or a view chosen with the buttons or keys `1`–`5`, is kept.
-- `…/seq/A000040/` is the sequence's own page (also reached from `…/A000040`), `…/seq/` lists
-  all sequences, and `…/family/primes/` lists one family.
-- The full fragment `#primes.kLd.iso.solid.one` also sets the view (`iso`, `xy`, `xz`, `yz`,
-  `edge`), the point mode (`solid`, `density`) and the L = 1 highlight. **Copy link** in the viewer
-  copies it.
-- **Gallery keys:** `/` focuses the search; `Home` (or the **Up** button that appears while
-  scrolling) returns to the top; `R` opens a random sequence (within the selected family and
-  search); `T` switches the theme.
-- **CSV:** **Download CSV** on a sequence's page (`…/seq/A000040/`), or **download CSV** in the viewer, saves
-  `decompwlj_<A-number>.csv` with one row per term: `n;a;weight;level;jump`, where a
-  is the term a(n) and weight and level are empty when the term does not decompose. The file is
-  rebuilt in the browser from the data chunks; nothing extra is stored on the server.
-- **Compare** (panel on the right): pick a second sequence by A-number or name, or **random**.
-  **overlay** draws both clouds in one scene, the second in violet and green; **side by side**
-  shows two views turned by one camera (stacked on a tall screen). Both share one box, so their
-  scales match. **swap** exchanges the two, **clear** ends the comparison. The link carries it:
-  `#primes.kLd.iso.solid.vs-A001359` (overlay) or `….vs-A001359.split` (side by side).
-- **Viewer keys:** `G` or `Esc` returns to the gallery; `↑`/`↓` moves to the neighbouring
-  sequence; `R` opens a random one; `1`–`5` switch views; `V` switches a comparison between overlay and side by side; `C` and `P` toggle the side panels; `T`
-  switches the theme; `Space` sweeps along n.
-
-## Data format
-
-`data/catalog.csv` is RFC 4180 CSV with a header row. The main columns:
-
-| Column | Meaning |
+| Link | Opens |
 |---|---|
-| `id` | Short identifier, also the folder name under `data/seq/` and the URL fragment |
-| `anumber`, `name`, `alias` | OEIS A-number, OEIS name, and an older short name (searchable) |
-| `family` | Family label used by the gallery's selector |
-| `n0`, `terms`, `chunks`, `chunk_rows` | Index of the first term (the OEIS offset), number of terms, chunk layout |
-| `decomposable`, `level`, `weight`, `ties`, `level_one`, `forced` | Classification counts |
-| `amin` … `dmax` | Ranges of a, k, L and d |
-| `note` | The text shown under the statistics |
+| `/` or `/#home` | the gallery |
+| `/#A000040` or `/#primes` | a sequence in the viewer |
+| `/#primes.kLd.iso.solid.one` | …with a view (`iso`, `xy`, `xz`, `yz`, `edge`), a point mode (`solid`, `density`) and the L = 1 highlight |
+| `/#primes.kLd.iso.solid.vs-A001359` | a comparison (add `.split` for side by side) |
+| `/seq/A000040/` (or `/A000040`) | the sequence's static page, with **Download CSV** |
+| `/seq/`, `/family/primes/`, `/learn/` | all sequences, one family, how it works |
 
-Each chunk is a small binary file, gzip-compressed. Every number is an unsigned LEB128 varint
-(7 bits per byte, low bits first):
+**Keys** — gallery: `/` search, `R` random, `T` theme, `Home` top. Viewer: `G`/`Esc` gallery,
+`↑`/`↓` neighbouring sequence, `R` random, `1`–`5` views, `V` overlay/side by side, `C`/`P` side
+panels, `T` theme, `Space` sweep along n.
+
+Opened from a gallery card, a sequence starts in the flat k–L view like the card; the first
+grab-and-drag tilts it into 3-D. A link that names a view keeps it.
+
+## Under the hood
+
+<details>
+<summary><b>Repository layout</b></summary>
+
+| Path | Contents |
+|---|---|
+| `index.html` | The whole app: gallery, viewer, CSS and JavaScript (~110 kB) |
+| `data/catalog.csv` | One row per sequence: id, A-number, OEIS name, family, index range, counts, ranges, note |
+| `data/seq/<id>/chunk-NNN.bin.gz` | The data: 50,000 terms per chunk, compact binary, gzip |
+| `thumbs/<id>.webp` | Gallery plates (480 × 480, transparent, lossless WebP) |
+| `share/<id>.jpg` | Link previews of the sequence pages (600 × 315) |
+| `seq/`, `family/`, `learn/`, `404.html`, `sitemap.xml`, `robots.txt`, `og.png` | Static pages, written by `tools/seo.py` |
+| `css/pages.css` | Stylesheet of the static pages |
+| `vendor/` | three.js r169 and OrbitControls, unmodified (MIT) |
+| `tools/` | Generator, OEIS metadata, encoders, audit and page builders (not needed at runtime) |
+| `tests/smoke.mjs`, `.github/workflows/checks.yml` | Automatic checks |
+| `deploy/` | Apache and nginx examples |
+| `docs/SEQUENCES.md` | Every sequence by family, and how the data was verified |
+| `docs/img/` | The screenshots of this README |
+| `CNAME`, `.nojekyll` | GitHub Pages: custom domain; serve files as they are |
+| `js/`, `css/app.css` | Earlier modular sources, kept for reference (not loaded) |
+
+</details>
+
+<details>
+<summary><b>Data format</b></summary>
+
+`data/catalog.csv` (RFC 4180, header row): `id` (folder and URL name), `anumber`, `name`, `alias`,
+`family`, `n0` (first index = OEIS offset), `terms`, `chunks`, `chunk_rows`, the counts
+`decomposable`, `level`, `weight`, `ties`, `level_one`, `forced`, the ranges `amin` … `dmax`,
+and the `note`.
+
+Each chunk is gzip-compressed binary; every number is an unsigned LEB128 varint:
 
 | Part | Contents |
 |---|---|
-| `dwj2` | 4-byte format tag |
-| `m` | 1 byte: how the jumps are coded — `0` the jumps d, `1` their first differences, `2` their second differences |
-| `n`, `a0` | Number of rows in the chunk, first term |
-| `j[0]` … `j[n−1]` | The jumps, coded by `m` (differences in zigzag form: v ≥ 0 → 2v, v < 0 → −2v − 1) |
-| `s[0]` … `s[n−1]` | The smaller factor of a − d = k·L: `0` if the term does not decompose, `2k` if k ≤ L, `2L + 1` if L < k |
+| `dwj2` | format tag (4 bytes) |
+| `m` | 1 byte: jumps stored as `0` d, `1` first differences, `2` second differences (zigzag) |
+| `n`, `a0` | rows in the chunk, first term |
+| `j[0…n−1]` | the jumps, coded by `m` |
+| `s[0…n−1]` | the smaller factor of a − d = k·L: `0` no decomposition, `2k` if k ≤ L, `2L + 1` if L < k |
 
-Every term is present, decomposable or not, so row i is index n = n0 + i. The page rebuilds a(n)
-as a running sum of the jumps, and the factor not stored as (a − d) divided by the stored one.
-Storing the smaller factor, at most √(a − d), makes the files about 40 % smaller than storing k.
-`compact.py` codes each chunk's jumps all three ways and keeps the smallest: for a polynomial of
-degree 2 the second differences are constant, which saves about a fifth of the data overall.
-The older `dwj1` chunks (the same without the mode byte) are still read.
-The page rejects a chunk if a division is not exact, if k ≤ d, if the stored factor is not the
-smaller one, or if a chunk does not continue the previous one. All values are below 2⁵³, so
-JavaScript numbers hold them exactly. `tools/compact.py` has an `encode()` and a `decode()` for
-reading the files from Python.
+Every term is present, so row i is index n0 + i. The page rebuilds a as a running sum of the
+jumps and the other factor as (a − d) divided by the stored one, and rejects a chunk if anything
+is inconsistent. All values are below 2⁵³. `tools/compact.py` has `encode()` and `decode()` for
+Python; older `dwj1` chunks are still read. A sequence weighs from under 1 kB to 0.6 MB (median
+0.17 MB).
 
-A sequence costs from under 1 kB to 0.6 MB to download (median 0.17 MB). The gallery previews
-total 32 MB, but only the visible ones are fetched.
+</details>
 
 ## Rebuilding the data
 
-The published data is reproducible. The generator writes identical files on every run, so
-unchanged sequences produce no diff.
+The pipeline is deterministic: unchanged sequences produce no diff. It needs a C compiler, Python
+3.9+ with `numpy` and `Pillow`, ~2 GB of RAM, ~13 GB of disk and about two hours of CPU.
 
 ```sh
 cd tools
 cc -O2 -o decompwlj_gen decompwlj_gen.c -lm
-./decompwlj_gen raw                 # all sequences: raw a,d,k,L chunks + catalog.csv (~60 min)
-./decompwlj_gen raw primes 200000   # or a single sequence, at any length below 2^53
+./decompwlj_gen raw                 # every sequence: raw a,d,k,L chunks + catalog.csv (~60 min)
+./decompwlj_gen raw primes 200000   # or one sequence, at any length below 2^53
 python3 names.py raw                # OEIS names into the catalogue (from oeis.json)
-python3 audit.py raw                # independent verification of every row and of the OEIS terms
-python3 compact.py raw ../data      # the gzip chunks the site loads
-python3 thumbs.py  raw ../thumbs    # the gallery previews
-python3 seo.py                      # the static pages, share images, sitemap.xml and robots.txt
+python3 audit.py raw                # independent check of every row and of the OEIS terms
+python3 compact.py raw ../data      # the compact chunks the site loads
+python3 thumbs.py  raw ../thumbs    # the gallery plates
+python3 seo.py                      # static pages, share images, sitemap, robots.txt
 ```
 
-To **add a sequence**:
-
-1. Write a generator function in `tools/decompwlj_gen.c`. It fills `t[0..cnt-1]` with strictly
-   increasing terms.
-2. Add an entry to the `defs[]` table: id, A-number, name, family, note, number of terms, first
-   index, function.
-3. Run `python3 fetch_oeis.py A123456` to record its OEIS name, offset and first terms in
-   `oeis.json`.
-4. Run the pipeline above; `audit.py` must report "all clear".
-
-[`docs/SEQUENCES.md`](docs/SEQUENCES.md) lists every sequence by family and describes the
-verification.
+**To add a sequence:** write a generator in `tools/decompwlj_gen.c` (it fills `t[0..cnt-1]` with
+strictly increasing terms), add its entry to the `defs[]` table, record its OEIS data with
+`python3 fetch_oeis.py A123456`, then run the pipeline; `audit.py` must report "all clear".
 
 ### Automatic checks
 
-`.github/workflows/checks.yml` runs on every pull request and every push to `main`:
-
-- the generator compiles with `-Wall -Werror`;
-- `tools/check_site.py` finds every sequence's chunks, plate, share image, page and OEIS record,
-  nothing left over, and the counts in `index.html` and the sitemap in step with the catalogue;
-  it also rebuilds four sequences with the generator and compares them byte for byte;
-- `tools/audit.py data --every 25` re-verifies one sequence in 25 straight from the site's chunks
-  (the weights re-derived by exhaustive search, the first terms against the OEIS);
-- `tools/seo.py` is run again and must write the same HTML;
-- `tests/smoke.mjs` drives Chromium through the gallery, the k–L and 3-D views, the data of sixty
-  sequences, a sequence page and its CSV, and the live example of the "How it works" page.
-
-The same checks run locally:
+Every pull request and push to `main` runs [`checks.yml`](.github/workflows/checks.yml): the
+generator compiles with `-Werror`; `tools/check_site.py` finds every file in place and rebuilds
+four sequences byte for byte; `audit.py` re-verifies one sequence in 25 from the site's own chunks;
+`seo.py` must rewrite the same HTML; and `tests/smoke.mjs` drives Chromium through the gallery,
+the viewer, sixty sequences, a CSV download and the How it works page. Locally:
 
 ```sh
-python3 tools/check_site.py
-python3 tools/audit.py data --every 25
-python3 -m http.server 8765 &  node tests/smoke.mjs     # needs: npm install playwright
+python3 tools/check_site.py && python3 tools/audit.py data --every 25
+python3 -m http.server 8765 & node tests/smoke.mjs      # needs: npm install playwright
 ```
 
 ## Troubleshooting
 
-| Symptom | Cause and fix |
+| Symptom | Fix |
 |---|---|
-| Blank page, or "Open this page through a web server" | The page was opened from disk. Serve it over HTTP (see [Quick start](#quick-start)). |
-| An old version is shown after an update | Browser cache. Reload with Ctrl+F5 (Cmd+Shift+R on a Mac). GitHub Pages can take a few minutes to publish. |
-| "Enforce HTTPS" stays greyed out | DNS is not yet pointing at GitHub, an old A record or registrar redirection remains, or a CAA record blocks Let's Encrypt. Fix the records, then remove and re-add the custom domain to retry. |
-| A sequence fails to load (404 on a chunk) | The server rewrites missing files, or `data/seq/` was not fully uploaded. Upload the whole `data/` folder. |
-| The gallery works but the 3-D view does not | WebGL is disabled or unavailable (some remote desktops and VMs). Enable hardware acceleration in the browser. |
+| Blank page / "Open this page through a web server" | Serve it over HTTP (see [Run it locally](#run-it-locally)). |
+| Old version after an update | Hard reload (Ctrl+F5, Cmd+Shift+R); Pages can take a few minutes. |
+| "Enforce HTTPS" greyed out | DNS not pointing at GitHub yet, a leftover A record or redirection, or a CAA record blocking Let's Encrypt. Fix, then remove and re-add the custom domain. |
+| A sequence fails to load (404 on a chunk) | The server rewrites missing files, or `data/` was not fully uploaded. |
+| Gallery works, 3-D view does not | WebGL is off (some VMs and remote desktops): enable hardware acceleration. |
 
 ## Credits and licences
 
-- The decomposition into weight × level + jump: Rémi Eismann,
+- The decomposition into weight × level + jump: Rémi Eismann —
   [arXiv:0711.0865](https://arxiv.org/abs/0711.0865), [decompwlj.com](https://decompwlj.com).
-- Sequence names, offsets and reference terms: [The On-Line Encyclopedia of Integer
-  Sequences](https://oeis.org), licensed under
-  [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/); read from
-  [github.com/oeis/oeisdata](https://github.com/oeis/oeisdata).
-- [three.js](https://threejs.org) r169, © 2010–2024 three.js authors, MIT licence
-  (`vendor/LICENSE-three.js.txt`).
+- Sequence names, offsets and reference terms: [the OEIS](https://oeis.org), CC BY-SA 4.0, read
+  from [github.com/oeis/oeisdata](https://github.com/oeis/oeisdata).
+- [three.js](https://threejs.org) r169, © 2010–2024 three.js authors, MIT (`vendor/LICENSE-three.js.txt`).
