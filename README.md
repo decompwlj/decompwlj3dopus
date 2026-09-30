@@ -53,6 +53,10 @@ code, database, build step or third-party request, so it runs on any static host
   links to its OEIS entry. `#A000040`-style links open a sequence directly.
 - **Shareable views**: the URL fragment records the sequence, view and point mode.
 - Light and dark themes, keyboard shortcuts, PNG snapshots.
+- **How it works** (`learn/`): the decomposition step by step, three primes worked by hand, and a
+  live example where you type your own terms and see the table and the plate.
+- **Link previews**: every sequence page has its own share image (the plate and the A-number), so
+  a link posted on a social site or in a chat shows that sequence.
 
 ## Quick start
 
@@ -87,9 +91,9 @@ subfolder.
 Every push to `main` republishes the site. `.nojekyll` tells GitHub Pages to serve the files as
 they are, without running Jekyll.
 
-The site is about 940 MB, within GitHub Pages' limits: 1 GB per published site, with a soft
-bandwidth limit of 100 GB per month. That leaves room for few more sequences; beyond about 5,300
-the data would have to be hosted elsewhere.
+The site is about 975 MB, within GitHub Pages' limits: 1 GB per published site, with a soft
+bandwidth limit of 100 GB per month. That leaves room for about a hundred more sequences; beyond
+that the data would have to be hosted elsewhere.
 
 ### A custom domain with HTTPS
 
@@ -149,11 +153,13 @@ not index. `tools/seo.py` therefore writes plain HTML pages that they can index,
 |---|---|
 | `seq/A000040/` | One page per sequence: OEIS name, plate, counts, note, links to the 3-D viewer, the OEIS and the neighbouring sequences, and a **Download CSV** button |
 | `seq/csv.js` | The script behind that button: it rebuilds the CSV from the data chunks in the browser |
+| `share/<id>.jpg` | The 600 × 315 preview of each sequence page when its link is shared (the plate and the A-number, about 7 kB) |
+| `learn/` | How it works: the decomposition explained, with a live example (`learn.js`) |
 | `seq/` | The list of all sequences, by A-number |
 | `family/<family>/` | The sequences of one family |
 | `404.html` | Not-found page; short URLs such as `/A000040` redirect to `/seq/A000040/` |
 | `sitemap.xml`, `robots.txt` | Every page for the crawlers (with the plates as images); everything may be crawled |
-| `og.png` | The 1200 × 630 preview shown when a link is shared |
+| `og.png` | The 1200 × 630 preview shown when a link to the gallery is shared |
 
 Every page carries a canonical URL, a description, Open Graph tags and schema.org data
 (`Dataset` and `BreadcrumbList`). The base URL comes from `CNAME`; a site without a custom domain
@@ -199,12 +205,14 @@ needs it.
 | `data/catalog.csv` | One row per sequence: id, A-number, OEIS name, family, index range, counts, ranges, note |
 | `data/seq/<id>/chunk-000.bin.gz`, `chunk-001.bin.gz` | The sequence data, 50,000 terms per chunk, compact binary, gzip-compressed |
 | `thumbs/<id>.webp` | Gallery previews (480 × 480, transparent, lossless WebP) |
+| `share/<id>.jpg` | Link previews of the sequence pages (600 × 315 JPEG), written by `tools/seo.py` |
 | `vendor/` | three.js r169 and OrbitControls, unmodified (MIT licence included) |
 | `deploy/` | Example Apache and nginx configurations |
 | `tools/` | Data generator, OEIS metadata and verification scripts (not needed at runtime) |
 | `docs/SEQUENCES.md` | All 5000 sequences by family, and how the data was verified |
 | `CNAME`, `.nojekyll` | GitHub Pages settings: custom domain; serve files as they are |
-| `seq/`, `family/`, `404.html` | Static pages for search engines, written by `tools/seo.py` |
+| `seq/`, `family/`, `learn/`, `404.html` | Static pages for search engines, written by `tools/seo.py` |
+| `.github/workflows/checks.yml`, `tests/smoke.mjs` | Automatic checks on every pull request (see below) |
 | `sitemap.xml`, `robots.txt`, `og.png` | Sitemap, crawler rules and link preview image |
 | `css/pages.css` | The static pages' stylesheet |
 | `js/`, `css/app.css` | Earlier modular sources, kept for reference; the page does not load them |
@@ -289,7 +297,7 @@ python3 names.py raw                # OEIS names into the catalogue (from oeis.j
 python3 audit.py raw                # independent verification of every row and of the OEIS terms
 python3 compact.py raw ../data      # the gzip chunks the site loads
 python3 thumbs.py  raw ../thumbs    # the gallery previews
-python3 seo.py                      # the static pages, sitemap.xml and robots.txt
+python3 seo.py                      # the static pages, share images, sitemap.xml and robots.txt
 ```
 
 To **add a sequence**:
@@ -304,6 +312,28 @@ To **add a sequence**:
 
 [`docs/SEQUENCES.md`](docs/SEQUENCES.md) lists every sequence by family and describes the
 verification.
+
+### Automatic checks
+
+`.github/workflows/checks.yml` runs on every pull request and every push to `main`:
+
+- the generator compiles with `-Wall -Werror`;
+- `tools/check_site.py` finds every sequence's chunks, plate, share image, page and OEIS record,
+  nothing left over, and the counts in `index.html` and the sitemap in step with the catalogue;
+  it also rebuilds four sequences with the generator and compares them byte for byte;
+- `tools/audit.py data --every 25` re-verifies one sequence in 25 straight from the site's chunks
+  (the weights re-derived by exhaustive search, the first terms against the OEIS);
+- `tools/seo.py` is run again and must write the same HTML;
+- `tests/smoke.mjs` drives Chromium through the gallery, the k–L and 3-D views, the data of sixty
+  sequences, a sequence page and its CSV, and the live example of the "How it works" page.
+
+The same checks run locally:
+
+```sh
+python3 tools/check_site.py
+python3 tools/audit.py data --every 25
+python3 -m http.server 8765 &  node tests/smoke.mjs     # needs: npm install playwright
+```
 
 ## Troubleshooting
 

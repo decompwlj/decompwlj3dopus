@@ -17,7 +17,11 @@ Checks, per sequence:
   8  the first rows (up to 40) equal the OEIS terms read from index n0 (checks n0 too)
   9  every value is below 2^53, so the browser's doubles hold it exactly
 
-Usage:  python3 tools/audit.py [data_dir] [--sample N]
+Usage:  python3 tools/audit.py [data_dir] [--sample N] [--every M] [--only id,id,...]
+
+data_dir holds either the generator's raw chunks (chunk-NNN.csv) or the site's compact ones
+(chunk-NNN.bin.gz, decoded by compact.py).  --every M audits one sequence in M (the continuous
+integration runs it that way); --only names the sequences to audit.
 """
 
 import sys, os, csv, random, math, json
@@ -48,6 +52,14 @@ def read_rows(base, rec):
     rows = []
     for c in range(int(rec['chunks'])):
         path = os.path.join(base, 'seq', rec['id'], f'chunk-{c:03d}.csv')
+        if not os.path.exists(path) and os.path.exists(path[:-4] + '.bin.gz'):
+            from compact import decode
+            with open(path[:-4] + '.bin.gz', 'rb') as f:
+                part = decode(f.read())
+            expect = min(int(rec['chunk_rows']), int(rec['terms']) - c * int(rec['chunk_rows']))
+            assert len(part) == expect, f'{path[:-4]}.bin.gz: {len(part)} rows, expected {expect}'
+            rows += part
+            continue
         with open(path) as f:
             head = f.readline().strip()
             assert head == 'a,d,k,L', f'{path}: header is {head!r}'
@@ -69,6 +81,12 @@ def main():
 
     with open(os.path.join(base, 'catalog.csv'), newline='') as f:
         cat = list(csv.DictReader(f))
+    if '--every' in sys.argv:
+        cat = cat[::int(sys.argv[sys.argv.index('--every') + 1])]
+    if '--only' in sys.argv:
+        only = set(sys.argv[sys.argv.index('--only') + 1].split(','))
+        cat = [r for r in cat if r['id'] in only or r['anumber'] in only]
+        assert cat, 'no sequence matches --only'
 
     total_rows = total_sampled = 0
     for rec in cat:

@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>How it works: weight × level + jump · decompwlj 3D</title>
+<meta name="description" content="The decomposition a(n) = k·L + d of an integer sequence, step by step: the jump, the weight and the level, three worked primes, and a live example where you type your own terms.">
+<link rel="canonical" href="https://decompwlj.net/learn/">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%230b0e14'/%3E%3Ccircle cx='10' cy='21' r='3' fill='%234c8dff'/%3E%3Ccircle cx='19' cy='13' r='3' fill='%23ff8c42'/%3E%3Ccircle cx='25' cy='7' r='2' fill='%23ffe45c'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="../css/pages.css">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="decompwlj 3D">
+<meta property="og:title" content="How it works: weight × level + jump · decompwlj 3D">
+<meta property="og:description" content="The decomposition a(n) = k·L + d of an integer sequence, step by step: the jump, the weight and the level, three worked primes, and a live example where you type your own terms.">
+<meta property="og:url" content="https://decompwlj.net/learn/">
+<meta property="og:image" content="https://decompwlj.net/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://decompwlj.net/"},{"@type":"ListItem","position":2,"name":"How it works","item":"https://decompwlj.net/learn/"}]}</script>
+</head>
+<body>
+<header class="top">
+  <a class="brand" href="../"><span class="brand-mark" aria-hidden="true"></span>decompwlj<span class="brand-dim"> 3D</span></a>
+  <nav aria-label="Site"><a href="../">Gallery</a><a href="../learn/">How it works</a><a href="../seq/">All sequences</a><a href="https://decompwlj.com" rel="noopener">decompwlj.com</a></nav>
+</header>
+<main>
+<nav class="crumbs" aria-label="Breadcrumb"><a href="../">Home</a> › <span aria-current="page">How it works</span></nav>
+<h1>How it works: weight × level + jump</h1>
+<p class="lead">Take a strictly increasing sequence of whole numbers — the primes, the squares, any sequence of the OEIS.
+Each term, together with the next one, is written as a product plus a jump:</p>
+<p class="formula"><i>a</i>(n) = <i>k</i>(n) · <i>L</i>(n) + <i>d</i>(n)</p>
+<p class="lead"><i>k</i> is the <b class="wt">weight</b>, <i>L</i> the <b class="lv">level</b> and <i>d</i> the <b>jump</b>.
+Every term that can be decomposed is decomposed in exactly one way, by three steps.</p>
+
+<h2>The three steps</h2>
+<ol class="steps">
+  <li><b>The jump.</b> <i>d</i> = a(n+1) − a(n), the distance to the next term.</li>
+  <li><b>What is left.</b> <i>l</i> = a(n) − d. The term decomposes only if <i>l</i> &gt; <i>d</i>, that is a(n) &gt; 2d;
+    otherwise the jump is too large and the term is skipped.</li>
+  <li><b>Weight and level.</b> The weight <i>k</i> is the <em>smallest divisor of l that is larger than d</em>, and the
+    level is <i>L</i> = l / k. Then a(n) = k·L + d, and k &gt; d: the weight always exceeds the jump.</li>
+</ol>
+
+<h2>Three primes, worked by hand</h2>
+<div class="cards3">
+  <div class="card3"><p class="big">113</p><p>next prime 127, so <i>d</i> = 14<br><i>l</i> = 113 − 14 = 99<br>
+    divisors of 99: 1, 3, 9, 11, <b>33</b>, 99<br>the smallest above 14 is <i>k</i> = 33, and <i>L</i> = 99 / 33 = 3</p>
+    <p class="res">113 = 33 × 3 + 14 · <span class="lv">level class, k &gt; L</span></p></div>
+  <div class="card3"><p class="big">1009</p><p>next prime 1013, so <i>d</i> = 4<br><i>l</i> = 1009 − 4 = 1005<br>
+    divisors of 1005: 1, 3, <b>5</b>, 15, 67, …<br>the smallest above 4 is <i>k</i> = 5, and <i>L</i> = 1005 / 5 = 201</p>
+    <p class="res">1009 = 5 × 201 + 4 · <span class="wt">weight class, k ≤ L</span></p></div>
+  <div class="card3"><p class="big">7</p><p>next prime 11, so <i>d</i> = 4<br><i>l</i> = 7 − 4 = 3<br>
+    3 is not larger than 4: no divisor of 3 can exceed the jump</p>
+    <p class="res">7 does not decompose (7 ≤ 2 × 4)</p></div>
+</div>
+<p class="lead">A term is in the <b class="lv">level class</b> when k &gt; L and in the <b class="wt">weight class</b> when
+k ≤ L; the ties k = L sit on the diagonal. For the primes the weight is never even, and a prime above 3 is the lesser
+of a twin pair exactly when its weight is 3.</p>
+
+<h2>Try it</h2>
+<p class="lead">Type or paste increasing terms, or start from a sequence below. The table and the plate follow as you type.</p>
+<div class="presets">
+  <button type="button" class="cta alt" data-preset="primes">Primes</button><button type="button" class="cta alt" data-preset="squares">Squares</button><button type="button" class="cta alt" data-preset="triangular">Triangular numbers</button><button type="button" class="cta alt" data-preset="odd">Odd numbers</button><button type="button" class="cta alt" data-preset="fibonacci">Fibonacci</button>
+</div>
+<label class="lab" for="terms">Terms, separated by commas or spaces</label>
+<textarea id="terms" rows="3" spellcheck="false"></textarea>
+<p id="err" class="err" role="alert"></p>
+<div class="try">
+  <figure class="tryplate"><svg id="plate" viewBox="0 0 300 300" role="img" aria-label="Weight–level plate of the example"></svg>
+    <figcaption>The example's plate: weight k across, level L up, on log scales; the dashed line is k = L.
+    Hover a point for its values.</figcaption></figure>
+  <div class="trytab"><p id="sum" class="note" aria-live="polite"></p>
+    <div class="scroll"><table class="list demo"><thead><tr><th>n</th><th>a(n)</th><th>d</th><th>l = a − d</th><th>k</th><th>L</th><th>k × L + d</th><th>class</th></tr></thead>
+    <tbody id="rows"></tbody></table></div></div>
+</div>
+<p class="note">Fibonacci is a sequence where nothing decomposes: each term is less than twice the jump to the next.</p>
+
+<h2>Reading the site</h2>
+<ul class="steps">
+  <li><b>The plates</b> of the gallery put every decomposable term at (log k, log L), scaled by the largest term:
+    <span class="wt">blue</span> for the weight class, <span class="lv">orange</span> for the level class. The dashed
+    diagonal is k = L, the edge k·L = a is where the jump is small against the term.</li>
+  <li><b>The 3-D viewer</b> adds the jump d as a third axis. Its flat views are the plate (k–L), and the jump against
+    the weight (k–d) or the level (L–d); the level line L = 1 holds the terms whose l is itself the weight.</li>
+  <li>Each sequence page gives the counts, a note on its shape, and a CSV of all 10⁵ terms with their weight, level
+    and jump. Good places to start: the <a href="../seq/A000040/">primes</a>, the
+    <a href="../seq/A000027/">natural numbers</a> (d = 1: the weight is the least divisor of a − 1 above 1),
+    the <a href="../seq/A000290/">squares</a>.</li>
+</ul>
+<p class="lead">The decomposition is described in <a href="https://arxiv.org/abs/0711.0865" rel="noopener">arXiv:0711.0865</a>
+and on <a href="https://decompwlj.com" rel="noopener">decompwlj.com</a>.</p>
+<script src="learn.js" defer></script>
+</main>
+<footer class="foot">
+  <span>decompwlj 3D — the decomposition a(n) = k·L + d for 5000 integer sequences</span>
+  <a href="https://arxiv.org/abs/0711.0865" rel="noopener">arXiv:0711.0865</a>
+  <a href="https://oeis.org" rel="noopener">OEIS</a>
+</footer>
+</body>
+</html>

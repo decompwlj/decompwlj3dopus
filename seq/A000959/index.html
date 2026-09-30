@@ -13,15 +13,17 @@
 <meta property="og:title" content="Lucky numbers (A000959) · weight × level + jump">
 <meta property="og:description" content="A000959, Lucky numbers: 100,000 terms decomposed as a(n) = k·L + d; 32.31 % in the level class (k &gt; L), 67.69 % in the weight class. A sieve of the same shape as Eratosthenes, with the same density x / log x. As for the primes, every term is odd and every gap even, so l is odd and every weight is…">
 <meta property="og:url" content="https://decompwlj.net/seq/A000959/">
-<meta property="og:image" content="https://decompwlj.net/thumbs/lucky.webp">
-<meta name="twitter:card" content="summary">
+<meta property="og:image" content="https://decompwlj.net/share/lucky.jpg">
+<meta property="og:image:width" content="600">
+<meta property="og:image:height" content="315">
+<meta name="twitter:card" content="summary_large_image">
 <script type="application/ld+json">{"@context":"https://schema.org","@type":"Dataset","name":"A000959: Lucky numbers — weight × level + jump","description":"A000959, Lucky numbers: 100,000 terms decomposed as a(n) = k·L + d; 32.31 % in the level class (k > L), 67.69 % in the weight class. A sieve of the same shape as Eratosthenes, with the same density x / log x. As for the primes, every term is odd and every gap even, so l is odd and every weight is…","url":"https://decompwlj.net/seq/A000959/","identifier":"A000959","isBasedOn":"https://oeis.org/A000959","keywords":["integer sequence","OEIS","A000959","sieve","weight","level","jump","decomposition"],"image":"https://decompwlj.net/thumbs/lucky.webp","includedInDataCatalog":{"@type":"DataCatalog","name":"decompwlj 3D","url":"https://decompwlj.net/"},"distribution":[{"@type":"DataDownload","encodingFormat":"application/gzip","contentUrl":"https://decompwlj.net/data/seq/lucky/chunk-000.bin.gz"},{"@type":"DataDownload","encodingFormat":"application/gzip","contentUrl":"https://decompwlj.net/data/seq/lucky/chunk-001.bin.gz"}]}</script>
 <script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://decompwlj.net/"},{"@type":"ListItem","position":2,"name":"All sequences","item":"https://decompwlj.net/seq/"},{"@type":"ListItem","position":3,"name":"sieve","item":"https://decompwlj.net/family/sieve/"},{"@type":"ListItem","position":4,"name":"A000959","item":"https://decompwlj.net/seq/A000959/"}]}</script>
 </head>
 <body>
 <header class="top">
   <a class="brand" href="../../"><span class="brand-mark" aria-hidden="true"></span>decompwlj<span class="brand-dim"> 3D</span></a>
-  <nav aria-label="Site"><a href="../../">Gallery</a><a href="../../seq/">All sequences</a><a href="https://decompwlj.com" rel="noopener">decompwlj.com</a></nav>
+  <nav aria-label="Site"><a href="../../">Gallery</a><a href="../../learn/">How it works</a><a href="../../seq/">All sequences</a><a href="https://decompwlj.com" rel="noopener">decompwlj.com</a></nav>
 </header>
 <main>
 <nav class="crumbs" aria-label="Breadcrumb"><a href="../../">Home</a> › <a href="../">All sequences</a> › <a href="../../family/sieve/">sieve</a> › <span aria-current="page">A000959</span></nav>
@@ -50,7 +52,7 @@
   </div>
 </div>
 <h2>The decomposition</h2>
-<p class="lead">Every term of a strictly increasing sequence is written <i>a</i>(n) = <i>k</i>(n)·<i>L</i>(n) + <i>d</i>(n): the jump <i>d</i> = a(n+1) − a(n), the weight <i>k</i> the least divisor of a − d greater than d, the level <i>L</i> = (a − d)/k. A term decomposes when a &gt; 2d; it is in the level class when k &gt; L and in the weight class when k ≤ L. See <a href="https://decompwlj.com" rel="noopener">decompwlj.com</a> and <a href="https://arxiv.org/abs/0711.0865" rel="noopener">arXiv:0711.0865</a>.</p>
+<p class="lead">Every term of a strictly increasing sequence is written <i>a</i>(n) = <i>k</i>(n)·<i>L</i>(n) + <i>d</i>(n): the jump <i>d</i> = a(n+1) − a(n), the weight <i>k</i> the least divisor of a − d greater than d, the level <i>L</i> = (a − d)/k. A term decomposes when a &gt; 2d; it is in the level class when k &gt; L and in the weight class when k ≤ L. See <a href="https://decompwlj.com" rel="noopener">decompwlj.com</a> and <a href="https://arxiv.org/abs/0711.0865" rel="noopener">arXiv:0711.0865</a>, or <a href="../../learn/">how it works</a>, with worked examples and a live one.</p>
 <script src="../csv.js" defer></script>
 <nav class="pn" aria-label="Neighbouring sequences"><a class="prev" href="../A000788/" title="Total number of 1&#x27;s in binary expansions of 0, ..., n">← A000788 Total number of 1&#x27;s in binary expansions of 0…</a><a class="next" href="../A000960/" title="Flavius Josephus&#x27;s sieve: Start with the natural numbers; at the k-th sieving step, remove every (k+1)-st term of the sequence remaining after the (k-1)-st sieving step; iterate">A000960 Flavius Josephus&#x27;s sieve: Start with the natural… →</a></nav>
 </main>
