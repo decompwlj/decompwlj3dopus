@@ -279,6 +279,19 @@ for f in fam_order:
           ld=[crumbs_ld([('All sequences', f'{BASE}/seq/'), (f, f'{BASE}/family/{slug(f)}/')])]))
 
 # ── how it works: the decomposition explained, with a live example ──────────
+def _spf(n):
+    p = 2
+    while p * p <= n:
+        if n % p == 0: return p
+        p += 1
+    return n
+_nat = []
+for a in range(3, 18):                         # the naturals 3 ... 17: the weight is the sieve's smallest prime factor
+    l = a - 1; k = _spf(l); L = l // k
+    cls = '<td class="lv">level</td>' if k > L else '<td class="wt">weight, tie</td>' if k == L else '<td class="wt">weight</td>'
+    _nat.append(f'<tr><td>{a}</td><td>{l}</td><td>{k}</td><td>{L}</td><td>{k} × {L} + 1</td>{cls}</tr>')
+NAT_TABLE = ('<div class="scroll narrow"><table class="list demo"><thead><tr><th>a</th><th>l = a − 1</th><th>k, smallest prime factor of l</th>'
+             '<th>L</th><th>k × L + d</th><th>class</th></tr></thead><tbody>' + ''.join(_nat) + '</tbody></table></div>')
 LEARN_JS = r"""/* decompwlj 3D, written by tools/seo.py: the live example of the "How it works" page.
    The same rule as the generator (tools/decompwlj_gen.c):
      d = a(n+1) - a(n);  if a > 2d:  l = a - d,  k = least divisor of l above d,  L = l / k. */
@@ -397,6 +410,49 @@ Every term that can be decomposed is decomposed in exactly one way, by three ste
 <p class="lead">A term is in the <b class="lv">level class</b> when k &gt; L and in the <b class="wt">weight class</b> when
 k ≤ L; the ties k = L sit on the diagonal. For the primes the weight is never even, and a prime above 3 is the lesser
 of a twin pair exactly when its weight is 3.</p>
+
+<h2>A little theory</h2>
+
+<h3>A Euclidean division</h3>
+<p class="lead">Since the weight exceeds the jump, 0 ≤ d &lt; k, and a = k·L + d is exactly the
+<a href="https://en.wikipedia.org/wiki/Euclidean_division" rel="noopener">Euclidean division</a> of a by k:
+the level L is the quotient and the jump d is the remainder. So the weight can be read another way:
+<b>k is the smallest number above d for which dividing a by k leaves the remainder d</b>, the distance to the
+next term. For 113: dividing by 15, 16, …, 32 leaves other remainders; 113 = 33 × 3 + 14 is the first division by a
+number above 14 whose remainder is 14. It is the same condition as before, since a leaves the remainder d on
+division by k exactly when k divides a − d.</p>
+
+<h3>When a term decomposes</h3>
+<p class="lead">If a &gt; 2d, then l = a − d &gt; d, and l is itself a divisor of l larger than d: a weight always exists
+and is unique, with d &lt; k ≤ l. If a ≤ 2d, then l ≤ d and no divisor of l can exceed d: the term does not decompose.
+In other words a term decomposes unless the next term is at least 1.5 times as large, which only fast-growing
+sequences do all the time: the powers of 2, or the Fibonacci numbers, whose ratio tends to 1.618.</p>
+
+<h3>Weight or level: the window (d, √l]</h3>
+<p class="lead">Because k·L = l, the weight class k ≤ L is the same as k ≤ √l. A term is therefore in the
+<b class="wt">weight class</b> exactly when l has a divisor in the window d &lt; k ≤ √l, and in the
+<b class="lv">level class</b> when that window holds no divisor of l. Three consequences:</p>
+<ul class="steps">
+  <li><b>Forced level.</b> When l ≤ d², the window is empty whatever l is made of, and the term is in the level class
+    without looking at its divisors. Sequences whose jumps grow faster than the square root of the terms (the
+    squares of primes, many polynomials) are almost entirely forced level.</li>
+  <li><b>The level line L = 1.</b> L = 1 means k = l: no divisor of l lies strictly between d and l. This always
+    happens when l is a prime larger than d.</li>
+  <li><b>Ties.</b> k = L means l = k²: the least divisor above d is exactly the square root of l.</li>
+</ul>
+
+<h3>The natural numbers and the sieve of Eratosthenes</h3>
+<p class="lead">For the natural numbers the jump is always d = 1, so the weight of a is the least divisor of a − 1
+above 1: its <b>smallest prime factor</b>. That is what the
+<a href="https://en.wikipedia.org/wiki/Sieve_of_Eratosthenes" rel="noopener">sieve of Eratosthenes</a> computes:
+it crosses out every composite number first with its smallest prime factor. The weight–level plate of the naturals
+is the sieve drawn in the plane: one column k = p for each prime p, holding the terms a for which p is the smallest
+prime factor of a − 1.</p>
+{NAT_TABLE}
+<p class="lead">The window (1, √l] contains a divisor of l exactly when l is composite, so the level class of the
+naturals is the set of terms with a − 1 prime, all on the line L = 1: 9,592 of the first 10⁵ terms, one per prime
+below 10⁵. The ties are the squares of primes, a − 1 = p² (65 of them). For any other sequence the jump plays the
+role of a starting point: the divisors up to d are skipped, as if the sieve began at d + 1.</p>
 
 <h2>Try it</h2>
 <p class="lead">Type or paste increasing terms, or start from a sequence below. The table and the plate follow as you type.</p>
