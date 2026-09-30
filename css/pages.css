@@ -123,3 +123,5 @@ textarea#terms { width: 100%; font: 14px/1.5 var(--mono); color: var(--fg); back
 .list.demo td { font-family: var(--mono); padding-left: 8px; white-space: nowrap; }
 .list.demo td.no { color: var(--fg-3); }
 .list.demo td.wt { color: var(--c-weight); } .list.demo td.lv { color: var(--c-level); }
+h3 { font-size: 16px; margin: 22px 0 4px; }
+.scroll.narrow { max-width: 640px; max-height: none; margin: 8px 0 12px; }
