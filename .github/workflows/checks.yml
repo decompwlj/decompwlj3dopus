@@ -1,0 +1,61 @@
+# decompwlj 3D — checks on every pull request and every push to main.
+#   data:    the generator compiles cleanly, the site is complete (tools/check_site.py), four
+#            sequences rebuild byte for byte, audit.py re-verifies one sequence in 25, and the
+#            static pages are in step with the catalogue (tools/seo.py writes the same HTML).
+#   browser: a Chromium smoke test of the gallery, the viewer, a sequence page and its CSV,
+#            and the "How it works" page (tests/smoke.mjs).
+name: checks
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: checks-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  data:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Python packages
+        run: pip install numpy pillow
+      - name: Compile the generator (warnings are errors)
+        run: cc -O2 -Wall -Werror -o /tmp/decompwlj_gen tools/decompwlj_gen.c -lm
+      - name: Site complete, and four sequences rebuilt byte for byte
+        run: python3 tools/check_site.py --regen /tmp/decompwlj_gen primes,a030632,a032917,a124594
+      - name: Audit one sequence in 25
+        run: python3 tools/audit.py data --every 25 --sample 50 | tail -n 3
+      - name: Static pages in step with the catalogue
+        run: |
+          python3 tools/seo.py
+          # the images depend on the Pillow build; the HTML, sitemap and scripts must not change
+          git diff --stat --exit-code -- '*.html' '*.xml' '*.js' '*.txt'
+
+  browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Playwright and Chromium
+        run: |
+          npm install --no-save --no-package-lock playwright@1.56.1
+          npx playwright install --with-deps chromium
+      - name: Smoke test
+        run: |
+          python3 -m http.server 8765 > /dev/null 2>&1 &
+          sleep 2
+          node tests/smoke.mjs

@@ -11,11 +11,13 @@ data/catalog.csv, next to index.html:
     seq/<A-number>/index.html     one page per sequence: OEIS name, plate, counts, note,
                                   links to the 3-D viewer, the OEIS and its neighbours
     seq/index.html                every sequence, by A-number
+    learn/index.html, learn.js    how it works: the decomposition step by step, with a live example
     family/<family>/index.html    the sequences of one family
     404.html                      not-found page; /A000040 redirects to /seq/A000040/
     sitemap.xml, robots.txt       for the crawlers
     og.png                        1200 x 630 preview for links shared on social sites
-                                  (needs Pillow; skipped without it)
+    share/<id>.jpg                600 x 315 preview of each sequence page
+                                  (both need Pillow; skipped without it)
 
 Run it again whenever the catalogue changes. The output is deterministic.
 """
@@ -58,10 +60,9 @@ PLATE_SVG = (f'<svg viewBox="0 0 1 1" preserveAspectRatio="none" aria-hidden="tr
              f'<line class="dg" x1="{PM}" y1="{PX}" x2="0.5" y2="0.5"/></svg>')
 
 def page(up, path, title, desc, body, image=None, ld=()):
-    """A complete page. up: relative path back to the site root ('../../')."""
+    """A complete page. up: relative path back to the site root ('../../'). image: a 600 x 315 share image."""
     url = f'{BASE}/{path}'
-    img = image or f'{BASE}/og.png'
-    card = 'summary' if image else 'summary_large_image'
+    img, (iw, ih) = (image, (600, 315)) if image else (f'{BASE}/og.png', (1200, 630))
     lds = ''.join(f'<script type="application/ld+json">{json.dumps(x, ensure_ascii=False, separators=(",", ":"))}</script>\n'
                   for x in ld)
     return f'''<!doctype html>
@@ -80,12 +81,14 @@ def page(up, path, title, desc, body, image=None, ld=()):
 <meta property="og:description" content="{e(desc)}">
 <meta property="og:url" content="{e(url)}">
 <meta property="og:image" content="{e(img)}">
-<meta name="twitter:card" content="{card}">
+<meta property="og:image:width" content="{iw}">
+<meta property="og:image:height" content="{ih}">
+<meta name="twitter:card" content="summary_large_image">
 {lds}</head>
 <body>
 <header class="top">
   <a class="brand" href="{up}"><span class="brand-mark" aria-hidden="true"></span>decompwlj<span class="brand-dim"> 3D</span></a>
-  <nav aria-label="Site"><a href="{up}">Gallery</a><a href="{up}seq/">All sequences</a><a href="https://decompwlj.com" rel="noopener">decompwlj.com</a></nav>
+  <nav aria-label="Site"><a href="{up}">Gallery</a><a href="{up}learn/">How it works</a><a href="{up}seq/">All sequences</a><a href="https://decompwlj.com" rel="noopener">decompwlj.com</a></nav>
 </header>
 <main>
 {body}
@@ -114,7 +117,8 @@ ABOUT = ('<h2>The decomposition</h2>\n<p class="lead">Every term of a strictly i
          '<i>a</i>(n) = <i>k</i>(n)·<i>L</i>(n) + <i>d</i>(n): the jump <i>d</i> = a(n+1) − a(n), the weight <i>k</i> the least '
          'divisor of a − d greater than d, the level <i>L</i> = (a − d)/k. A term decomposes when a &gt; 2d; it is in the level '
          'class when k &gt; L and in the weight class when k ≤ L. See <a href="https://decompwlj.com" rel="noopener">decompwlj.com</a> '
-         'and <a href="https://arxiv.org/abs/0711.0865" rel="noopener">arXiv:0711.0865</a>.</p>')
+         'and <a href="https://arxiv.org/abs/0711.0865" rel="noopener">arXiv:0711.0865</a>, or '
+         '<a href="../../learn/">how it works</a>, with worked examples and a live one.</p>')
 
 CSV_JS = r"""/* decompwlj 3D, written by tools/seo.py: the "Download CSV" button of a sequence page.
    Rebuilds n;a;weight;level;jump from the data chunks (the dwj2 format of tools/compact.py),
@@ -232,7 +236,7 @@ for i, r in enumerate(rows):
            'distribution': [{'@type': 'DataDownload', 'encodingFormat': 'application/gzip',
                              'contentUrl': f'{BASE}/data/seq/{r["id"]}/chunk-{c:03d}.bin.gz'} for c in range(int(r['chunks']))]},
           crumbs_ld([('All sequences', f'{BASE}/seq/'), (fam, f'{BASE}/family/{slug(fam)}/'), (A, f'{BASE}/seq/{A}/')])]
-    write(f'seq/{A}/index.html', page(up, f'seq/{A}/', title, desc, body, image=f'{BASE}/thumbs/{r["id"]}.webp', ld=ld))
+    write(f'seq/{A}/index.html', page(up, f'seq/{A}/', title, desc, body, image=f'{BASE}/share/{r["id"]}.jpg', ld=ld))
 
 # ── lists: all sequences, and one per family ─────────────────────────────────
 def chips(up, current=None):
@@ -274,6 +278,165 @@ for f in fam_order:
                + ', '.join(f'{r["anumber"]} {r["name"]}' for r in rs[:4]) + '…', 300), body,
           ld=[crumbs_ld([('All sequences', f'{BASE}/seq/'), (f, f'{BASE}/family/{slug(f)}/')])]))
 
+# ── how it works: the decomposition explained, with a live example ──────────
+LEARN_JS = r"""/* decompwlj 3D, written by tools/seo.py: the live example of the "How it works" page.
+   The same rule as the generator (tools/decompwlj_gen.c):
+     d = a(n+1) - a(n);  if a > 2d:  l = a - d,  k = least divisor of l above d,  L = l / k. */
+(() => {
+  const $ = (s) => document.querySelector(s);
+  const PRESETS = {
+    primes: () => { const p = []; for (let n = 2; p.length < 40; n++) if (isPrime(n)) p.push(n); return p; },
+    squares: () => Array.from({ length: 40 }, (_, i) => (i + 1) ** 2),
+    triangular: () => Array.from({ length: 40 }, (_, i) => (i + 1) * (i + 2) / 2),
+    odd: () => Array.from({ length: 40 }, (_, i) => 2 * i + 1),
+    fibonacci: () => { const f = [1, 2]; while (f.length < 40) f.push(f[f.length - 1] + f[f.length - 2]); return f; },
+  };
+  function isPrime(n) { if (n < 2) return false; for (let i = 2; i * i <= n; i++) if (n % i === 0) return false; return true; }
+  /** k, L for a term a with jump d, or null when a <= 2d */
+  function decomp(a, d) {
+    if (a <= 2 * d) return null;
+    const l = a - d; let k = l;                      /* l itself always exceeds d */
+    for (let i = 1; i * i <= l; i++) {
+      if (l % i) continue;
+      if (i > d && i < k) k = i;
+      const j = l / i; if (j > d && j < k) k = j;
+    }
+    return { l, k, L: l / k };
+  }
+  const fmt = (x) => x.toLocaleString('en-US');
+  function parse(text) {
+    const v = (text.match(/-?\d+/g) || []).map(Number);
+    if (v.length < 2) return { err: 'Type at least two terms.' };
+    if (v.length > 400) return { err: 'At most 400 terms here; the viewer has 100,000 per sequence.' };
+    if (v.some(x => !Number.isSafeInteger(x) || x < 1 || x > 1e12)) return { err: 'Terms must be whole numbers from 1 to 10^12.' };
+    for (let i = 1; i < v.length; i++) if (v[i] <= v[i - 1]) return { err: `The terms must increase: ${fmt(v[i - 1])} is followed by ${fmt(v[i])}.` };
+    return { v };
+  }
+  function run() {
+    const { v, err } = parse($('#terms').value);
+    $('#err').textContent = err || '';
+    const body = $('#rows'); body.replaceChildren();
+    const pts = [];
+    let nw = 0, nl = 0, nt = 0, nn = 0;
+    if (!v) { draw(pts); $('#sum').textContent = ''; return; }
+    for (let i = 0; i + 1 < v.length; i++) {
+      const a = v[i], d = v[i + 1] - a, r = decomp(a, d);
+      const tr = document.createElement('tr');
+      let cls = 'no', label = `a ≤ 2d: no decomposition`;
+      if (r) {
+        if (r.k > r.L) { cls = 'lv'; label = 'level (k > L)'; nl++; }
+        else { cls = 'wt'; label = r.k === r.L ? 'weight, tie (k = L)' : 'weight (k ≤ L)'; nw++; if (r.k === r.L) nt++; }
+        pts.push({ k: r.k, L: r.L, lv: r.k > r.L, i });
+      } else nn++;
+      const cells = [i + 1, fmt(a), fmt(d), r ? fmt(r.l) : '–', r ? fmt(r.k) : '–', r ? fmt(r.L) : '–',
+                     r ? `${fmt(r.k)} × ${fmt(r.L)} + ${fmt(d)}` : '–'];
+      for (const c of cells) { const td = document.createElement('td'); td.textContent = c; tr.append(td); }
+      const td = document.createElement('td'); td.textContent = label; td.className = cls; tr.append(td);
+      tr.dataset.i = i; body.append(tr);
+    }
+    const dec = nw + nl;
+    $('#sum').textContent = `${v.length - 1} terms (the last one has no successor): ${dec} decompose, ` +
+      `${nl} in the level class, ${nw} in the weight class` + (nt ? ` (${nt} ties)` : '') + (nn ? `, ${nn} do not decompose.` : '.');
+    draw(pts);
+  }
+  /* the weight-level plate of the example: log k across, log L up, as on the site */
+  function draw(pts) {
+    const svg = $('#plate'), NS = 'http://www.w3.org/2000/svg';
+    svg.replaceChildren();
+    const S = 300, M = 24;
+    const mx = Math.max(4, ...pts.map(p => Math.max(p.k, p.L)));
+    const lg = Math.log(mx);
+    const X = (k) => M + Math.log(k) / lg * (S - 2 * M), Y = (L) => S - M - Math.log(L) / lg * (S - 2 * M);
+    const el = (n, at) => { const e = document.createElementNS(NS, n); for (const k in at) e.setAttribute(k, at[k]); svg.append(e); return e; };
+    el('rect', { x: M, y: M, width: S - 2 * M, height: S - 2 * M, class: 'fr' });
+    el('line', { x1: X(1), y1: Y(1), x2: X(mx), y2: Y(mx), class: 'dg' });
+    const tk = el('text', { x: S - M, y: S - 6, 'text-anchor': 'end' }); tk.textContent = 'k →';
+    const tl = el('text', { x: 6, y: M - 8 }); tl.textContent = '↑ L';
+    for (const p of pts) {
+      const c = el('circle', { cx: X(p.k), cy: Y(p.L), r: 4, class: p.lv ? 'lv' : 'wt' });
+      const t = document.createElementNS(NS, 'title'); t.textContent = `term ${p.i + 1}: k = ${p.k}, L = ${p.L}`; c.append(t);
+    }
+  }
+  document.querySelectorAll('[data-preset]').forEach(b => b.addEventListener('click', () => {
+    $('#terms').value = PRESETS[b.dataset.preset]().join(', '); run();
+  }));
+  $('#terms').addEventListener('input', run);
+  $('#terms').value = PRESETS.primes().join(', ');
+  run();
+})();
+"""
+lbody = f'''{crumbs('../', [('How it works', None)])}
+<h1>How it works: weight × level + jump</h1>
+<p class="lead">Take a strictly increasing sequence of whole numbers — the primes, the squares, any sequence of the OEIS.
+Each term, together with the next one, is written as a product plus a jump:</p>
+<p class="formula"><i>a</i>(n) = <i>k</i>(n) · <i>L</i>(n) + <i>d</i>(n)</p>
+<p class="lead"><i>k</i> is the <b class="wt">weight</b>, <i>L</i> the <b class="lv">level</b> and <i>d</i> the <b>jump</b>.
+Every term that can be decomposed is decomposed in exactly one way, by three steps.</p>
+
+<h2>The three steps</h2>
+<ol class="steps">
+  <li><b>The jump.</b> <i>d</i> = a(n+1) − a(n), the distance to the next term.</li>
+  <li><b>What is left.</b> <i>l</i> = a(n) − d. The term decomposes only if <i>l</i> &gt; <i>d</i>, that is a(n) &gt; 2d;
+    otherwise the jump is too large and the term is skipped.</li>
+  <li><b>Weight and level.</b> The weight <i>k</i> is the <em>smallest divisor of l that is larger than d</em>, and the
+    level is <i>L</i> = l / k. Then a(n) = k·L + d, and k &gt; d: the weight always exceeds the jump.</li>
+</ol>
+
+<h2>Three primes, worked by hand</h2>
+<div class="cards3">
+  <div class="card3"><p class="big">113</p><p>next prime 127, so <i>d</i> = 14<br><i>l</i> = 113 − 14 = 99<br>
+    divisors of 99: 1, 3, 9, 11, <b>33</b>, 99<br>the smallest above 14 is <i>k</i> = 33, and <i>L</i> = 99 / 33 = 3</p>
+    <p class="res">113 = 33 × 3 + 14 · <span class="lv">level class, k &gt; L</span></p></div>
+  <div class="card3"><p class="big">1009</p><p>next prime 1013, so <i>d</i> = 4<br><i>l</i> = 1009 − 4 = 1005<br>
+    divisors of 1005: 1, 3, <b>5</b>, 15, 67, …<br>the smallest above 4 is <i>k</i> = 5, and <i>L</i> = 1005 / 5 = 201</p>
+    <p class="res">1009 = 5 × 201 + 4 · <span class="wt">weight class, k ≤ L</span></p></div>
+  <div class="card3"><p class="big">7</p><p>next prime 11, so <i>d</i> = 4<br><i>l</i> = 7 − 4 = 3<br>
+    3 is not larger than 4: no divisor of 3 can exceed the jump</p>
+    <p class="res">7 does not decompose (7 ≤ 2 × 4)</p></div>
+</div>
+<p class="lead">A term is in the <b class="lv">level class</b> when k &gt; L and in the <b class="wt">weight class</b> when
+k ≤ L; the ties k = L sit on the diagonal. For the primes the weight is never even, and a prime above 3 is the lesser
+of a twin pair exactly when its weight is 3.</p>
+
+<h2>Try it</h2>
+<p class="lead">Type or paste increasing terms, or start from a sequence below. The table and the plate follow as you type.</p>
+<div class="presets">
+  <button type="button" class="cta alt" data-preset="primes">Primes</button><button type="button" class="cta alt" data-preset="squares">Squares</button><button type="button" class="cta alt" data-preset="triangular">Triangular numbers</button><button type="button" class="cta alt" data-preset="odd">Odd numbers</button><button type="button" class="cta alt" data-preset="fibonacci">Fibonacci</button>
+</div>
+<label class="lab" for="terms">Terms, separated by commas or spaces</label>
+<textarea id="terms" rows="3" spellcheck="false"></textarea>
+<p id="err" class="err" role="alert"></p>
+<div class="try">
+  <figure class="tryplate"><svg id="plate" viewBox="0 0 300 300" role="img" aria-label="Weight–level plate of the example"></svg>
+    <figcaption>The example's plate: weight k across, level L up, on log scales; the dashed line is k = L.
+    Hover a point for its values.</figcaption></figure>
+  <div class="trytab"><p id="sum" class="note" aria-live="polite"></p>
+    <div class="scroll"><table class="list demo"><thead><tr><th>n</th><th>a(n)</th><th>d</th><th>l = a − d</th><th>k</th><th>L</th><th>k × L + d</th><th>class</th></tr></thead>
+    <tbody id="rows"></tbody></table></div></div>
+</div>
+<p class="note">Fibonacci is a sequence where nothing decomposes: each term is less than twice the jump to the next.</p>
+
+<h2>Reading the site</h2>
+<ul class="steps">
+  <li><b>The plates</b> of the gallery put every decomposable term at (log k, log L), scaled by the largest term:
+    <span class="wt">blue</span> for the weight class, <span class="lv">orange</span> for the level class. The dashed
+    diagonal is k = L, the edge k·L = a is where the jump is small against the term.</li>
+  <li><b>The 3-D viewer</b> adds the jump d as a third axis. Its flat views are the plate (k–L), and the jump against
+    the weight (k–d) or the level (L–d); the level line L = 1 holds the terms whose l is itself the weight.</li>
+  <li>Each sequence page gives the counts, a note on its shape, and a CSV of all 10⁵ terms with their weight, level
+    and jump. Good places to start: the <a href="../seq/A000040/">primes</a>, the
+    <a href="../seq/A000027/">natural numbers</a> (d = 1: the weight is the least divisor of a − 1 above 1),
+    the <a href="../seq/A000290/">squares</a>.</li>
+</ul>
+<p class="lead">The decomposition is described in <a href="https://arxiv.org/abs/0711.0865" rel="noopener">arXiv:0711.0865</a>
+and on <a href="https://decompwlj.com" rel="noopener">decompwlj.com</a>.</p>
+<script src="learn.js" defer></script>'''
+write('learn/index.html', page('../', 'learn/', 'How it works: weight × level + jump · decompwlj 3D',
+      'The decomposition a(n) = k·L + d of an integer sequence, step by step: the jump, the weight and the level, three worked '
+      'primes, and a live example where you type your own terms.', lbody,
+      ld=[crumbs_ld([('How it works', f'{BASE}/learn/')])]))
+write('learn/learn.js', LEARN_JS)
+
 # ── 404: short URLs such as /A000040 go to their page ───────────────────────
 write('404.html', f'''<!doctype html>
 <html lang="en">
@@ -305,7 +468,7 @@ a sequence also opens by its A-number, as in <a href="/seq/A000040/">/seq/A00004
 ''')
 
 # ── sitemap and robots ──────────────────────────────────────────────────────
-urls = [(f'{BASE}/', f'{BASE}/og.png'), (f'{BASE}/seq/', None)]
+urls = [(f'{BASE}/', f'{BASE}/og.png'), (f'{BASE}/learn/', None), (f'{BASE}/seq/', None)]
 urls += [(f'{BASE}/family/{slug(f)}/', None) for f in fam_order]
 urls += [(f'{BASE}/seq/{r["anumber"]}/', f'{BASE}/thumbs/{r["id"]}.webp') for r in rows]
 sm = ['<?xml version="1.0" encoding="UTF-8"?>',
@@ -350,6 +513,27 @@ else:
     d.text((W // 2, 398), 'a(n) = k·L + d', font=font(False, 28), fill=(255, 140, 66), anchor='mm')
     img.convert('RGB').save(ROOT / 'og.png', optimize=True)
     written.append('og.png')
+
+    # one share image per sequence (share/<id>.jpg, 600 x 315): the plate and the A-number; the name and
+    # the counts are in the card's title and description, since text costs as much as the plate in a
+    # JPEG.  Rewritten only when its bytes change; the 5000 take about 34 MB.
+    import io
+    SW, SH, P = 600, 315, 271
+    f_an, f_sm = font(True, 20), font(False, 14)
+    nshare = 0
+    for r in rows:
+        src = ROOT / 'thumbs' / f'{r["id"]}.webp'
+        if not src.exists(): continue
+        im = Image.new('RGB', (SW, SH), (11, 14, 20)); d = ImageDraw.Draw(im)
+        x0, y0 = (SW - P) // 2, (SH - P) // 2
+        th = Image.open(src).convert('RGBA').resize((P, P), Image.LANCZOS)
+        im.paste(th, (x0, y0), th)
+        d.text((18, 16), r['anumber'], font=f_an, fill=(122, 162, 255))
+        d.text((SW - 18, SH - 14), 'decompwlj 3D · k·L + d', font=f_sm, fill=(100, 112, 138), anchor='rs')
+        b = io.BytesIO(); im.save(b, 'JPEG', quality=60, optimize=True, progressive=True)
+        out = ROOT / 'share' / f'{r["id"]}.jpg'; out.parent.mkdir(exist_ok=True)
+        if not out.exists() or out.read_bytes() != b.getvalue(): out.write_bytes(b.getvalue()); nshare += 1
+    print(f'{nshare} share images written or updated')
 
 print(f'{len(written)} files written for {BASE}: {N} sequence pages, {len(fam_order)} family pages, '
       f'the index, 404.html, sitemap.xml ({len(urls)} URLs), robots.txt')
