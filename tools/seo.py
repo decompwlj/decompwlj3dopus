@@ -549,8 +549,12 @@ try:
 except ImportError:
     print('Pillow missing: og.png not written')
 else:
+    # the link previews always use the light palette of the pages (css/pages.css), whatever the
+    # theme a visitor picks in the app: they are shown on social sites and in chats, mostly light
+    BG, CARD, FG, FG2, FG3 = (246, 247, 250), (255, 255, 255), (17, 21, 31), (76, 86, 112), (107, 118, 141)
+    ACCENT, LEVEL = (47, 95, 208), (226, 102, 26)
     W, H, T = 1200, 630, 150
-    img = Image.new('RGB', (W, H), (11, 14, 20))
+    img = Image.new('RGB', (W, H), BG)
     cols, rws = W // T + 1, H // T + 1
     step = max(1, N // (cols * rws))
     pick = [rows[(j * step) % N] for j in range(cols * rws)]
@@ -558,10 +562,10 @@ else:
         p = ROOT / 'thumbs' / f'{r["id"]}.webp'
         if not p.exists(): continue
         th = Image.open(p).convert('RGBA').resize((T - 6, T - 6), Image.LANCZOS)
-        tile = Image.new('RGBA', (T - 6, T - 6), (17, 21, 31, 255)); tile.alpha_composite(th)
+        tile = Image.new('RGBA', (T - 6, T - 6), CARD + (255,)); tile.alpha_composite(th)
         img.paste(tile.convert('RGB'), ((j % cols) * T + 3 - 30, (j // cols) * T + 3 - 30))
     shade = Image.new('RGBA', (W, H), (0, 0, 0, 0)); d = ImageDraw.Draw(shade)
-    d.rectangle([0, 190, W, 440], fill=(11, 14, 20, 225))
+    d.rectangle([0, 190, W, 440], fill=BG + (232,))
     img = Image.alpha_composite(img.convert('RGBA'), shade)
     d = ImageDraw.Draw(img)
     def font(bold, size):
@@ -570,10 +574,10 @@ else:
             try: return ImageFont.truetype(f, size)
             except OSError: pass
         return ImageFont.load_default()
-    d.text((W // 2, 262), 'decompwlj 3D', font=font(True, 72), fill=(230, 235, 245), anchor='mm')
+    d.text((W // 2, 262), 'decompwlj 3D', font=font(True, 72), fill=FG, anchor='mm')
     d.text((W // 2, 345), f'weight × level + jump · {N} integer sequences from the OEIS', font=font(False, 32),
-           fill=(154, 166, 189), anchor='mm')
-    d.text((W // 2, 398), 'a(n) = k·L + d', font=font(False, 28), fill=(255, 140, 66), anchor='mm')
+           fill=FG2, anchor='mm')
+    d.text((W // 2, 398), 'a(n) = k·L + d', font=font(False, 28), fill=LEVEL, anchor='mm')
     img.convert('RGB').save(ROOT / 'og.png', optimize=True)
     written.append('og.png')
 
@@ -587,12 +591,12 @@ else:
     for r in rows:
         src = ROOT / 'thumbs' / f'{r["id"]}.webp'
         if not src.exists(): continue
-        im = Image.new('RGB', (SW, SH), (11, 14, 20)); d = ImageDraw.Draw(im)
+        im = Image.new('RGB', (SW, SH), CARD); d = ImageDraw.Draw(im)
         x0, y0 = (SW - P) // 2, (SH - P) // 2
         th = Image.open(src).convert('RGBA').resize((P, P), Image.LANCZOS)
         im.paste(th, (x0, y0), th)
-        d.text((18, 16), r['anumber'], font=f_an, fill=(122, 162, 255))
-        d.text((SW - 18, SH - 14), 'decompwlj 3D · k·L + d', font=f_sm, fill=(100, 112, 138), anchor='rs')
+        d.text((18, 16), r['anumber'], font=f_an, fill=ACCENT)
+        d.text((SW - 18, SH - 14), 'decompwlj 3D · k·L + d', font=f_sm, fill=FG3, anchor='rs')
         b = io.BytesIO(); im.save(b, 'JPEG', quality=60, optimize=True, progressive=True)
         out = ROOT / 'share' / f'{r["id"]}.jpg'; out.parent.mkdir(exist_ok=True)
         if not out.exists() or out.read_bytes() != b.getvalue(): out.write_bytes(b.getvalue()); nshare += 1
