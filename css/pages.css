@@ -125,3 +125,13 @@ textarea#terms { width: 100%; font: 14px/1.5 var(--mono); color: var(--fg); back
 .list.demo td.wt { color: var(--c-weight); } .list.demo td.lv { color: var(--c-level); }
 h3 { font-size: 16px; margin: 22px 0 4px; }
 .scroll.narrow { max-width: 640px; max-height: none; margin: 8px 0 12px; }
+
+/* the plate opens the 3-D viewer, which starts on the same picture */
+.plate-link { display: block; text-decoration: none; }
+.plate-link .plate { transition: border-color .15s, box-shadow .15s; }
+.plate-link:hover .plate, .plate-link:focus-visible .plate { border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 20%, transparent); }
+.plate .go3d { position: absolute; right: 10px; top: 10px; padding: 4px 10px; border-radius: 999px; font: 600 12px var(--sans);
+  background: var(--accent); color: #fff; opacity: .9; transition: opacity .15s; }
+@media (hover: hover) { .plate .go3d { opacity: 0; } .plate-link:hover .go3d, .plate-link:focus-visible .go3d { opacity: .95; } }
+/* a soft cross-fade when moving between the pages and the viewer (where supported) */
+@view-transition { navigation: auto; }
