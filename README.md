@@ -171,8 +171,10 @@ a hard reload (Ctrl+F5, Cmd+Shift+R) clears the cached `index.html` and `data/ca
 `↑`/`↓` neighbouring sequence, `R` random, `1`–`5` views, `V` overlay/side by side, `C`/`P` side
 panels, `T` theme, `Space` sweep along n.
 
-Opened from a gallery card, a sequence starts in the flat k–L view like the card; the first
-grab-and-drag tilts it into 3-D. A link that names a view keeps it.
+Opened from a gallery card or from its sequence page (click the plate), a sequence starts in the
+flat k–L view, the same picture as the plate; the first grab-and-drag tilts it into 3-D. A link
+that names a view keeps it. In the viewer, **sequence page** (next to the A-number, and in the
+Sequence panel) leads back to the sequence's page; browsers that support it cross-fade between the two.
 
 ## Under the hood
 

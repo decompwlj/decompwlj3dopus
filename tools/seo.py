@@ -220,8 +220,8 @@ for i, r in enumerate(rows):
 <p class="meta"><a class="an" href="https://oeis.org/{A}" rel="noopener">{A}</a> on the OEIS · family <a href="{up}family/{slug(fam)}/">{e(fam)}</a>{f' · also known as {e(r["alias"])}' if r['alias'] else ''}</p>
 <div class="seq">
   <figure>
-    <div class="plate">{PLATE_SVG}<img src="{up}thumbs/{r['id']}.webp" width="480" height="480" alt="Weight–level plate of {e(name)}"><span class="axl k" aria-hidden="true">k</span><span class="axl L" aria-hidden="true">L</span></div>
-    <figcaption>Weight k across, level L up, both on log scales: blue in the weight class (k ≤ L), orange in the level class (k &gt; L). The dashed diagonal is k = L.</figcaption>
+    <a class="plate-link" href="{up}#{A}" title="Open in the 3-D viewer: it starts on this plate; drag it to turn it into 3-D"><div class="plate">{PLATE_SVG}<img src="{up}thumbs/{r['id']}.webp" width="480" height="480" alt="Weight–level plate of {e(name)}"><span class="axl k" aria-hidden="true">k</span><span class="axl L" aria-hidden="true">L</span><span class="go3d" aria-hidden="true">Explore in 3-D →</span></div></a>
+    <figcaption>Click the plate to explore it in 3-D. Weight k across, level L up, both on log scales: blue in the weight class (k ≤ L), orange in the level class (k &gt; L). The dashed diagonal is k = L.</figcaption>
   </figure>
   <div>
     <a class="cta" href="{up}#{A}">Open in the 3-D viewer</a><a class="cta alt" href="https://oeis.org/{A}" rel="noopener">{A} on the OEIS</a><button type="button" class="cta alt" id="csv" data-id="{r['id']}" data-an="{A}" data-n0="{n0}" data-terms="{terms}" data-chunks="{r['chunks']}" title="n;a;weight;level;jump, one row per term, rebuilt from the data">Download CSV</button>

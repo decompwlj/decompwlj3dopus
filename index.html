@@ -236,6 +236,10 @@ html, body {
 .sub { font: 11px var(--mono); color: var(--fg-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .sub a.oeis { color: var(--accent); text-decoration: none; }
 .sub a.oeis:hover { text-decoration: underline; }
+.sub a.page { color: var(--fg-2); text-decoration: none; }
+.sub a.page:hover { color: var(--accent); text-decoration: underline; }
+/* a soft cross-fade when moving between the viewer and the static pages (where supported) */
+@view-transition { navigation: auto; }
 .fullname { margin: 0 0 10px; font-size: 12px; line-height: 1.5; color: var(--fg); }
 .spacer { flex: 1; }
 .load-state { font: 11px var(--mono); color: var(--fg-3); font-variant-numeric: tabular-nums; }
@@ -651,7 +655,7 @@ input[type=range] { width: 100%; accent-color: var(--accent); height: 18px; }
       <button id="catShow" class="icon-btn ghost" title="Show catalogue (C)" aria-label="Show catalogue">&#9776;</button>
       <div class="title-block">
         <h1 id="seqName">—</h1>
-        <div id="seqSub" class="sub"><a class="oeis" target="_blank" rel="noopener" title="Open this sequence on the OEIS"></a><span id="seqSubRest"></span><span id="seqVs" class="vs"></span></div>
+        <div id="seqSub" class="sub"><a class="oeis" target="_blank" rel="noopener" title="Open this sequence on the OEIS"></a> · <a id="pageLink" class="page" title="This sequence's page: counts, note, plate and CSV">sequence page</a><span id="seqSubRest"></span><span id="seqVs" class="vs"></span></div>
       </div>
       <div class="spacer"></div>
       <div id="loadState" class="load-state"></div>
@@ -752,6 +756,7 @@ input[type=range] { width: 100%; accent-color: var(--accent); height: 18px; }
       <dl id="stats" class="stats"></dl>
       <p id="note" class="note"></p>
       <div class="btn-row">
+        <a id="pageLink2" class="chip" title="This sequence's page: counts, note, plate and CSV">sequence page</a>
         <a id="oeisLink" class="chip" target="_blank" rel="noopener">OEIS</a>
         <button id="snap" class="chip">snapshot</button>
         <button id="csvBtn" class="chip" title="n;a;weight;level;jump, one row per term; rebuilt from the data on demand">download CSV</button>
@@ -2233,8 +2238,8 @@ function ensureViewer() {
   return viewerReady;
 }
 
-/* Opened from a gallery card, a sequence first shows the flat k–L view, the same picture
-   as the card; the first grab-and-drag on the plot (mouse button held, or a finger) turns it
+/* Opened from a gallery card or a sequence page (or any link without a view), a sequence first
+   shows the flat k–L view, the same picture as the plate; the first grab-and-drag on the plot (mouse button held, or a finger) turns it
    into the 3-D view, tilting smoothly out of the plane.  Hovering and the wheel leave it flat.
    Links that carry a view, and views picked by hand, keep their own. */
 let introFlat = false, introArm = null;
@@ -2268,6 +2273,9 @@ function startIntro() {
 
 async function showViewer(t) {
   clearFail();
+  /* arriving from outside the viewer (the gallery, a sequence page, a bare #A000040 link) with no
+     view in the link: start flat, as the plate looked, and let a drag turn it into 3-D */
+  if ($('#app').hidden && !t.view && t.vs === undefined) introFlat = true;
   $('#home').hidden = true;
   $('#app').hidden = false;
   const first = !viz;
@@ -2324,6 +2332,7 @@ async function select(id) {
   $('#seqName').title = r.name;
   const an = $('#seqSub').querySelector('a');
   an.href = oeisUrl(r); an.textContent = r.anumber;
+  $('#pageLink').href = $('#pageLink2').href = `seq/${r.anumber}/`;
   $('#seqSubRest').textContent = ` · ${r.family} · n = ${fmt.format(r.n0)} … ${fmt.format(r.n0 + r.terms - 1)}`;
   $('#fullName').textContent = r.name;
   $('#note').textContent = r.note || '';
