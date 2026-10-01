@@ -46,7 +46,8 @@ live example. Background: [decompwlj.com](https://decompwlj.com) and
   rebuilt in the browser) and its own link-preview image.
 - 🎓 **How it works** page with theory and a live example.
 - 🌗 Light and dark themes, keyboard shortcuts, PNG snapshots.
-- 📦 Plain static files: no server code, no database, no build step, no third-party requests.
+- 📦 Plain static files: no server code, no database, no build step.
+- 🔒 Privacy-friendly visit counts ([GoatCounter](https://www.goatcounter.com)): no cookies, no personal data.
 
 ## Run it locally
 
@@ -129,6 +130,26 @@ To get indexed: add the domain to **Google Search Console** (verify with a DNS T
 submit `https://<domain>/sitemap.xml`; do the same in **Bing Webmaster Tools** (it also feeds
 DuckDuckGo and Yahoo). On GitHub, fill the repository's **About** box (description, website,
 topics) and upload `og.png` under **Settings → General → Social preview**.
+
+### Visit counts (GoatCounter)
+
+Every page loads [GoatCounter](https://www.goatcounter.com), a free, open-source counter for
+non-commercial sites: **no cookies, no personal data, nothing stored in the browser**, so no
+consent banner is needed. The gallery counts as `/`, each sequence opened in the viewer as
+`/#A000040` (whatever its view), the static pages under their own path, and each CSV download as
+the event `csv/A000040`. Visits from `localhost` are ignored, and the site works the same if a
+blocker stops the counter.
+
+To turn it on for decompwlj.net:
+
+1. Sign up at [goatcounter.com/signup](https://www.goatcounter.com/signup) with the code
+   **`decompwlj`**: the dashboard is then <https://decompwlj.goatcounter.com>.
+2. In its **Settings**, set the site domain to `decompwlj.net`; optionally make the dashboard
+   public, or ignore your own visits from the dashboard's settings.
+
+Counts appear as soon as the pages are live. To use another code, change the URL in the
+`data-goatcounter` script of `index.html` and `GOATCOUNTER_URL` in `tools/seo.py`, then run
+`python3 tools/seo.py`; to remove the counter, delete that script and set `GOATCOUNTER_URL = ''`.
 
 ### Updating
 

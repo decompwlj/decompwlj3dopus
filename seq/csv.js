@@ -51,6 +51,7 @@
       var url = URL.createObjectURL(new Blob(text, { type: 'text/csv' }));
       var a = document.createElement('a'); a.href = url; a.download = 'decompwlj_' + an + '.csv';
       document.body.appendChild(a); a.click(); a.remove();
+      try { window.goatcounter.count({ path: 'csv/' + an, title: 'CSV ' + an, event: true }); } catch (e) {}
       setTimeout(function () { URL.revokeObjectURL(url); }, 30000);
     }).catch(function (e) { alert('Could not build the CSV: ' + e.message); })
       .then(function () { btn.disabled = false; btn.textContent = label; });

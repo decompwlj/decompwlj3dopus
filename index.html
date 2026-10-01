@@ -17,6 +17,10 @@
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
 <link rel="sitemap" type="application/xml" href="sitemap.xml">
+<!-- Visit counts with GoatCounter (goatcounter.com): no cookies, no personal data, nothing stored in
+     the browser. The page counts its own views — the gallery, and each sequence opened — through
+     track() below; the dashboard is public at decompwlj.goatcounter.com. -->
+<script data-goatcounter="https://decompwlj.goatcounter.com/count" data-goatcounter-settings='{"no_onload": true}' async src="https://gc.zgo.at/count.js"></script>
 <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebSite","name":"decompwlj 3D","url":"https://decompwlj.net/","description":"Interactive 3-D atlas of the decomposition into weight × level + jump for 5000 integer sequences from the OEIS."}</script>
 <style>
 /* the base rules the claude.ai wrapper used to supply */
@@ -2076,6 +2080,19 @@ function toHomeTop() {
 }
 
 const HOME_TITLE = document.title;
+
+/* ── visit counts (GoatCounter, see the <head>) ─────────────── */
+/* The gallery is counted as "/", a sequence as "/#A000040" whatever its view, and a CSV download as
+   the event "csv/A000040".  Nothing is sent from localhost, and nothing breaks if a blocker stops
+   the counter script. */
+let tracked = null;
+function track(path, title, event = false) {
+  if (!event) { if (path === tracked) return; tracked = path; }
+  const send = () => { try { window.goatcounter.count({ path, title, event }); } catch {} };
+  if (window.goatcounter && window.goatcounter.count) return send();
+  const s = document.querySelector('script[data-goatcounter]');
+  if (s) s.addEventListener('load', send, { once: true });
+}
 function showHome() {
   clearFail();
   if (viz) viz.stop();
@@ -2083,6 +2100,7 @@ function showHome() {
   $('#app').hidden = true;
   $('#home').hidden = false;
   document.title = HOME_TITLE;
+  track('/', 'Gallery');
   if (state.cmp) clearCompare();          /* a comparison ends with a visit to the gallery */
   disarmIntro();
   renderHome();
@@ -2316,6 +2334,7 @@ async function select(id) {
   $('#progressBar').style.width = '2%';
   $('#tip').hidden = true;
   if (!$('#app').hidden) document.title = `${r.name} · decompwlj 3D`;
+  track('/#' + r.anumber, r.name);
 
   ds = new Dataset(r, DATA);
   rebuildFrame();
@@ -2527,6 +2546,7 @@ async function downloadCSV(r, btn) {
     const a = document.createElement('a');
     a.href = url; a.download = `decompwlj_${r.anumber}.csv`;
     document.body.appendChild(a); a.click(); a.remove();
+    track('csv/' + r.anumber, `CSV ${r.anumber}`, true);
     setTimeout(() => URL.revokeObjectURL(url), 30000);
   } catch (e) {
     alert(`Could not build the CSV for ${r.anumber}: ${e.message}`);

@@ -26,6 +26,10 @@ import csv, html, json, pathlib, re, sys
 HERE = pathlib.Path(__file__).resolve().parent
 ROOT = HERE.parent
 SITE = 'decompwlj 3D'
+# visit counts: GoatCounter, no cookies and no personal data (see index.html); '' leaves them out
+GOATCOUNTER_URL = 'https://decompwlj.goatcounter.com/count'
+GOATCOUNTER = (f'<script data-goatcounter="{GOATCOUNTER_URL}" async src="https://gc.zgo.at/count.js"></script>'
+               if GOATCOUNTER_URL else '')
 
 def base_url():
     if '--base' in sys.argv:
@@ -75,6 +79,7 @@ def page(up, path, title, desc, body, image=None, ld=()):
 <link rel="canonical" href="{e(url)}">
 <link rel="icon" href="{FAVICON}">
 <link rel="stylesheet" href="{up}css/pages.css">
+{GOATCOUNTER}
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="{SITE}">
 <meta property="og:title" content="{e(title)}">
@@ -173,6 +178,7 @@ CSV_JS = r"""/* decompwlj 3D, written by tools/seo.py: the "Download CSV" button
       var url = URL.createObjectURL(new Blob(text, { type: 'text/csv' }));
       var a = document.createElement('a'); a.href = url; a.download = 'decompwlj_' + an + '.csv';
       document.body.appendChild(a); a.click(); a.remove();
+      try { window.goatcounter.count({ path: 'csv/' + an, title: 'CSV ' + an, event: true }); } catch (e) {}
       setTimeout(function () { URL.revokeObjectURL(url); }, 30000);
     }).catch(function (e) { alert('Could not build the CSV: ' + e.message); })
       .then(function () { btn.disabled = false; btn.textContent = label; });
@@ -503,6 +509,7 @@ write('404.html', f'''<!doctype html>
 <meta name="robots" content="noindex">
 <link rel="icon" href="{FAVICON}">
 <link rel="stylesheet" href="/css/pages.css">
+{GOATCOUNTER}
 <script>
   /* /A000040, /a000040/ or /seq/a000040 -> /seq/A000040/ ; the site may live under a sub-path */
   (function () {{

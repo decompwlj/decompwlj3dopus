@@ -19,7 +19,7 @@ const b = await chromium.launch();
 const ctx = await b.newContext({ viewport: { width: 1400, height: 900 }, acceptDownloads: true });
 const p = await ctx.newPage();
 p.on('pageerror', e => errs.push('page error: ' + e.message));
-p.on('response', r => { if (r.status() >= 400) errs.push(`${r.status()} ${r.url()}`); });
+p.on('response', r => { if (r.status() >= 400 && !r.url().includes('goatcounter') && !r.url().includes('gc.zgo.at')) errs.push(`${r.status()} ${r.url()}`); });  /* the visit counter is not ours to test */
 
 /* the gallery */
 await p.goto(BASE + '/'); await p.waitForSelector('#grid .card');
