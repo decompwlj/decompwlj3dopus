@@ -708,7 +708,7 @@ input[type=range] { width: 100%; accent-color: var(--accent); height: 18px; }
 
     <section class="grp">
       <h2>Points</h2>
-      <div class="slider-row"><label for="ptSize">size</label><input type="range" id="ptSize" min="0.4" max="12" step="0.1" value="2.4"><output id="ptSizeOut">2.4</output></div>
+      <div class="slider-row"><label for="ptSize">size</label><input type="range" id="ptSize" min="0.4" max="12" step="0.1" value="3"><output id="ptSizeOut">3.0</output></div>
       <div class="slider-row"><label for="ptOpacity">opacity</label><input type="range" id="ptOpacity" min="0.05" max="1" step="0.01" value="0.85"><output id="ptOpacityOut">0.85</output></div>
       <div class="btn-row">
         <button id="mDensity" class="chip" aria-pressed="false" title="additive blending — bright where the cloud is dense">density</button>
@@ -1401,7 +1401,7 @@ class Viz {
     this.onPick = () => {};
 
     this.uniforms = {
-      uSize:    { value: 2.4 },
+      uSize:    { value: 3 },
       uDpr:     { value: this.renderer.getPixelRatio() },
       uAtten:   { value: 1 },
       uRef:     { value: 16 },
