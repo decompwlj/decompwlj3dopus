@@ -708,7 +708,7 @@ input[type=range] { width: 100%; accent-color: var(--accent); height: 18px; }
 
     <section class="grp">
       <h2>Points</h2>
-      <div class="slider-row"><label for="ptSize">size</label><input type="range" id="ptSize" min="0.4" max="12" step="0.1" value="2.4"><output id="ptSizeOut">2.4</output></div>
+      <div class="slider-row"><label for="ptSize">size</label><input type="range" id="ptSize" min="0.4" max="12" step="0.1" value="3"><output id="ptSizeOut">3.0</output></div>
       <div class="slider-row"><label for="ptOpacity">opacity</label><input type="range" id="ptOpacity" min="0.05" max="1" step="0.01" value="0.85"><output id="ptOpacityOut">0.85</output></div>
       <div class="btn-row">
         <button id="mDensity" class="chip" aria-pressed="false" title="additive blending — bright where the cloud is dense">density</button>
@@ -1385,6 +1385,11 @@ class Viz {
     this.camera.position.set(14, 11, 18);
     this._orthoH = 8;
     this._autoRotate = false;
+    /* pixels of the canvas covered by the top bar and the status bar: the views are fitted to the
+       band between them and centred in it (set by the page; zero when side by side) */
+    this.insets = () => ({ top: 0, bottom: 0, legend: 0 });
+    this._flat = false;
+    this.autoFit = false;         /* grow the orthographic frame so a tilted flat view stays whole */
 
     this._makeControls();
 
@@ -1396,7 +1401,7 @@ class Viz {
     this.onPick = () => {};
 
     this.uniforms = {
-      uSize:    { value: 2.4 },
+      uSize:    { value: 3 },
       uDpr:     { value: this.renderer.getPixelRatio() },
       uAtten:   { value: 1 },
       uRef:     { value: 16 },
@@ -1469,7 +1474,7 @@ class Viz {
     c.autoRotateSpeed = 0.55;
     c.autoRotate = this._autoRotate;
     c.target.copy(target);
-    c.addEventListener('change', () => { this.dirty = true; });
+    c.addEventListener('change', () => { this.dirty = true; if (this.autoFit) this._growFit(); });
     this.controls = c;
   }
 
@@ -1559,6 +1564,11 @@ class Viz {
     const H = this._orthoH;
     this.ortho.top = H; this.ortho.bottom = -H;
     this.ortho.left = -H * aspect; this.ortho.right = H * aspect;
+    /* centre the picture in the free band: shift it down by half the difference of the bars */
+    const ins = this._insets(), shift = Math.round((ins.top - ins.bottom) / 2);
+    for (const cam of [this.persp, this.ortho]) {
+      if (shift) cam.setViewOffset(cell.w, cell.h, 0, -shift, cell.w, cell.h); else cam.clearViewOffset();
+    }
     this.ortho.updateProjectionMatrix();
     this.renderer.setSize(w, h, false);
     this.uniforms.uDpr.value = this.renderer.getPixelRatio();
@@ -1765,19 +1775,36 @@ class Viz {
 
   /** Distance at which the decade box just fills the perspective frustum,
    *  and the half-height that just fits it under orthographic projection. */
-  _fit(dir, up0) {
+  _fit(dir, up0, margin = 1.14) {
     const b = this.box, aspect = this.persp.aspect || 1;
-    const tv = Math.tan(THREE.MathUtils.degToRad(this.persp.fov) / 2), th = tv * aspect;
+    /* only the band between the top bar and the status bar is free: fit the box to it */
+    const h = this.cells()[0].h, ins = this._insets(), band = Math.max(0.4, (h - ins.top - ins.bottom) / h);
+    const tv = Math.tan(THREE.MathUtils.degToRad(this.persp.fov) / 2), th = tv * aspect, tb = tv * band;
     const { right, up } = this._basis(dir, up0);
     const c = new THREE.Vector3();
     let dist = 0, hh = 0;
     for (const sx of [-.5, .5]) for (const sy of [-.5, .5]) for (const sz of [-.5, .5]) {
       c.set(sx * b.x, sy * b.y, sz * b.z);
       const cz = c.dot(dir), cr = Math.abs(c.dot(right)), cu = Math.abs(c.dot(up));
-      dist = Math.max(dist, cz + cr / th, cz + cu / tv);
-      hh = Math.max(hh, cu, cr / aspect);
+      dist = Math.max(dist, cz + cr / th, cz + cu / tb);
+      hh = Math.max(hh, cu / band, cr / aspect);
     }
-    return { dist: dist * 1.1, half: hh * 1.14 };
+    return { dist: dist * (1 + (margin - 1) * 0.7), half: hh * margin };
+  }
+
+  /* a flat view also keeps clear of the legend, which would cover its lower-left corner */
+  _insets() {
+    if (this.cmp === 'split') return { top: 0, bottom: 0 };
+    const i = this.insets();
+    return { top: i.top, bottom: this._flat ? Math.max(i.bottom, i.legend || 0) : i.bottom };
+  }
+
+  /** While a flat view is tilted by hand, let the orthographic frame grow so the box stays whole. */
+  _growFit() {
+    if (!this.camera.isOrthographicCamera) return;
+    const dir = this.camera.position.clone().sub(this.controls.target).normalize();
+    const need = this._fit(dir, this.camera.up).half;
+    if (need > this._orthoH) { this._orthoH = need; this.resize(); }
   }
 
   view(kind) {
@@ -1790,7 +1817,10 @@ class Viz {
     };
     const dir = (dirs[kind] || dirs.iso).normalize();
     const up = kind === 'xz' ? new THREE.Vector3(0, 0, -1) : new THREE.Vector3(0, 1, 0);
-    const fit = this._fit(dir, up);
+    /* the flat views keep a wider margin, for the axis names and the tick labels around them */
+    this._flat = kind !== 'iso';
+    const fit = this._fit(dir, up, kind === 'iso' ? 1.1 : 1.16);
+    this.autoFit = false;
     this._orthoH = fit.half;
     this.uniforms.uRef.value = fit.dist;
     this.resize();
@@ -2222,6 +2252,14 @@ function ensureViewer() {
     viz.applyTheme();
     viz.onPick = showTip;
     viz.onLayout = layoutCompare;
+    /* the top bar (title) and the status bar cover the canvas: fit and centre the views between them */
+    viz.insets = () => {
+      const st = $('#stage').getBoundingClientRect();
+      const lg = $('#legend').getBoundingClientRect();
+      return { top: Math.max(0, $('#topbar').getBoundingClientRect().bottom - st.top),
+               bottom: Math.max(0, st.bottom - $('#statusbar').getBoundingClientRect().top),
+               legend: lg.height ? Math.max(0, st.bottom - lg.top) : 0 };
+    };
     const opts = document.createDocumentFragment();
     for (const r of all) { const o = document.createElement('option'); o.value = `${r.anumber} ${r.name}`; opts.append(o); }
     $('#cmpList').replaceChildren(opts);
@@ -2255,6 +2293,7 @@ function startIntro() {
     disarmIntro();
     if (state.view !== 'xy') return;
     state.view = 'iso';
+    viz.autoFit = true;            /* the frame grows as the plane tilts, so the box stays whole */
     document.querySelectorAll('[data-view]').forEach(o => o.classList.toggle('on', o.dataset.view === 'iso'));
     writeHash();
   };
