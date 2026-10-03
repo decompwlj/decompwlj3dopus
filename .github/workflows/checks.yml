@@ -29,7 +29,7 @@ jobs:
         with:
           python-version: '3.12'
       - name: Python packages
-        run: pip install numpy pillow
+        run: pip install numpy pillow zopfli
       - name: Compile the generator (warnings are errors)
         run: cc -O2 -Wall -Werror -o /tmp/decompwlj_gen tools/decompwlj_gen.c -lm
       - name: Site complete, and four sequences rebuilt byte for byte
