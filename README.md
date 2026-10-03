@@ -36,7 +36,9 @@ live example. Background: [decompwlj.com](https://decompwlj.com) and
 
 ## Features
 
-- 🖼️ **Gallery** of 5000 weight–level plates with search, a family selector and a random button;
+- 🖼️ **Gallery** of 5000 weight–level plates with search, a family selector, a random button,
+  **sorting** (A-number, name, level share, ties, forced level, largest terms) and **filters**
+  (with ties, every term decomposes, level ≥ 50 %, forced level ≥ 90 %), remembered in the browser;
   cards and images load as you scroll.
 - 🧊 **3-D viewer** (three.js / WebGL) of log k, log L, log d: preset views (3D, k–L, k–d, L–d,
   edge), point size and opacity, density mode, the L = 1 line, filters on n and d, a sweep along n.
@@ -45,6 +47,9 @@ live example. Background: [decompwlj.com](https://decompwlj.com) and
 - 📄 **Static page per sequence** for search engines, with a **CSV download** (`n;a;weight;level;jump`,
   rebuilt in the browser) and its own link-preview image.
 - 🎓 **How it works** page with theory and a live example.
+- 📱 **On phones** the controls open as a bottom sheet with the plot kept in view above it (Done,
+  or swipe the handle down, to close), the family chips scroll sideways, and buttons are sized for
+  fingers.
 - 🌗 Light and dark themes, keyboard shortcuts, PNG snapshots.
 - 📦 Plain static files: no server code, no database, no build step.
 - 🔒 Privacy-friendly visit counts ([GoatCounter](https://www.goatcounter.com)): no cookies, no personal data.
