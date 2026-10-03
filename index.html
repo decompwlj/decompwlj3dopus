@@ -131,14 +131,20 @@ html, body {
 
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
+/* very wide screens at scale 1 (QHD, UHD): the side panels and the overlays grow a little */
+:root { --ui: 1; }
+@media (min-width: 2200px) { :root { --ui: 1.15; } }
+@media (min-width: 3000px) { :root { --ui: 1.35; } }
+#catalog, #panel, #topbar, #legend, #statusbar { zoom: var(--ui); }
+
 #app {
   display: grid;
-  grid-template-columns: 292px minmax(0,1fr) 312px;
+  grid-template-columns: calc(292px * var(--ui)) minmax(0,1fr) calc(312px * var(--ui));
   height: 100%; width: 100%;
   transition: grid-template-columns .28s cubic-bezier(.4,0,.2,1);
 }
-#app.no-cat   { grid-template-columns: 0 minmax(0,1fr) 312px; }
-#app.no-panel { grid-template-columns: 292px minmax(0,1fr) 0; }
+#app.no-cat   { grid-template-columns: 0 minmax(0,1fr) calc(312px * var(--ui)); }
+#app.no-panel { grid-template-columns: calc(292px * var(--ui)) minmax(0,1fr) 0; }
 #app.no-cat.no-panel { grid-template-columns: 0 minmax(0,1fr) 0; }
 
 /* ── catalogue ─────────────────────────────────────────────── */
@@ -220,10 +226,10 @@ html, body {
 #overlay { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
 
 .lbl {
-  position: absolute; left: 0; top: 0; font: 11px var(--mono); color: var(--fg-3);
+  position: absolute; left: 0; top: 0; font: calc(11px * var(--ls, 1)) var(--mono); color: var(--fg-3);
   transform: translate(-50%, -50%); white-space: nowrap; user-select: none;
 }
-.lbl.name { font: 600 12px var(--sans); letter-spacing: .02em; }
+.lbl.name { font: 600 calc(12px * var(--ls, 1)) var(--sans); letter-spacing: .02em; }
 .lbl.name.x { color: var(--ax-x); } .lbl.name.y { color: var(--ax-y); } .lbl.name.z { color: var(--ax-z); }
 
 #topbar {
@@ -591,6 +597,23 @@ input[type=range] { width: 100%; accent-color: var(--accent); height: 18px; }
   .fam-chip { flex: none; }
   .home-links { flex-wrap: wrap; gap: 6px 14px; }
   .home-links a { white-space: nowrap; }
+}
+/* short screens (a phone held sideways): the catalogue becomes a drawer too, the top bar slims */
+@media (max-height: 500px) and (min-width: 721px) {
+  #app, #app.no-cat, #app.no-panel, #app.no-cat.no-panel { grid-template-columns: minmax(0,1fr); }
+  #catalog { position: fixed; left: 0; top: 0; bottom: 0; width: min(268px, 50vw); z-index: 9;
+             transform: translateX(-100%); transition: transform .28s cubic-bezier(.4,0,.2,1); box-shadow: var(--shadow); }
+  #app.show-cat #catalog { transform: none; }
+  #catShow { display: grid !important; }
+  #topbar { padding: 6px var(--gut); }
+  #seqName { font-size: 14px; }
+  #seqSub { display: none; }           /* the sequence page and OEIS links stay in the controls */
+}
+/* small or short screens: the legend is one compact row along the bottom */
+@media (max-width: 720px), (max-height: 500px) {
+  #legend { flex-direction: row; flex-wrap: wrap; gap: 0 2px; padding: 2px 4px; right: auto; max-width: calc(100% - 2 * var(--gut)); bottom: 32px; }
+  .lg { width: auto; padding: 3px 6px; gap: 5px; }
+  .lg em { display: none; }
 }
 /* fingers: larger targets wherever the pointer is coarse */
 @media (pointer: coarse) {
@@ -1384,7 +1407,7 @@ const sup = (n) => (n < 0 ? '⁻' : '') + String(Math.abs(n)).split('').map(d =>
 
 const VERT = /* glsl */`
   attribute vec4 meta;          // x class(0 w,1 l,2 tie)  y log10 d  z index  w L==1
-  uniform float uSize, uDpr, uAtten, uNMax, uHiOne, uRef, uOrthoAtt;
+  uniform float uSize, uDpr, uAtten, uNMax, uHiOne, uRef, uOrthoAtt, uScale;
   uniform vec2  uD;
   uniform vec3  uShow;          // weight, level, tie
   uniform vec3  cWeight, cLevel, cTie, cOne;
@@ -1404,22 +1427,24 @@ const VERT = /* glsl */`
 
     /* uSize is the pixel size at the framing distance; nearer points grow. */
     float att = (uOrthoAtt > 0.0) ? uOrthoAtt : clamp(uRef / max(-mv.z, 0.001), 0.2, 8.0);
-    gl_PointSize = show * uSize * uDpr * mix(1.0, att, uAtten) * boost;
+    gl_PointSize = show * uSize * uScale * uDpr * mix(1.0, att, uAtten) * boost;
   }`;
 
 const FRAG = /* glsl */`
-  uniform float uOpacity, uSoft;
+  uniform float uOpacity, uSoft, uFade;
   varying vec3 vColor;
   void main() {
     vec2 c = gl_PointCoord - 0.5;
     float r2 = dot(c, c);
     if (r2 > 0.25) discard;
-    float a = uOpacity * mix(1.0, smoothstep(0.25, 0.02, r2), uSoft);
+    float a = uOpacity * uFade * mix(1.0, smoothstep(0.25, 0.02, r2), uSoft);
     gl_FragColor = vec4(vColor, a);
     #include <colorspace_fragment>
   }`;
 
 class Viz {
+  static FOV = 32;          /* the perspective camera's field of view, in degrees */
+  static FLAT_FOV = 1;      /* a flight to a flat view narrows it to this, then lands in the orthographic camera */
   constructor(canvas, overlay) {
     this.canvas = canvas;
     this.overlay = overlay;
@@ -1464,6 +1489,8 @@ class Viz {
       uD:       { value: new THREE.Vector2(-9, 99) },
       uShow:    { value: new THREE.Vector3(1, 1, 1) },
       uOpacity: { value: 0.85 },
+      uFade:    { value: 1 },        /* a new sequence's cloud fades in */
+      uScale:   { value: 1 },        /* points grow with the canvas: the same look on a phone and on UHD */
       uSoft:    { value: 1 },
       cWeight:  { value: new THREE.Color(0x4c8dff) },
       cLevel:   { value: new THREE.Color(0xff8c42) },
@@ -1486,6 +1513,7 @@ class Viz {
        filters reach both */
     this.cmp = 'none';                    // 'none' | 'overlay' | 'split'
     this.uniforms2 = Object.assign({}, this.uniforms, {
+      uFade:   { value: 1 },
       uNMax:   { value: 1e9 },
       cWeight: { value: new THREE.Color(0xb388ff) },
       cLevel:  { value: new THREE.Color(0x3fd694) },
@@ -1629,6 +1657,10 @@ class Viz {
     this._applyShift(cell);
     this.ortho.updateProjectionMatrix();
     this.renderer.setSize(w, h, false);
+    /* the points and the axis labels follow the canvas size (in CSS pixels), within bounds */
+    const sc = Math.min(1.9, Math.max(0.75, Math.min(cell.w, cell.h) / 820));
+    this.uniforms.uScale.value = sc;
+    this.overlay.style.setProperty('--ls', Math.min(1.45, Math.max(1, Math.sqrt(sc))).toFixed(3));
     this.uniforms.uDpr.value = this.renderer.getPixelRatio();
     const tight = cell.w < 720;
     if (this._tight !== undefined && tight !== this._tight && this._frameArgs) this.buildFrame(...this._frameArgs);
@@ -1643,6 +1675,13 @@ class Viz {
    *  log₁₀; `lo` their per-axis decade floor; `box` the decade span. */
   setPoints(dataset, fx, fy, fz, lo, box, second = false) {
     const n = dataset.count;
+    /* a different sequence fades in; more chunks of the same one, or a new frame, do not */
+    const key = second ? '_shown2' : '_shown';
+    if (this[key] !== dataset.rec.id) {
+      this[key] = dataset.rec.id;
+      if (!matchMedia('(prefers-reduced-motion: reduce)').matches)
+        (this._fades = this._fades || []).push({ u: (second ? this.uniforms2 : this.uniforms).uFade, t0: performance.now() });
+    }
     const pos = new Float32Array(n * 3);
     const meta = new Float32Array(n * 4);
     const hx = box[0] / 2, hy = box[1] / 2, hz = box[2] / 2;
@@ -1890,18 +1929,72 @@ class Viz {
     this._flat = kind !== 'iso';
     const fit = this._fit(dir, up, kind === 'iso' ? 1.1 : 1.16);
     this.autoFit = false;
+    const H0 = this._orthoH;                       /* the flat frame the flight may start from */
     this._orthoH = fit.half;
-    this.uniforms.uRef.value = fit.dist;
     this.resize();
-    const to = dir.clone().multiplyScalar(this.camera.isOrthographicCamera
-      ? Math.max(fit.dist, 40) : fit.dist);
-    if (this.camera.isOrthographicCamera) { this.camera.zoom = 1; this.camera.updateProjectionMatrix(); }
+    /* One continuous flight, in the perspective camera: the direction turns along a great circle,
+       the framing (the half-height seen at the target) changes geometrically, and the field of view
+       narrows to FLAT_FOV for a flat view (the camera backing off to keep the framing: a dolly zoom),
+       so landing in the orthographic camera, or leaving it, shows no jump. */
+    const cur = this.camera, tgt = this.controls.target.clone();
+    const rel = cur.position.clone().sub(tgt), dir0 = rel.clone().normalize();
+    const flat = THREE.MathUtils.degToRad(Viz.FLAT_FOV) / 2, base = THREE.MathUtils.degToRad(Viz.FOV) / 2;
+    let t0, h0;
+    if (cur.isOrthographicCamera) { t0 = Math.tan(flat); h0 = H0 / cur.zoom; }
+    else { t0 = Math.tan(THREE.MathUtils.degToRad(cur.fov) / 2); h0 = rel.length() * t0; }
+    const toFlat = kind !== 'iso';
+    const t1 = Math.tan(toFlat ? flat : base), h1 = toFlat ? fit.half : fit.dist * Math.tan(base);
+    if (cur !== this.persp) {                        /* take over in the perspective camera, unseen */
+      this.persp.up.copy(cur.up);
+      this.camera = this.persp; this.projection = 'persp';
+      this._makeControls();
+    }
     const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
-    this.tween = {
-      t: 0, t0: performance.now(), dur: reduce ? 1 : 520, from: this.camera.position.clone(), to,
-      fromUp: this.camera.up.clone(), toUp: up,
-    };
-    this.controls.target.set(0, 0, 0);
+    this.tween = { t: 0, t0: performance.now(), dur: reduce ? 1 : 650, dir0, dir1: dir, up0: cur.up.clone(), up1: up,
+                   lt0: Math.log(t0), lt1: Math.log(t1), h0, h1, tgt0: tgt, toFlat, fit };
+    this._flight(0);
+    this.dirty = true;
+  }
+
+  /** One frame of the flight between two views, at eased progress e (0 … 1). */
+  _flight(e) {
+    const tw = this.tween, cam = this.persp;
+    const c = Math.min(1, Math.max(-1, tw.dir0.dot(tw.dir1))), w = Math.acos(c);
+    const dir = w < 1e-4 ? tw.dir1.clone()
+      : tw.dir0.clone().multiplyScalar(Math.sin((1 - e) * w) / Math.sin(w)).add(tw.dir1.clone().multiplyScalar(Math.sin(e * w) / Math.sin(w)));
+    dir.normalize();
+    const tan = Math.exp(tw.lt0 + (tw.lt1 - tw.lt0) * e);
+    const h = tw.h0 * Math.pow(tw.h1 / tw.h0, e), D = h / tan;
+    const target = tw.tgt0.clone().multiplyScalar(1 - e);
+    this.controls.target.copy(target);
+    cam.position.copy(target).addScaledVector(dir, D);
+    cam.up.copy(tw.up0).lerp(tw.up1, e).normalize();
+    cam.fov = THREE.MathUtils.radToDeg(2 * Math.atan(tan));
+    cam.near = Math.max(0.05, D * 0.02); cam.far = D * 3 + 200;
+    cam.updateProjectionMatrix();
+    cam.lookAt(target);
+    this.uniforms.uRef.value = D;                    /* the points keep their size all the way */
+  }
+
+  /** The end of a flight: settle in the camera of the view. */
+  _land() {
+    const tw = this.tween, cam = this.persp;
+    this.tween = null;
+    cam.fov = Viz.FOV; cam.near = 0.05; cam.far = 4000;
+    if (tw.toFlat) {
+      const o = this.ortho;
+      o.position.copy(tw.dir1).multiplyScalar(Math.max(tw.fit.dist, 40));
+      o.up.copy(tw.up1); o.zoom = 1;
+      this.camera = o; this.projection = 'ortho';
+      this.controls.target.set(0, 0, 0);
+      this.resize();
+      o.lookAt(0, 0, 0);
+    } else {
+      cam.position.copy(tw.dir1).multiplyScalar(tw.fit.dist); cam.up.copy(tw.up1);
+      this.uniforms.uRef.value = tw.fit.dist;
+      cam.updateProjectionMatrix();
+    }
+    this._makeControls();
     this.dirty = true;
   }
 
@@ -1975,13 +2068,20 @@ class Viz {
   _loop() {
     this._raf = requestAnimationFrame(this._loop.bind(this));
     const now = performance.now();
+    if (this._fades && this._fades.length) {
+      this._fades = this._fades.filter(f => {
+        const t = Math.min(1, (now - f.t0) / 380);
+        f.u.value = t * t * (3 - 2 * t);
+        return t < 1;
+      });
+      this.dirty = true;
+    }
     if (this.tween) {
       const tw = this.tween;
       tw.t = Math.min(1, (now - tw.t0) / tw.dur);
       const e = tw.t < 0.5 ? 4 * tw.t ** 3 : 1 - (-2 * tw.t + 2) ** 3 / 2;
-      this.camera.position.lerpVectors(tw.from, tw.to, e);
-      this.camera.up.lerpVectors(tw.fromUp, tw.toUp, e).normalize();
-      if (tw.t >= 1) { this.tween = null; this._makeControls(); }
+      this._flight(e);
+      if (tw.t >= 1) this._land();
       this.dirty = true;
     }
     if (this.controls.autoRotate) this.dirty = true;
@@ -2807,8 +2907,9 @@ function bindUI() {
     if (e.isTrusted) disarmIntro();
     document.querySelectorAll('[data-view]').forEach(o => o.classList.toggle('on', o === b));
     state.view = b.dataset.view;
-    /* a flat view is only a true plate without foreshortening */
-    setProjection(state.view === 'iso' ? 'persp' : 'ortho');
+    /* a flat view is only a true plate without foreshortening: the flight itself moves between
+       the perspective and the orthographic camera */
+    state.proj = state.view === 'iso' ? 'persp' : 'ortho';
     viz.view(state.view);
     writeHash();
   }));
@@ -3119,7 +3220,7 @@ function setMode(mode) {
 function toggle(what) {
   const app = $('#app');
   /* matchMedia, not innerWidth — they disagree under mobile emulation and zoom */
-  if (what === 'cat' && matchMedia('(max-width: 720px)').matches) { app.classList.toggle('show-cat'); return; }
+  if (what === 'cat' && matchMedia('(max-width: 720px), (max-height: 500px)').matches) { app.classList.toggle('show-cat'); return; }
   if (what === 'panel' && matchMedia('(max-width: 1080px)').matches) {
     app.classList.toggle('show-panel');
     setTimeout(() => viz && viz.resize(), 300);           /* after the sheet's slide: the plot moves above it */
