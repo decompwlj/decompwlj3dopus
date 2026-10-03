@@ -1,12 +1,14 @@
 #!/usr/bin/env python3
-"""fetch_oeis.py — the OEIS records the site needs: name, offset and first terms.
+"""fetch_oeis.py — the OEIS records the site needs: name, offset, keywords and first terms.
 
     python3 fetch_oeis.py A000040 A000027 ...     add or refresh these entries
     python3 fetch_oeis.py --catalog raw           every A-number in raw/catalog.csv
+    python3 fetch_oeis.py --keywords --catalog raw    only (re)read the keywords, keep the rest
 
 Reads the OEIS's own data repository (github.com/oeis/oeisdata, one .seq file per
 sequence) and keeps what it needs in oeis.json beside this script:
-    { "A000040": { "name": "The prime numbers.", "offset": 1, "terms": [2, 3, ...] }, ... }
+    { "A000040": { "name": "The prime numbers.", "offset": 1, "keywords": ["core", "nice", "nonn"],
+                   "terms": [2, 3, ...] }, ... }
 audit.py checks every sequence's first rows against these terms, and the
 catalogue takes its names from here.
 """
@@ -25,11 +27,12 @@ def fetch(anum):
             break
         except Exception as e:
             if attempt == 3: raise RuntimeError(f'{anum}: {e}')
-    rec = {'name': '', 'offset': None, 'terms': ''}
+    rec = {'name': '', 'offset': None, 'keywords': [], 'terms': ''}
     for line in text.splitlines():
         tag, rest = line[:2], line[11:] if len(line) > 11 else ''
         if tag == '%N': rec['name'] = rest.strip()
         elif tag == '%O': rec['offset'] = int(rest.split(',')[0])
+        elif tag == '%K': rec['keywords'] = [k for k in rest.strip().split(',') if k]
         elif tag in ('%S', '%T', '%U'): rec['terms'] += rest.strip()
     rec['terms'] = [int(x) for x in rec['terms'].split(',') if x]
     if not rec['name'] or rec['offset'] is None or not rec['terms']:
@@ -38,12 +41,15 @@ def fetch(anum):
 
 def main():
     args = sys.argv[1:]
+    only_kw = '--keywords' in args
+    args = [a for a in args if a != '--keywords']
     if args and args[0] == '--catalog':
         args = [r['anumber'] for r in csv.DictReader(open(pathlib.Path(args[1]) / 'catalog.csv'))]
     store = json.loads(STORE.read_text()) if STORE.exists() else {}
     with concurrent.futures.ThreadPoolExecutor(8) as ex:
         for anum, rec in ex.map(fetch, args):
-            store[anum] = rec
+            if only_kw and anum in store: store[anum]['keywords'] = rec['keywords']
+            else: store[anum] = rec
     STORE.write_text(json.dumps(dict(sorted(store.items())), indent=0, ensure_ascii=False) + '\n')
     print(f'{len(args)} fetched, {len(store)} in {STORE.name}')
 

@@ -38,7 +38,8 @@ live example. Background: [decompwlj.com](https://decompwlj.com) and
 
 - 🖼️ **Gallery** of 5000 weight–level plates with search, a family selector, a random button,
   **sorting** (A-number, name, level share, ties, forced level, largest terms) and **filters**
-  (with ties, every term decomposes, level ≥ 50 %, forced level ≥ 90 %), remembered in the browser;
+  (the OEIS keywords **core** and **nice**, with ties, every term decomposes, level ≥ 50 %, forced
+  level ≥ 90 %), remembered in the browser;
   cards and images load as you scroll.
 - 🧊 **3-D viewer** (three.js / WebGL) of log k, log L, log d: preset views (3D, k–L, k–d, L–d,
   edge), point size and opacity, density mode, the L = 1 line, filters on n and d, a sweep along n.
@@ -213,7 +214,7 @@ Sequence panel) leads back to the sequence's page; browsers that support it cros
 <summary><b>Data format</b></summary>
 
 `data/catalog.csv` (RFC 4180, header row): `id` (folder and URL name), `anumber`, `name`, `alias`,
-`family`, `n0` (first index = OEIS offset), `terms`, `chunks`, `chunk_rows`, the counts
+`family`, `keywords` (the OEIS keywords core and nice), `n0` (first index = OEIS offset), `terms`, `chunks`, `chunk_rows`, the counts
 `decomposable`, `level`, `weight`, `ties`, `level_one`, `forced`, the ranges `amin` … `dmax`,
 and the `note`.
 

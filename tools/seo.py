@@ -195,6 +195,12 @@ def write(rel, text):
     written.append(rel)
 
 # ── one page per sequence ────────────────────────────────────────────────────
+def kw_html(r):
+    """the OEIS keywords core and nice, each a link to every sequence the OEIS gives it"""
+    ks = (r.get('keywords') or '').split()
+    return (' · OEIS ' + ', '.join(f'<a class="kw" href="https://oeis.org/search?q=keyword:{k}" rel="noopener" '
+                                    f'title="Every sequence the OEIS marks {k}">{k}</a>' for k in ks)) if ks else ''
+
 for i, r in enumerate(rows):
     A, name, fam = r['anumber'], r['name'], r['family']
     up = '../../'
@@ -218,7 +224,7 @@ for i, r in enumerate(rows):
     ]
     body = f'''{crumbs(up, [('All sequences', '../'), (fam, f'{up}family/{slug(fam)}/'), (A, None)])}
 <h1>{e(name)}</h1>
-<p class="meta"><a class="an" href="https://oeis.org/{A}" rel="noopener">{A}</a> on the OEIS · family <a href="{up}family/{slug(fam)}/">{e(fam)}</a>{f' · also known as {e(r["alias"])}' if r['alias'] else ''}</p>
+<p class="meta"><a class="an" href="https://oeis.org/{A}" rel="noopener">{A}</a> on the OEIS · family <a href="{up}family/{slug(fam)}/">{e(fam)}</a>{f' · also known as {e(r["alias"])}' if r['alias'] else ''}{kw_html(r)}</p>
 <div class="seq">
   <figure>
     <a class="plate-link" href="{up}#{A}" title="Open in the 3-D viewer: it starts on this plate; drag it to turn it into 3-D"><div class="plate">{PLATE_SVG}<img src="{up}thumbs/{r['id']}.webp" width="480" height="480" alt="Weight–level plate of {e(name)}"><span class="axl k" aria-hidden="true">k</span><span class="axl L" aria-hidden="true">L</span><span class="go3d" aria-hidden="true">Explore in 3-D →</span></div></a>

@@ -540,6 +540,8 @@ input[type=range] { width: 100%; accent-color: var(--accent); height: 18px; }
 .card .sub2 { display: flex; align-items: baseline; gap: 8px; font-size: 11px; color: var(--fg-3); min-width: 0; }
 .card .sub2 .an { font-family: var(--mono); flex: none; }
 .card .sub2 .fam { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.card .sub2 .kw { flex: none; padding: 0 5px; border-radius: 4px; font: 600 9.5px var(--sans); letter-spacing: .03em;
+                  text-transform: uppercase; color: var(--accent); border: 1px solid color-mix(in oklab, var(--accent) 45%, transparent); }
 .card .r2 { display: flex; align-items: center; gap: 8px; }
 .lvl-bar { flex: 1; height: 3px; border-radius: 2px; background: var(--t-weight); overflow: hidden; min-width: 30px; }
 .lvl-bar > i { display: block; height: 100%; background: var(--t-level); }
@@ -1045,7 +1047,7 @@ async function loadCatalog(url, onBatch, signal) {
       r[key] = NUM.has(key) ? Number(v) : v;
     }
     if (!r.id) return;
-    r._key = `${r.id} ${r.anumber} ${r.name} ${r.alias || ''} ${r.family}`.toLowerCase();
+    r._key = `${r.id} ${r.anumber} ${r.name} ${r.alias || ''} ${r.family} ${r.keywords || ''}`.toLowerCase();
     r.levelShare = r.decomposable ? r.level / r.decomposable : 0;
     all.push(r);
     batch.push(r);
@@ -2172,6 +2174,8 @@ const home = { q: '', fam: '', hits: [], sort: 'an', flags: new Set() };
 
 /* gallery filters on the catalogue's counts, and the orders it can be sorted in */
 const FLAGS = [
+  ['core',   'OEIS core',              'Sequences the OEIS marks "core": the fundamental ones',       r => /\bcore\b/.test(r.keywords || '')],
+  ['nice',   'OEIS nice',              'Sequences the OEIS marks "nice": exceptionally nice ones',    r => /\bnice\b/.test(r.keywords || '')],
   ['ties',   'with ties',              'Sequences where some term has k = L',                        r => r.ties > 0],
   ['all',    'every term decomposes',  'No term with a ≤ 2d: every one is written k·L + d',           r => r.decomposable === r.terms],
   ['level',  'level ≥ 50 %',           'At least half of the decomposed terms in the level class',    r => r.levelShare >= 0.5],
@@ -2467,6 +2471,12 @@ function card(r) {
   const an = a.querySelector('.an');
   an.textContent = r.anumber; an.href = oeisUrl(r); an.title = `${r.anumber} on the OEIS`;
   a.querySelector('.fam').textContent = r.family;
+  /* the OEIS keywords core and nice, as small badges after the family */
+  for (const k of (r.keywords || '').split(' ').filter(Boolean)) {
+    const b = document.createElement('span'); b.className = 'kw ' + k; b.textContent = k;
+    b.title = k === 'core' ? 'OEIS keyword "core": a fundamental sequence' : 'OEIS keyword "nice": an exceptionally nice sequence';
+    a.querySelector('.sub2').append(b);
+  }
   a.querySelector('.lvl-bar > i').style.width = (r.levelShare * 100).toFixed(2) + '%';
   a.querySelector('.pct').textContent = (r.levelShare * 100).toFixed(1) + '% lvl';
   a.querySelector('.open').addEventListener('click', () => { introFlat = true; });
