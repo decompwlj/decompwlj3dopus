@@ -3,7 +3,9 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%230b0e14'/%3E%3Ccircle cx='10' cy='21' r='3' fill='%234c8dff'/%3E%3Ccircle cx='19' cy='13' r='3' fill='%23ff8c42'/%3E%3Ccircle cx='25' cy='7' r='2' fill='%23ffe45c'/%3E%3C/svg%3E">
+<link rel="icon" href="favicon.ico" sizes="32x32">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
 <title>decompwlj 3D · weight × level + jump for 5000 integer sequences</title>
 <meta name="description" content="Gallery and interactive 3-D atlas of the decomposition into weight × level + jump, a(n) = k·L + d, for 5000 integer sequences from the OEIS, 10⁵ terms each.">
 <link rel="canonical" href="https://decompwlj.net/">
@@ -2328,7 +2330,7 @@ async function showViewer(t) {
   try {
     await ensureViewer();
   } catch (e) {
-    return fail(`The 3-D engine (three.js r169, from cdn.jsdelivr.net) did not load: ${e.message}. ` +
+    return fail(`The 3-D engine (three.js r169, from vendor/) did not load: ${e.message}. ` +
                 `The gallery still works; check the connection or any content blocker, then reload.`);
   }
   if (!first) applyToken(t);

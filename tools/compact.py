@@ -4,7 +4,9 @@
     python3 compact.py <raw_dir> <site_data_dir>      e.g.  python3 compact.py raw ../data
 
 Each chunk is written as chunk-NNN.bin.gz: a small binary file, gzip-compressed (the page
-inflates it; the files carry no timestamp, so a rebuild is byte-identical).
+inflates it; the files carry no timestamp, so a rebuild is byte-identical). The gzip stream is
+made by Zopfli (pip install zopfli), about 4 % smaller than gzip -9 and read the same way;
+without the module the script falls back to gzip -9.
 
     'dwj2'                      4 bytes, the format tag
     m                           1 byte, how the jumps are coded (below)
@@ -48,6 +50,15 @@ def _gzip(b):
         g.write(bytes(b))
     return buf.getvalue()
 
+try:
+    import zopfli.gzip as _zopfli
+except ImportError:
+    _zopfli = None
+
+def _pack(b):
+    """The published gzip stream: Zopfli (5 iterations, no timestamp), else gzip -9."""
+    return _zopfli.compress(bytes(b), numiterations=5) if _zopfli else _gzip(b)
+
 def _jumps(ds, m):
     """the coded jumps for mode m, or None if a value would reach 2^53"""
     out, p, pp = [], 0, 0
@@ -63,16 +74,16 @@ def encode(rows):
     tail = bytearray()
     for a, d, k, L in rows:
         _uv(0 if k == 0 else (2 * k if k <= L else 2 * L + 1), tail)
-    best = None
+    best = None                     # the mode is chosen by gzip -9 size, then packed by _pack
     for m in (0, 1, 2):
         js = _jumps(ds, m)
         if js is None: continue
         b = bytearray(MAGIC2); b.append(m)
         _uv(len(rows), b); _uv(rows[0][0], b)
         for v in js: _uv(v, b)
-        g = _gzip(b + tail)
-        if best is None or len(g) < len(best): best = g
-    return best
+        raw = b + tail; g = len(_gzip(raw))
+        if best is None or g < best[0]: best = (g, raw)
+    return _pack(best[1])
 
 def decode(data):
     """gzip bytes -> [(a, d, k, L), ...], checking every division."""

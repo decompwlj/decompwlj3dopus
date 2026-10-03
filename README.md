@@ -196,8 +196,8 @@ Sequence panel) leads back to the sequence's page; browsers that support it cros
 | `deploy/` | Apache and nginx examples |
 | `docs/SEQUENCES.md` | Every sequence by family, and how the data was verified |
 | `docs/img/` | The screenshots of this README |
+| `favicon.svg`, `favicon.ico`, `apple-touch-icon.png` | The site icon (light theme), at the root where browsers look for it |
 | `CNAME`, `.nojekyll` | GitHub Pages: custom domain; serve files as they are |
-| `js/`, `css/app.css` | Earlier modular sources, kept for reference (not loaded) |
 
 </details>
 

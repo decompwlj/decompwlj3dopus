@@ -54,9 +54,10 @@ families = {}
 for r in rows: families.setdefault(r['family'], []).append(r)
 fam_order = sorted(families, key=lambda f: (-len(families[f]), f.lower()))
 
-FAVICON = ("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' "
-           "fill='%230b0e14'/%3E%3Ccircle cx='10' cy='21' r='3' fill='%234c8dff'/%3E%3Ccircle cx='19' cy='13' r='3' fill='%23ff8c42'/%3E"
-           "%3Ccircle cx='25' cy='7' r='2' fill='%23ffe45c'/%3E%3C/svg%3E")
+# the favicon: files at the site root (favicon.svg, favicon.ico, apple-touch-icon.png), light theme
+def icons(up):
+    return (f'<link rel="icon" href="{up}favicon.ico" sizes="32x32">\n<link rel="icon" href="{up}favicon.svg" type="image/svg+xml">\n'
+            f'<link rel="apple-touch-icon" href="{up}apple-touch-icon.png">')
 PM, PX = 0.03 / 1.06, 1.03 / 1.06
 PLATE_SVG = (f'<svg viewBox="0 0 1 1" preserveAspectRatio="none" aria-hidden="true">'
              f'<rect x="{PM}" y="{PM}" width="{PX - PM}" height="{PX - PM}"/>'
@@ -77,7 +78,7 @@ def page(up, path, title, desc, body, image=None, ld=()):
 <title>{e(title)}</title>
 <meta name="description" content="{e(desc)}">
 <link rel="canonical" href="{e(url)}">
-<link rel="icon" href="{FAVICON}">
+{icons(up)}
 <link rel="stylesheet" href="{up}css/pages.css">
 {GOATCOUNTER}
 <meta property="og:type" content="website">
@@ -507,7 +508,7 @@ write('404.html', f'''<!doctype html>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Page not found · {SITE}</title>
 <meta name="robots" content="noindex">
-<link rel="icon" href="{FAVICON}">
+{icons('/')}
 <link rel="stylesheet" href="/css/pages.css">
 {GOATCOUNTER}
 <script>

@@ -65,7 +65,8 @@ sm = (ROOT / 'sitemap.xml').read_text().count('<url>')
 if sm != N + len(fams) + 3: bad(f'sitemap.xml has {sm} URLs, expected {N + len(fams) + 3}')
 lst = (ROOT / 'seq' / 'index.html').read_text().count('<tr><td>')
 if lst != N: bad(f'seq/index.html lists {lst} sequences, the catalogue has {N}')
-for p in ('learn/index.html', 'learn/learn.js', 'seq/csv.js', '404.html', 'robots.txt', 'og.png'):
+for p in ('learn/index.html', 'learn/learn.js', 'seq/csv.js', '404.html', 'robots.txt', 'og.png',
+          'favicon.svg', 'favicon.ico', 'apple-touch-icon.png', 'vendor/three.module.min.js', 'vendor/addons/controls/OrbitControls.js'):
     if not (ROOT / p).is_file(): bad(f'missing {p}')
 
 # rebuild some sequences with the C generator and compare byte for byte
