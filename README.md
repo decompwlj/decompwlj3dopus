@@ -42,6 +42,9 @@ live example. Background: [decompwlj.com](https://decompwlj.com) and
   cards and images load as you scroll.
 - 🧊 **3-D viewer** (three.js / WebGL) of log k, log L, log d: preset views (3D, k–L, k–d, L–d,
   edge), point size and opacity, density mode, the L = 1 line, filters on n and d, a sweep along n.
+  Changing view is one smooth camera flight (the perspective flattens into the 2-D views and back,
+  a "dolly zoom"), and a new sequence fades in. The views fit the free space of any screen, from a
+  phone (portrait or sideways) to QHD and UHD, with points and labels scaled to the canvas.
 - ⚖️ **Compare** two sequences, overlaid or side by side.
 - 🔗 **Shareable links** — the URL records the sequence, view, mode and comparison.
 - 📄 **Static page per sequence** for search engines, with a **CSV download** (`n;a;weight;level;jump`,
