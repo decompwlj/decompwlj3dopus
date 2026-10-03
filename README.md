@@ -76,9 +76,9 @@ subfolder.
 3. A minute or two later the site is at `https://<user>.github.io/<repository>/`
    (the **Actions** tab shows each publication). Every push to `main` republishes it.
 
-The empty `.nojekyll` file makes Pages serve the files as they are. The site is about **975 MB**
-against Pages' **1 GB** limit (soft bandwidth limit: 100 GB a month), which leaves room for about a
-hundred more sequences; beyond that the data would have to live on another host.
+The empty `.nojekyll` file makes Pages serve the files as they are. The site is about **945 MB**
+against Pages' **1 GB** limit (soft bandwidth limit: 100 GB a month), which leaves room for about
+250 more sequences; beyond that the data would have to live on another host.
 
 ### With a custom domain and HTTPS
 
@@ -223,14 +223,14 @@ Every term is present, so row i is index n0 + i. The page rebuilds a as a runnin
 jumps and the other factor as (a − d) divided by the stored one, and rejects a chunk if anything
 is inconsistent. All values are below 2⁵³. `tools/compact.py` has `encode()` and `decode()` for
 Python; older `dwj1` chunks are still read. A sequence weighs from under 1 kB to 0.6 MB (median
-0.17 MB).
+0.16 MB); the gzip streams are made by Zopfli, about 4 % smaller than gzip -9.
 
 </details>
 
 ## Rebuilding the data
 
 The pipeline is deterministic: unchanged sequences produce no diff. It needs a C compiler, Python
-3.9+ with `numpy` and `Pillow`, ~2 GB of RAM, ~13 GB of disk and about two hours of CPU.
+3.9+ with `numpy`, `Pillow` and `zopfli`, ~2 GB of RAM, ~13 GB of disk and about two hours of CPU.
 
 ```sh
 cd tools
