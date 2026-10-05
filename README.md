@@ -259,6 +259,36 @@ python3 seo.py                      # static pages, share images, sitemap, robot
 strictly increasing terms), add its entry to the `defs[]` table, record its OEIS data with
 `python3 fetch_oeis.py A123456`, then run the pipeline; `audit.py` must report "all clear".
 
+### Data integrity
+
+The numbers are protected at every step, from the generator to the file a visitor saves:
+
+- **At build time**, `tools/verify_all.c`, a program that shares no code with the generator
+  (its own decoder and its own factorisation), checks **every row of every sequence**:
+  a = k·L + d exactly, k > d, **k is the least divisor of a − d above d**, a term decomposes
+  exactly when a > 2d, the chunks are well formed and continue each other, the catalogue's
+  counts are reproduced, and the first terms equal the OEIS terms. The last full run checked
+  499,965,535 rows and re-derived 499,947,311 weights in under 8 minutes, with no failure.
+- **Fingerprints**: `data/sha256.txt` holds the SHA-256 of every sequence's CSV, computed by
+  an independent decoder (`tools/fingerprint.py`), in `sha256sum` format; each sequence page
+  shows its own.
+- **In the browser**, every chunk is checked as it is decoded (exact divisions, k > d, the
+  stored factor, row counts, continuity), then the viewer recounts the catalogue's figures and
+  compares the SHA-256 of the sequence with the published one: the Sequence panel says
+  "✓ data verified" or shows a warning. Both CSV buttons compare the file's SHA-256 with the
+  published one and **refuse to save a file that differs**.
+- **Afterwards**, anyone can check downloaded CSVs: `sha256sum -c sha256.txt`.
+- **Continuously**: every pull request re-verifies every row and a sample of the fingerprints;
+  `.github/workflows/integrity.yml` re-verifies everything, fingerprints included, every week.
+
+The pipeline above ends, when data change, with:
+
+```sh
+cc -O2 -o tools/verify_all tools/verify_all.c -lz && python3 tools/verify_all.py   # every row
+python3 tools/fingerprint.py                                                        # data/sha256.txt
+python3 tools/seo.py                                                                # pages carry it
+```
+
 ### Automatic checks
 
 Every pull request and push to `main` runs [`checks.yml`](.github/workflows/checks.yml): the

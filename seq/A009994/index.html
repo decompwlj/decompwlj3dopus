@@ -38,7 +38,7 @@
     <figcaption>Click the plate to explore it in 3-D. Weight k across, level L up, both on log scales: blue in the weight class (k ≤ L), orange in the level class (k &gt; L). The dashed diagonal is k = L.</figcaption>
   </figure>
   <div>
-    <a class="cta" href="../../#A009994">Open in the 3-D viewer</a><a class="cta alt" href="https://oeis.org/A009994" rel="noopener">A009994 on the OEIS</a><button type="button" class="cta alt" id="csv" data-id="nondec" data-an="A009994" data-n0="1" data-terms="100000" data-chunks="2" title="n;a;weight;level;jump, one row per term, rebuilt from the data">Download CSV</button>
+    <a class="cta" href="../../#A009994">Open in the 3-D viewer</a><a class="cta alt" href="https://oeis.org/A009994" rel="noopener">A009994 on the OEIS</a><button type="button" class="cta alt" id="csv" data-id="nondec" data-an="A009994" data-n0="1" data-terms="100000" data-chunks="2" data-rows="50000" data-sha256="85261c683850438517881b49ca019633ed49f884839188ca9de7ceab195e144d" title="n;a;weight;level;jump, one row per term, rebuilt from the data and checked against its published SHA-256">Download CSV</button>
     <table class="stats">
       <tr><th scope="row">Terms</th><td>100,000 <span class="dim">(n = 1 … 100,000)</span></td></tr>
       <tr><th scope="row">Decomposable (a &gt; 2d)</th><td>99,997</td></tr>
@@ -52,6 +52,7 @@
       <tr><th scope="row">Largest weight k, level L</th><td>11,122,356,799, 5,561,178,888</td></tr>
     </table>
     <p class="note">Decimal digits never decrease (0, 1, ..., 9, 11, 12, ...). There are only C(d+9, 9) of them with d digits or fewer, so the terms grow fast: the 100,000th has 11 digits. The level share is 19.84 %; 2.7 % of terms are forced level (l &lt;= d^2); L = 1 holds 43 % of the level class.</p>
+    <p class="sha">SHA-256 of the CSV <code>decompwlj_A009994.csv</code>, checked before it is saved: <code class="h">85261c683850438517881b49ca019633ed49f884839188ca9de7ceab195e144d</code> (all of them: <a href="../../data/sha256.txt">sha256.txt</a>, for <code>sha256sum -c</code>)</p>
   </div>
 </div>
 <h2>The decomposition</h2>

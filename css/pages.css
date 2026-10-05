@@ -135,3 +135,7 @@ h3 { font-size: 16px; margin: 22px 0 4px; }
 @media (hover: hover) { .plate .go3d { opacity: 0; } .plate-link:hover .go3d, .plate-link:focus-visible .go3d { opacity: .95; } }
 /* a soft cross-fade when moving between the pages and the viewer (where supported) */
 @view-transition { navigation: auto; }
+
+/* the CSV's published fingerprint, on a sequence page */
+.sha { font-size: 12px; color: var(--fg-3); margin-top: 10px; overflow-wrap: anywhere; }
+.sha code.h { font: 11px var(--mono); color: var(--fg-2); }

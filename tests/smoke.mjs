@@ -45,6 +45,11 @@ const res = await p.evaluate(async () => {
 });
 check(res.bad.length === 0 && res.ok > 30, `sample of sequences loads in the viewer (${res.ok} ok${res.bad.length ? ', bad ' + res.bad.join(' ') : ''})`);
 
+/* the viewer verifies the numbers it shows against the published fingerprint */
+await p.goto(BASE + '/#A000040');
+await p.waitForFunction(() => /verified:|failed/.test(document.querySelector('#verify').textContent), null, { timeout: 60000 });
+check((await p.textContent('#verify')).startsWith('✓ data verified'), 'viewer: data verified against the published SHA-256');
+
 /* a sequence page and its CSV */
 await p.goto(BASE + '/seq/A000040/');
 check((await p.getAttribute('meta[property="og:image"]', 'content')).endsWith('/share/primes.jpg'), 'sequence page has its share image');

@@ -38,7 +38,7 @@
     <figcaption>Click the plate to explore it in 3-D. Weight k across, level L up, both on log scales: blue in the weight class (k ≤ L), orange in the level class (k &gt; L). The dashed diagonal is k = L.</figcaption>
   </figure>
   <div>
-    <a class="cta" href="../../#A000960">Open in the 3-D viewer</a><a class="cta alt" href="https://oeis.org/A000960" rel="noopener">A000960 on the OEIS</a><button type="button" class="cta alt" id="csv" data-id="flavius" data-an="A000960" data-n0="1" data-terms="100000" data-chunks="2" title="n;a;weight;level;jump, one row per term, rebuilt from the data">Download CSV</button>
+    <a class="cta" href="../../#A000960">Open in the 3-D viewer</a><a class="cta alt" href="https://oeis.org/A000960" rel="noopener">A000960 on the OEIS</a><button type="button" class="cta alt" id="csv" data-id="flavius" data-an="A000960" data-n0="1" data-terms="100000" data-chunks="2" data-rows="50000" data-sha256="5493438b32905c7ccf8f35a460a5eb37ca07962772c04b4ed690ea8d9fd866ac" title="n;a;weight;level;jump, one row per term, rebuilt from the data and checked against its published SHA-256">Download CSV</button>
     <table class="stats">
       <tr><th scope="row">Terms</th><td>100,000 <span class="dim">(n = 1 … 100,000)</span></td></tr>
       <tr><th scope="row">Decomposable (a &gt; 2d)</th><td>99,997</td></tr>
@@ -52,6 +52,7 @@
       <tr><th scope="row">Largest weight k, level L</th><td>7,853,264,669, 5,149,949</td></tr>
     </table>
     <p class="note">count(x) = 2 sqrt(x/pi), so a(n) ~ pi n^2/4 and the gap outgrows sqrt(l): l &lt;= d^2 on 77 % of terms, and 96.6 % of the sequence is level-classified. It is the spread of the gap, not its mean, that populates the weight class.</p>
+    <p class="sha">SHA-256 of the CSV <code>decompwlj_A000960.csv</code>, checked before it is saved: <code class="h">5493438b32905c7ccf8f35a460a5eb37ca07962772c04b4ed690ea8d9fd866ac</code> (all of them: <a href="../../data/sha256.txt">sha256.txt</a>, for <code>sha256sum -c</code>)</p>
   </div>
 </div>
 <h2>The decomposition</h2>
