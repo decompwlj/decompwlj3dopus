@@ -853,7 +853,7 @@ input[type=range] { width: 100%; accent-color: var(--accent); height: 18px; }
         <a id="pageLink2" class="chip" title="This sequence's page: counts, note, plate and CSV">sequence page</a>
         <a id="oeisLink" class="chip" target="_blank" rel="noopener">OEIS</a>
         <button id="snap" class="chip">snapshot</button>
-        <button id="videoBtn" class="chip" title="Record a 15-second video: the flat k–L plate, then a smooth turn into 3-D and a slow rotation">video</button>
+        <button id="videoBtn" class="chip" title="Make a 15-second MP4 video: the flat k–L plate, then one smooth move into 3-D and a slow rotation">video</button>
         <button id="csvBtn" class="chip" title="n;a;weight;level;jump, one row per term; rebuilt from the data on demand">download CSV</button>
         <button id="share" class="chip" title="Copies a tag such as #primes.kLd.iso.solid. Add it to the end of this page's link to open the same view.">copy view tag</button>
       </div>
@@ -1464,7 +1464,8 @@ const FRAG = /* glsl */`
 
 class Viz {
   static FOV = 32;          /* the perspective camera's field of view, in degrees */
-  static FLAT_FOV = 1;      /* a flight to a flat view narrows it to this, then lands in the orthographic camera */
+  static FLAT_FOV = 0.05;   /* a flight to a flat view narrows it to this, then lands in the orthographic camera:
+                               so narrow that the box, seen through it, differs from the flat view by under a pixel */
   constructor(canvas, overlay) {
     this.canvas = canvas;
     this.overlay = overlay;
@@ -1857,11 +1858,14 @@ class Viz {
     const v = new THREE.Vector3(), u = new THREE.Vector3();
     /* an axis seen end-on (the third axis of a flat view) keeps its labels
        off: they would all project onto one spot over the other two axes */
-    const endOn = [false, false, false];
+    const endOn = [false, false, false], fade = [1, 1, 1];
     if (this._axes) for (let ax = 0; ax < 3; ax++) {
       v.copy(this._axes[ax][0]).project(this.camera);
       u.copy(this._axes[ax][1]).project(this.camera);
-      endOn[ax] = Math.hypot((u.x - v.x) * w / 2, (u.y - v.y) * h / 2) < 40;
+      const len = Math.hypot((u.x - v.x) * w / 2, (u.y - v.y) * h / 2);
+      endOn[ax] = len < 40;
+      const t = Math.min(1, Math.max(0, (len - 40) / 90));   /* and fade in as the axis opens up, not pop */
+      fade[ax] = t * t * (3 - 2 * t);
     }
     for (const el of this.labels) {
       const twin = el._twin;
@@ -1869,6 +1873,8 @@ class Viz {
       el.hidden = hide;
       if (twin) twin.hidden = hide;
       if (hide) continue;
+      const op = el._ax >= 0 ? fade[el._ax] : 1;
+      if (op !== el._op) { el._op = op; el.style.opacity = op < 1 ? op.toFixed(3) : ''; if (twin) twin.style.opacity = el.style.opacity; }
       /* keep labels clear of the frame edges and of the top and status bars */
       const name = el.classList.contains('name');
       /* split, a caption sits under the top bar: labels keep below it */
@@ -1955,6 +1961,7 @@ class Viz {
     const fit = this._fit(dir, up, kind === 'iso' ? 1.1 : 1.16);
     this.autoFit = false;
     const H0 = this._orthoH;                       /* the flat frame the flight may start from */
+    const S0 = this._shift || 0, F0 = this._scale || 1;   /* and where the picture sits in the cell */
     this._orthoH = fit.half;
     this.resize();
     /* One continuous flight, in the perspective camera: the direction turns along a great circle,
@@ -1976,7 +1983,8 @@ class Viz {
     }
     const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
     this.tween = { t: 0, t0: performance.now(), dur: dur || (reduce ? 1 : 650), dir0, dir1: dir, up0: cur.up.clone(), up1: up,
-                   lt0: Math.log(t0), lt1: Math.log(t1), h0, h1, tgt0: tgt, toFlat, fit };
+                   tan0: t0, tan1: t1, h0, h1, tgt0: tgt, toFlat, fit,
+                   s0: S0, f0: F0 };   /* the frame's centring moves with the flight */
     this._flight(0);
     this.dirty = true;
   }
@@ -1988,7 +1996,7 @@ class Viz {
     const dir = w < 1e-4 ? tw.dir1.clone()
       : tw.dir0.clone().multiplyScalar(Math.sin((1 - e) * w) / Math.sin(w)).add(tw.dir1.clone().multiplyScalar(Math.sin(e * w) / Math.sin(w)));
     dir.normalize();
-    const tan = Math.exp(tw.lt0 + (tw.lt1 - tw.lt0) * e);
+    const tan = tw.tan0 + (tw.tan1 - tw.tan0) * e;   /* the perspective (depth over distance) grows evenly */
     const h = tw.h0 * Math.pow(tw.h1 / tw.h0, e), D = h / tan;
     const target = tw.tgt0.clone().multiplyScalar(1 - e);
     this.controls.target.copy(target);
@@ -1999,6 +2007,11 @@ class Viz {
     cam.updateProjectionMatrix();
     cam.lookAt(target);
     this.uniforms.uRef.value = D;                    /* the points keep their size all the way */
+    if (this._shiftTo !== undefined) {               /* and the picture slides to its new band with it, not ahead */
+      this._shift = tw.s0 + (this._shiftTo - tw.s0) * e;
+      this._scale = tw.f0 + (this._scaleTo - tw.f0) * e;
+      this._applyShift();
+    }
   }
 
   /** The end of a flight: settle in the camera of the view. */
@@ -2092,7 +2105,11 @@ class Viz {
 
   _loop() {
     this._raf = requestAnimationFrame(this._loop.bind(this));
-    const now = performance.now();
+    this._tick(performance.now());
+  }
+
+  /** One frame at time `now` (ms): the live loop passes the clock, a video export its own frame times. */
+  _tick(now) {
     if (this._fades && this._fades.length) {
       this._fades = this._fades.filter(f => {
         const t = Math.min(1, (now - f.t0) / 380);
@@ -2111,7 +2128,7 @@ class Viz {
     }
     if (this.director) { this.director(now); this.dirty = true; }   /* a recording drives the camera */
     if (this.controls.autoRotate) this.dirty = true;
-    if (this._shiftTo !== undefined && (Math.abs(this._shiftTo - this._shift) > 0.5 || Math.abs(this._scaleTo - this._scale) > 1e-3)) {
+    if (!this.tween && this._shiftTo !== undefined && (Math.abs(this._shiftTo - this._shift) > 0.5 || Math.abs(this._scaleTo - this._scale) > 1e-3)) {
       this._shift += (this._shiftTo - this._shift) * 0.22;
       this._scale += (this._scaleTo - this._scale) * 0.22;
       if (Math.abs(this._shiftTo - this._shift) <= 0.5 && Math.abs(this._scaleTo - this._scale) <= 1e-3) {
@@ -2949,24 +2966,31 @@ async function downloadCSV(r, btn) {
 /* ── video export: 15 s of the flat k–L plate turning into 3-D ── */
 
 /* The canvas holds only the points and the frame; each video frame is composed on a second
-   canvas with the axis labels, the title and a legend, and that canvas is recorded. The
-   camera is driven by time, not by frames, so a slow machine gives the same film, choppier. */
-const VIDEO = { len: 15000, hold: 1500, turn: 3500, spin: 150 };   /* ms, ms, ms, degrees */
+   canvas with the axis labels, the title and a legend. Where the browser has an H.264 encoder
+   (WebCodecs: Chrome, Edge, Safari, Firefox) the film is rendered frame by frame at exact times
+   and packed into an .mp4, faster or slower than real time but always perfectly smooth; elsewhere
+   the canvas is recorded live (MediaRecorder, .mp4 where possible, else .webm). */
+const VIDEO = { len: 15000, hold: 1500, turn: 4500, spin: 150, fps: 30 };   /* ms, ms, ms, degrees, frames/s */
 let recording = null;
 
-function videoType() {
-  for (const t of ['video/webm;codecs=vp9', 'video/webm;codecs=vp8', 'video/webm', 'video/mp4;codecs=avc1', 'video/mp4'])
+function recorderType() {
+  for (const t of ['video/mp4;codecs=avc1', 'video/mp4', 'video/webm;codecs=vp9', 'video/webm;codecs=vp8', 'video/webm'])
     if (window.MediaRecorder && MediaRecorder.isTypeSupported(t)) return t;
   return '';
 }
 
+/* an H.264 configuration the browser's encoder takes for this frame size, or null */
+async function h264Config(width, height) {
+  if (!window.VideoEncoder || !window.VideoFrame) return null;
+  for (const codec of ['avc1.640033', 'avc1.640028', 'avc1.4d0033', 'avc1.4d0028', 'avc1.42003e', 'avc1.42001f']) {
+    const cfg = { codec, width, height, bitrate: 10e6, framerate: VIDEO.fps, avc: { format: 'avc' } };
+    try { if ((await VideoEncoder.isConfigSupported(cfg)).supported) return cfg; } catch { /* the next one */ }
+  }
+  return null;
+}
+
 async function recordVideo() {
   if (recording) return stopVideo(false);
-  const type = videoType();
-  if (!type || !HTMLCanvasElement.prototype.captureStream) {
-    alert('This browser cannot record video from the page. Recent Chrome, Edge, Firefox and Safari can.');
-    return;
-  }
   if (!ds || !ds.complete) { alert('Wait until the sequence has finished loading.'); return; }
   disarmIntro();
   if (state.cmp) clearCompare();
@@ -2980,62 +3004,53 @@ async function recordVideo() {
   const dpr = gl.width / cssW, k = Math.min(1, 1920 / gl.width, 1080 / ((cssH + TOP + BOT) * dpr));
   const comp = document.createElement('canvas');
   comp.width = Math.round(gl.width * k / 2) * 2; comp.height = Math.round((cssH + TOP + BOT) * dpr * k / 2) * 2;
+  const cfg = await h264Config(comp.width, comp.height);
+  const type = cfg ? 'video/mp4' : recorderType();
+  if (!cfg && (!type || !HTMLCanvasElement.prototype.captureStream)) {
+    alert('This browser cannot make a video from the page. Recent Chrome, Edge, Firefox and Safari can.');
+    return;
+  }
   const g = comp.getContext('2d'), px = comp.width / cssW;            /* composite pixels per CSS pixel */
   const css = getComputedStyle(document.documentElement), v = (n) => css.getPropertyValue(n).trim();
   const labels = viz.labels.map(el => ({ el, font: getComputedStyle(el).font, color: getComputedStyle(el).color }));
-  const r0 = rec;
+  const r0 = rec, name = `decompwlj_${r0.anumber}_k-L-to-3D.${type.includes('mp4') ? 'mp4' : 'webm'}`;
 
-  const stream = comp.captureStream(30);
-  const mr = new MediaRecorder(stream, { mimeType: type, videoBitsPerSecond: 8e6 });
-  const parts = [];
-  mr.ondataavailable = (e) => { if (e.data.size) parts.push(e.data); };
-  recording = { mr, keep: true, damping: viz.controls.enableDamping };
-  mr.onstop = () => {
-    const keep = recording && recording.keep; finishVideo();
-    if (!keep || !parts.length) return;
-    const blob = new Blob(parts, { type: type.split(';')[0] });
-    const url = URL.createObjectURL(blob), a = document.createElement('a');
-    a.href = url; a.download = `decompwlj_${r0.anumber}_k-L-to-3D.${type.includes('mp4') ? 'mp4' : 'webm'}`;
-    document.body.appendChild(a); a.click(); a.remove();
-    setTimeout(() => URL.revokeObjectURL(url), 60000);
-    track('video/' + r0.anumber, `Video ${r0.anumber}`, true);
-  };
-
-  /* the film: hold the plate, fly into 3-D, then turn slowly about the vertical axis. The clock
-     starts with the first frame the recorder takes, so the file lasts the full 15 s. */
-  let t0 = null, turned = false, base = null;
-  viz.controls.enableDamping = false;
-  viz.director = (now) => {
-    if (t0 === null) return;
-    const t = now - t0;
+  /* the film, as a function of its time t: hold the plate, then one continuous move: the flight
+     into 3-D and a turn about the vertical that starts with it, gently, and ends with the film,
+     so the camera never stops in between */
+  let turned = false, base = null;
+  const up = new THREE.Vector3(0, 1, 0);
+  const direct = (t, now) => {
     if (!turned && t >= VIDEO.hold) {
       turned = true;
       state.view = 'iso';
       document.querySelectorAll('[data-view]').forEach(o => o.classList.toggle('on', o.dataset.view === 'iso'));
       viz.view('iso', VIDEO.turn);
+      viz.tween.t0 = now;                            /* the flight runs on the film's clock */
     }
-    if (turned && !viz.tween) {
-      const c = viz.camera, tg = viz.controls.target;
-      if (!base) base = c.position.clone().sub(tg);
-      const s = Math.min(1, Math.max(0, (t - VIDEO.hold - VIDEO.turn) / (VIDEO.len - VIDEO.hold - VIDEO.turn)));
-      const ang = THREE.MathUtils.degToRad(VIDEO.spin) * s * s * (3 - 2 * s);
-      c.position.copy(base).applyAxisAngle(c.up, ang).add(tg);
-      c.lookAt(tg);
+    if (!turned) return;
+    const s = Math.min(1, Math.max(0, (t - VIDEO.hold) / (VIDEO.len - VIDEO.hold)));
+    const ang = THREE.MathUtils.degToRad(VIDEO.spin) * s * s * (3 - 2 * s);
+    const c = viz.camera, tg = viz.controls.target;
+    if (viz.tween) c.position.sub(tg).applyAxisAngle(up, ang).add(tg);   /* on top of the flight's own frame */
+    else {
+      if (!base) base = c.position.clone().sub(tg);  /* landed: turn on from where the flight ended */
+      c.position.copy(base).applyAxisAngle(up, ang).add(tg);
     }
-    $('#recTime').textContent = `recording ${Math.min(15, Math.floor(t / 1000))} / 15 s`;
-    if (t >= VIDEO.len + 120 && mr.state === 'recording') mr.stop();
+    c.lookAt(tg);
   };
-  /* each rendered frame, composed with its labels, title and legend */
-  viz.onFrame = (now) => {
-    if (t0 === null && mr.state === 'recording') t0 = now;
+  /* one rendered frame, composed with its labels, title and legend */
+  const compose = () => {
     g.fillStyle = v('--bg'); g.fillRect(0, 0, comp.width, comp.height);
     g.drawImage(gl, 0, TOP * px, comp.width, cssH * px);
     g.textAlign = 'center'; g.textBaseline = 'middle';
     for (const L of labels) {
       if (L.el.hidden || L.el._sx === undefined) continue;
+      g.globalAlpha = L.el._op ?? 1;                 /* the labels of an axis fade in as it opens up */
       g.font = L.font.replace(/(\d+(\.\d+)?)px/, (m, n) => `${(n * px).toFixed(1)}px`); g.fillStyle = L.color;
       g.fillText(L.el.textContent, L.el._sx * px, (L.el._sy + TOP) * px);
     }
+    g.globalAlpha = 1;
     const m = 16 * px;
     g.textAlign = 'left'; g.textBaseline = 'top';
     g.font = `600 ${17 * px}px system-ui, sans-serif`; g.fillStyle = v('--fg');
@@ -3052,15 +3067,83 @@ async function recordVideo() {
     }
     g.textAlign = 'right'; g.fillStyle = v('--fg-3'); g.fillText('decompwlj.net', comp.width - m, y);
   };
+  const save = (blob) => {
+    const url = URL.createObjectURL(blob), a = document.createElement('a');
+    a.href = url; a.download = name;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
+    track('video/' + r0.anumber, `Video ${r0.anumber}`, true);
+  };
+
+  recording = { keep: true, damping: viz.controls.enableDamping, mr: null };
+  viz.controls.enableDamping = false;
   $('#app').classList.add('recording');
   for (const el of [$('#panel'), $('#catalog'), $('#topbar')]) el.inert = true;
   $('#recPill').hidden = false; $('#videoBtn').textContent = 'stop';
+
+  if (cfg) return renderMP4(cfg, comp, direct, compose, save);
+
+  /* live: the camera is driven by the clock, so a slow machine gives the same film, choppier */
+  const stream = comp.captureStream(VIDEO.fps);
+  const mr = recording.mr = new MediaRecorder(stream, { mimeType: type, videoBitsPerSecond: 10e6 });
+  const parts = [];
+  mr.ondataavailable = (e) => { if (e.data.size) parts.push(e.data); };
+  mr.onstop = () => {
+    const keep = recording && recording.keep; finishVideo();
+    if (keep && parts.length) save(new Blob(parts, { type: type.split(';')[0] }));
+  };
+  let t0 = null;                                     /* the clock starts with the first frame the recorder takes */
+  viz.director = (now) => {
+    if (t0 === null) return;
+    const t = now - t0;
+    direct(t, now);
+    $('#recTime').textContent = `recording ${Math.min(15, Math.floor(t / 1000))} / 15 s`;
+    if (t >= VIDEO.len + 120 && mr.state === 'recording') mr.stop();
+  };
+  viz.onFrame = (now) => { if (t0 === null && mr.state === 'recording') t0 = now; compose(); };
   mr.start(250);
+}
+
+/* frame by frame: each frame rendered at its exact time, encoded in H.264 and packed in an .mp4 */
+async function renderMP4(cfg, comp, direct, compose, save) {
+  let fail = null;
+  try {
+    const { Muxer, ArrayBufferTarget } = await import('./vendor/mp4-muxer.min.mjs');
+    const muxer = new Muxer({ target: new ArrayBufferTarget(), fastStart: 'in-memory',
+                              video: { codec: 'avc', width: cfg.width, height: cfg.height, frameRate: VIDEO.fps } });
+    const enc = new VideoEncoder({ output: (chunk, meta) => muxer.addVideoChunk(chunk, meta), error: (e) => { fail = e; } });
+    enc.configure(cfg);
+    viz.stop();                                      /* the film's clock replaces the screen's */
+    const n = Math.round(VIDEO.len * VIDEO.fps / 1000), T0 = performance.now(), dt = 1000 / VIDEO.fps;
+    viz.director = (now) => direct(now - T0, now);
+    for (let i = 0; i < n && recording && recording.keep && !fail; i++) {
+      const now = T0 + i * dt;
+      viz.dirty = true; viz._tick(now);
+      compose();
+      const frame = new VideoFrame(comp, { timestamp: Math.round(i * 1e6 / VIDEO.fps), duration: Math.round(1e6 / VIDEO.fps) });
+      enc.encode(frame, { keyFrame: i % (2 * VIDEO.fps) === 0 });
+      frame.close();
+      $('#recTime').textContent = `rendering ${Math.floor(i / VIDEO.fps)} / 15 s`;
+      /* let the page breathe (and the cancel button work); keep the encoder's queue short */
+      do await new Promise(r => setTimeout(r, 0)); while (enc.encodeQueueSize > 4 && !fail);
+    }
+    const done = recording && recording.keep && !fail;
+    if (done) {
+      $('#recTime').textContent = 'finishing…';
+      await enc.flush();
+      muxer.finalize();
+    }
+    enc.close();
+    if (done && !fail) save(new Blob([muxer.target.buffer], { type: 'video/mp4' }));
+  } catch (e) { fail = e; }
+  if (fail) alert(`The video could not be made: ${fail.message || fail}`);
+  finishVideo();
 }
 
 function stopVideo(keep) {
   if (!recording) return;
   recording.keep = keep;
+  if (!recording.mr) return;                         /* rendering frame by frame: the loop sees it and stops */
   if (recording.mr.state === 'recording') recording.mr.stop(); else finishVideo();
 }
 
@@ -3072,6 +3155,7 @@ function finishVideo() {
   $('#app').classList.remove('recording');
   for (const el of [$('#panel'), $('#catalog'), $('#topbar')]) el.inert = false;
   $('#recPill').hidden = true; $('#videoBtn').textContent = 'video';
+  viz.start();
   writeHash();
 }
 

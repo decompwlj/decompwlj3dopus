@@ -54,8 +54,10 @@ live example. Background: [decompwlj.com](https://decompwlj.com) and
 - 📱 **On phones** the controls open as a bottom sheet with the plot kept in view above it (Done,
   or swipe the handle down, to close), the family chips scroll sideways, and buttons are sized for
   fingers.
-- 🎬 **Video export**: the **video** button records 15 s of the current sequence (WebM, or MP4 in
-  Safari): the flat k–L plate, a smooth turn into 3-D and a slow rotation, with title, labels and legend.
+- 🎬 **Video export**: the **video** button makes a 15 s MP4 of the current sequence: the flat k–L
+  plate, then one continuous move into 3-D and a slow rotation, with title, labels and legend. Each
+  frame is rendered at its exact time and encoded by the browser (WebCodecs H.264, packed with the
+  vendored mp4-muxer), so the film is smooth on any machine; browsers without it record live (WebM).
 - 🌗 Light and dark themes, keyboard shortcuts, PNG snapshots.
 - 📦 Plain static files: no server code, no database, no build step.
 - 🔒 Privacy-friendly visit counts ([GoatCounter](https://www.goatcounter.com)): no cookies, no personal data.
@@ -201,7 +203,7 @@ Sequence panel) leads back to the sequence's page; browsers that support it cros
 | `share/<id>.jpg` | Link previews of the sequence pages (600 × 315) |
 | `seq/`, `family/`, `learn/`, `404.html`, `sitemap.xml`, `robots.txt`, `og.png` | Static pages, written by `tools/seo.py` |
 | `css/pages.css` | Stylesheet of the static pages |
-| `vendor/` | three.js r169 and OrbitControls, unmodified (MIT) |
+| `vendor/` | three.js r169 and OrbitControls, unmodified; mp4-muxer 5.2.2, minified (MIT) |
 | `tools/` | Generator, OEIS metadata, encoders, audit and page builders (not needed at runtime) |
 | `tests/smoke.mjs`, `.github/workflows/checks.yml` | Automatic checks |
 | `deploy/` | Apache and nginx examples |
@@ -319,3 +321,4 @@ python3 -m http.server 8765 & node tests/smoke.mjs      # needs: npm install pla
 - Sequence names, offsets and reference terms: [the OEIS](https://oeis.org), CC BY-SA 4.0, read
   from [github.com/oeis/oeisdata](https://github.com/oeis/oeisdata).
 - [three.js](https://threejs.org) r169, © 2010–2024 three.js authors, MIT (`vendor/LICENSE-three.js.txt`).
+- [mp4-muxer](https://github.com/Vanilagy/mp4-muxer) 5.2.2, © 2023 Vanilagy, MIT (`vendor/LICENSE-mp4-muxer.txt`).
