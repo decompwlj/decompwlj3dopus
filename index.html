@@ -786,7 +786,7 @@ input[type=range] { width: 100%; accent-color: var(--accent); height: 18px; }
 
     <section class="grp">
       <h2>Points</h2>
-      <div class="slider-row"><label for="ptSize">size</label><input type="range" id="ptSize" min="0.4" max="12" step="0.1" value="3"><output id="ptSizeOut">3.0</output></div>
+      <div class="slider-row"><label for="ptSize">size</label><input type="range" id="ptSize" min="0.4" max="12" step="0.1" value="2.4"><output id="ptSizeOut">2.4</output></div>
       <div class="slider-row"><label for="ptOpacity">opacity</label><input type="range" id="ptOpacity" min="0.05" max="1" step="0.01" value="0.85"><output id="ptOpacityOut">0.85</output></div>
       <div class="btn-row">
         <button id="mDensity" class="chip" aria-pressed="false" title="additive blending — bright where the cloud is dense">density</button>
@@ -1427,8 +1427,9 @@ const VERT = /* glsl */`
     vColor = (cls > 1.5) ? cTie : ((cls > 0.5) ? cLevel : cWeight);
     if (uHiOne > 0.5 && meta.w > 0.5) { vColor = cOne; boost = 1.7; }
 
-    /* uSize is the pixel size at the framing distance; nearer points grow. */
-    float att = (uOrthoAtt > 0.0) ? uOrthoAtt : clamp(uRef / max(-mv.z, 0.001), 0.2, 8.0);
+    /* uSize is the pixel size at the framing distance; nearer points grow, farther ones keep it,
+       so the far side of the cloud does not thin out and darken as it turns away */
+    float att = (uOrthoAtt > 0.0) ? uOrthoAtt : clamp(uRef / max(-mv.z, 0.001), 1.0, 8.0);
     gl_PointSize = show * uSize * uScale * uDpr * mix(1.0, att, uAtten) * boost;
   }`;
 
@@ -1481,7 +1482,7 @@ class Viz {
     this.onPick = () => {};
 
     this.uniforms = {
-      uSize:    { value: 3 },
+      uSize:    { value: 2.4 },
       uDpr:     { value: this.renderer.getPixelRatio() },
       uAtten:   { value: 1 },
       uRef:     { value: 16 },
@@ -1502,7 +1503,9 @@ class Viz {
 
     this.material = new THREE.ShaderMaterial({
       uniforms: this.uniforms, vertexShader: VERT, fragmentShader: FRAG,
-      transparent: true, depthWrite: true, depthTest: true,
+      /* no depth writes: a dot's soft edge would hide the dots drawn after it, so the cloud's
+         brightness would depend on which side it is seen from */
+      transparent: true, depthWrite: false, depthTest: true,
     });
 
     this.geometry = new THREE.BufferGeometry();
@@ -1522,7 +1525,7 @@ class Viz {
     });
     this.material2 = new THREE.ShaderMaterial({
       uniforms: this.uniforms2, vertexShader: VERT, fragmentShader: FRAG,
-      transparent: true, depthWrite: true, depthTest: true,
+      transparent: true, depthWrite: false, depthTest: true,
     });
     this.geometry2 = new THREE.BufferGeometry();
     this.points2 = new THREE.Points(this.geometry2, this.material2);
@@ -3210,13 +3213,13 @@ function setMode(mode) {
   state.mode = mode;
   const m = viz.material, m2 = viz.material2;
   m2.blending = mode === 'density' ? THREE.AdditiveBlending : THREE.NormalBlending;
-  m2.depthWrite = mode !== 'density';
+  m2.depthWrite = false;
   m2.needsUpdate = true;
   if (mode === 'density') {
     m.blending = THREE.AdditiveBlending; m.depthWrite = false;
     viz.uniforms.uOpacity.value = Math.min(0.3, parseFloat($('#ptOpacity').value));
   } else {
-    m.blending = THREE.NormalBlending; m.depthWrite = true;
+    m.blending = THREE.NormalBlending; m.depthWrite = false;
     viz.uniforms.uOpacity.value = parseFloat($('#ptOpacity').value);
   }
   $('#ptOpacityOut').textContent = viz.uniforms.uOpacity.value.toFixed(2);
