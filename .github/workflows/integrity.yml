@@ -1,0 +1,32 @@
+# decompwlj 3D — the full integrity check, every week and on demand: every row of every
+# sequence re-verified by an independent program, and every published CSV fingerprint
+# recomputed from the data. A failure here means the published numbers changed.
+name: integrity
+
+on:
+  schedule:
+    - cron: '17 3 * * 1'        # Mondays, 03:17 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Tools
+        run: |
+          sudo apt-get install -y -qq zlib1g-dev > /dev/null
+          cc -O2 -Wall -Werror -o tools/verify_all tools/verify_all.c -lz
+      - name: Every row of every sequence (tools/verify_all.c)
+        run: python3 tools/verify_all.py --jobs 4
+      - name: Every published CSV fingerprint (tools/fingerprint.py)
+        run: python3 tools/fingerprint.py --check
+      - name: The site is complete (tools/check_site.py)
+        run: python3 tools/check_site.py

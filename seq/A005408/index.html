@@ -38,7 +38,7 @@
     <figcaption>Click the plate to explore it in 3-D. Weight k across, level L up, both on log scales: blue in the weight class (k ≤ L), orange in the level class (k &gt; L). The dashed diagonal is k = L.</figcaption>
   </figure>
   <div>
-    <a class="cta" href="../../#A005408">Open in the 3-D viewer</a><a class="cta alt" href="https://oeis.org/A005408" rel="noopener">A005408 on the OEIS</a><button type="button" class="cta alt" id="csv" data-id="odd" data-an="A005408" data-n0="0" data-terms="100000" data-chunks="2" title="n;a;weight;level;jump, one row per term, rebuilt from the data">Download CSV</button>
+    <a class="cta" href="../../#A005408">Open in the 3-D viewer</a><a class="cta alt" href="https://oeis.org/A005408" rel="noopener">A005408 on the OEIS</a><button type="button" class="cta alt" id="csv" data-id="odd" data-an="A005408" data-n0="0" data-terms="100000" data-chunks="2" data-rows="50000" data-sha256="b679f1ba6022c7169f3fee5bfc68e99be15ed7909cfe45836dda99c1095cbcab" title="n;a;weight;level;jump, one row per term, rebuilt from the data and checked against its published SHA-256">Download CSV</button>
     <table class="stats">
       <tr><th scope="row">Terms</th><td>100,000 <span class="dim">(n = 0 … 99,999)</span></td></tr>
       <tr><th scope="row">Decomposable (a &gt; 2d)</th><td>99,998</td></tr>
@@ -52,6 +52,7 @@
       <tr><th scope="row">Largest weight k, level L</th><td>199,967, 66,665</td></tr>
     </table>
     <p class="note">d = 2 and l = a - 2 is odd, so the divisor 2 is never available and k = spf(a - 2). The level class is exactly {a : a - 2 prime}, all on L = 1: 17,982 = pi(199,997) - 1 terms here. The ties are a - 2 = p^2, 85 = pi(447) - 1. Removing the divisor 2 nearly doubles the level share against the naturals: 17.98 % against 9.59 %.</p>
+    <p class="sha">SHA-256 of the CSV <code>decompwlj_A005408.csv</code>, checked before it is saved: <code class="h">b679f1ba6022c7169f3fee5bfc68e99be15ed7909cfe45836dda99c1095cbcab</code> (all of them: <a href="../../data/sha256.txt">sha256.txt</a>, for <code>sha256sum -c</code>)</p>
   </div>
 </div>
 <h2>The decomposition</h2>

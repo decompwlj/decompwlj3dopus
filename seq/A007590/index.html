@@ -38,7 +38,7 @@
     <figcaption>Click the plate to explore it in 3-D. Weight k across, level L up, both on log scales: blue in the weight class (k ≤ L), orange in the level class (k &gt; L). The dashed diagonal is k = L.</figcaption>
   </figure>
   <div>
-    <a class="cta" href="../../#A007590">Open in the 3-D viewer</a><a class="cta alt" href="https://oeis.org/A007590" rel="noopener">A007590 on the OEIS</a><button type="button" class="cta alt" id="csv" data-id="halfsq" data-an="A007590" data-n0="1" data-terms="100000" data-chunks="2" title="n;a;weight;level;jump, one row per term, rebuilt from the data">Download CSV</button>
+    <a class="cta" href="../../#A007590">Open in the 3-D viewer</a><a class="cta alt" href="https://oeis.org/A007590" rel="noopener">A007590 on the OEIS</a><button type="button" class="cta alt" id="csv" data-id="halfsq" data-an="A007590" data-n0="1" data-terms="100000" data-chunks="2" data-rows="50000" data-sha256="6a2580c19525d90b77efffa4299d976ee0e3bad65af35b68c83ed6d7ff227122" title="n;a;weight;level;jump, one row per term, rebuilt from the data and checked against its published SHA-256">Download CSV</button>
     <table class="stats">
       <tr><th scope="row">Terms</th><td>100,000 <span class="dim">(n = 1 … 100,000)</span></td></tr>
       <tr><th scope="row">Decomposable (a &gt; 2d)</th><td>99,995</td></tr>
@@ -52,6 +52,7 @@
       <tr><th scope="row">Largest weight k, level L</th><td>2,499,200,063, 49,728</td></tr>
     </table>
     <p class="note">floor(n^2/2), from a(1) = 0 (a(0) = a(1) = 0). Terms and gaps are even past the start, so the line L = 1 holds 2 terms. Every decomposable term is forced level (l &lt;= d^2).</p>
+    <p class="sha">SHA-256 of the CSV <code>decompwlj_A007590.csv</code>, checked before it is saved: <code class="h">6a2580c19525d90b77efffa4299d976ee0e3bad65af35b68c83ed6d7ff227122</code> (all of them: <a href="../../data/sha256.txt">sha256.txt</a>, for <code>sha256sum -c</code>)</p>
   </div>
 </div>
 <h2>The decomposition</h2>

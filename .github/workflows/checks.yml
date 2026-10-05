@@ -1,5 +1,8 @@
 # decompwlj 3D — checks on every pull request and every push to main.
-#   data:    the generator compiles cleanly, the site is complete (tools/check_site.py), four
+#   data:    every row of every sequence verified by an independent program (tools/verify_all.c:
+#            k·L + d = a, k > d, k the least divisor of a − d above d, the catalogue's counts),
+#            the published CSV fingerprints on a sample, the generator compiles cleanly, the
+#            site is complete (tools/check_site.py), four
 #            sequences rebuild byte for byte, audit.py re-verifies one sequence in 25, and the
 #            static pages are in step with the catalogue (tools/seo.py writes the same HTML).
 #   browser: a Chromium smoke test of the gallery, the viewer, a sequence page and its CSV,
@@ -22,7 +25,7 @@ concurrency:
 jobs:
   data:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -34,6 +37,13 @@ jobs:
         run: cc -O2 -Wall -Werror -o /tmp/decompwlj_gen tools/decompwlj_gen.c -lm
       - name: Site complete, and four sequences rebuilt byte for byte
         run: python3 tools/check_site.py --regen /tmp/decompwlj_gen primes,a030632,a032917,a124594
+      - name: Every row of every sequence, verified independently (tools/verify_all.c)
+        run: |
+          sudo apt-get install -y -qq zlib1g-dev > /dev/null
+          cc -O2 -Wall -Werror -o tools/verify_all tools/verify_all.c -lz
+          python3 tools/verify_all.py --jobs 4
+      - name: Published fingerprints, one sequence in 25 (tools/fingerprint.py)
+        run: python3 tools/fingerprint.py --check --every 25
       - name: Audit one sequence in 25
         run: python3 tools/audit.py data --every 25 --sample 50 | tail -n 3
       - name: Static pages in step with the catalogue

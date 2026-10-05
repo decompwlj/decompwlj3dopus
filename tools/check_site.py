@@ -65,6 +65,15 @@ sm = (ROOT / 'sitemap.xml').read_text().count('<url>')
 if sm != N + len(fams) + 3: bad(f'sitemap.xml has {sm} URLs, expected {N + len(fams) + 3}')
 lst = (ROOT / 'seq' / 'index.html').read_text().count('<tr><td>')
 if lst != N: bad(f'seq/index.html lists {lst} sequences, the catalogue has {N}')
+# the published fingerprints: one per sequence, and on its page
+shaf = ROOT / 'data' / 'sha256.txt'
+if not shaf.is_file(): bad('missing data/sha256.txt (run tools/fingerprint.py)')
+else:
+    sha = {l.split()[1][10:-4]: l.split()[0] for l in shaf.read_text().splitlines() if l.strip()}
+    for A in ans:
+        if not re.fullmatch(r'[0-9a-f]{64}', sha.get(A, '')): bad(f'{A}: no SHA-256 in data/sha256.txt')
+        elif f'data-sha256="{sha[A]}"' not in (ROOT / 'seq' / A / 'index.html').read_text(): bad(f'seq/{A}/: does not carry its SHA-256')
+    for A in set(sha) - set(ans): bad(f'data/sha256.txt: {A} is not in the catalogue')
 for p in ('learn/index.html', 'learn/learn.js', 'seq/csv.js', '404.html', 'robots.txt', 'og.png',
           'favicon.svg', 'favicon.ico', 'apple-touch-icon.png', 'vendor/three.module.min.js', 'vendor/addons/controls/OrbitControls.js'):
     if not (ROOT / p).is_file(): bad(f'missing {p}')

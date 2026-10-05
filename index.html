@@ -581,6 +581,11 @@ input[type=range] { width: 100%; accent-color: var(--accent); height: 18px; }
   #seqName { font-size: 14px; }
 }
 
+/* the integrity check of the loaded sequence, under its note */
+.verify { margin: 6px 0 0; font: 11px var(--mono); color: var(--fg-3); }
+.verify.ok { color: color-mix(in oklab, #1f9d55 80%, var(--fg)); }
+.verify.bad { color: #d93036; font-weight: 600; }
+
 /* the video export's progress, over the plot */
 .rec-pill { position: absolute; left: 50%; top: 70px; transform: translateX(-50%); z-index: 6; display: flex; align-items: center; gap: 10px;
             padding: 6px 8px 6px 14px; border-radius: 999px; background: color-mix(in oklab, var(--bg-2) 92%, transparent);
@@ -843,6 +848,7 @@ input[type=range] { width: 100%; accent-color: var(--accent); height: 18px; }
       <p id="fullName" class="fullname"></p>
       <dl id="stats" class="stats"></dl>
       <p id="note" class="note"></p>
+      <p id="verify" class="verify" aria-live="polite"></p>
       <div class="btn-row">
         <a id="pageLink2" class="chip" title="This sequence's page: counts, note, plate and CSV">sequence page</a>
         <a id="oeisLink" class="chip" target="_blank" rel="noopener">OEIS</a>
@@ -2642,6 +2648,7 @@ async function select(id) {
   $('#seqSubRest').textContent = ` · ${r.family} · n = ${fmt.format(r.n0)} … ${fmt.format(r.n0 + r.terms - 1)}`;
   $('#fullName').textContent = r.name;
   $('#note').textContent = r.note || '';
+  $('#verify').textContent = ''; $('#verify').className = 'verify';
   $('#oeisLink').href = oeisUrl(r);
   $('#oeisLink').textContent = `OEIS ${r.anumber}`;
   $('#loadState').textContent = 'loading…';
@@ -2674,6 +2681,7 @@ async function select(id) {
   $('#progressBar').style.opacity = '0';
   $('#loadState').textContent = '';
   applyFilters();
+  verifyDataset(ds, signal);
 }
 
 
@@ -2843,20 +2851,88 @@ function toggleTheme() {
 /** n;a;weight;level;jump for every term: a is the term a(n); weight and
  *  level are empty where a(n) does not decompose.  Uses the viewer's copy when it
  *  holds this sequence, otherwise loads the chunks. */
+/** The CSV text of a loaded sequence, in parts: exactly the file whose SHA-256 is published. */
+function csvParts(d, r) {
+  const parts = ['n;a;weight;level;jump\n'];
+  let buf = '';
+  for (let i = 0; i < r.terms; i++) {
+    const k = d.k[i];
+    buf += `${r.n0 + i};${d.a[i]};${k ? k : ''};${k ? d.L[i] : ''};${d.d[i]}\n`;
+    if (buf.length > 1 << 16) { parts.push(buf); buf = ''; }
+  }
+  parts.push(buf);
+  return parts;
+}
+
+/* ── integrity: the numbers shown are the numbers published ──────
+   data/sha256.txt (tools/fingerprint.py) holds the SHA-256 of every sequence's CSV, made by
+   an independent decoder from the published chunks. The viewer checks each sequence it
+   loads, and a CSV is checked before it is saved. */
+let checksums = null;
+function loadChecksums() {
+  if (!checksums) checksums = fetch(`${DATA}/sha256.txt`, { cache: 'no-cache' })
+    .then(res => { if (!res.ok) throw new Error(`sha256.txt: ${res.status}`); return res.text(); })
+    .then(t => new Map(t.split('\n').filter(Boolean).map(l => { const [h, f] = l.trim().split(/\s+/); return [f.slice(10, -4), h]; })))
+    .catch(e => { checksums = null; throw e; });
+  return checksums;
+}
+async function sha256Hex(parts) {
+  const buf = await new Blob(parts).arrayBuffer();
+  return [...new Uint8Array(await crypto.subtle.digest('SHA-256', buf))].map(b => b.toString(16).padStart(2, '0')).join('');
+}
+/** Throws unless the CSV text of `d` has the published SHA-256. Returns the hash. */
+async function checkFingerprint(d, r) {
+  const want = (await loadChecksums()).get(r.anumber);
+  if (!want) throw new Error(`no published fingerprint for ${r.anumber}`);
+  const got = await sha256Hex(csvParts(d, r));
+  if (got !== want) throw new Error(`the data of ${r.anumber} differ from the published fingerprint (SHA-256 ${got.slice(0, 12)}… instead of ${want.slice(0, 12)}…)`);
+  return got;
+}
+
+/** After a sequence has loaded: its counts and ranges against the catalogue, at once, then its
+ *  SHA-256 against the published one, when the page is idle. The result shows in the panel. */
+async function verifyDataset(d, signal) {
+  const r = d.rec, out = $('#verify');
+  const show = (ok, text) => { if (rec !== r) return; out.className = 'verify ' + (ok ? 'ok' : 'bad'); out.textContent = text; };
+  /* 1. what the catalogue says, recounted from the rows */
+  const c = { decomposable: 0, level: 0, weight: 0, ties: 0, level_one: 0, forced: 0, amin: Infinity, amax: 0, kmax: 0, Lmax: 0, dmin: Infinity, dmax: 0 };
+  for (let i = 0; i < r.terms; i++) {
+    const a = d.a[i], dd = d.d[i], k = d.k[i], L = d.L[i];
+    if (a < c.amin) c.amin = a; if (a > c.amax) c.amax = a;
+    if (dd < c.dmin) c.dmin = dd; if (dd > c.dmax) c.dmax = dd;
+    if (!k) continue;
+    c.decomposable++; if (k > L) c.level++; else c.weight++;
+    if (k === L) c.ties++; if (L === 1) c.level_one++;
+    /* l <= d², exactly: above 94,906,265 d² passes 2^53, beyond every l; below, it is exact */
+    if (dd > 94906265 || a - dd <= dd * dd) c.forced++;
+    if (k > c.kmax) c.kmax = k; if (L > c.Lmax) c.Lmax = L;
+  }
+  const off = Object.keys(c).filter(key => key in r && r[key] !== c[key]);
+  if (off.length) return show(false, `⚠ Data check failed: ${off.map(k => `${k} ${c[k]} ≠ ${r[k]}`).join(', ')}. ` +
+                                      'The data may be cached from another version: reload the page (Ctrl+F5).');
+  show(true, 'counts verified; checking the fingerprint…');
+  /* 2. the SHA-256 of the exact CSV, when the page is idle */
+  await new Promise(res => (window.requestIdleCallback || setTimeout)(res, { timeout: 2000 }));
+  if (signal && signal.aborted) return;
+  try {
+    const h = await checkFingerprint(d, r);
+    show(true, `✓ data verified: SHA-256 ${h.slice(0, 16)}…, as published`);
+  } catch (e) {
+    if (e.message.startsWith('sha256.txt') || !window.crypto || !crypto.subtle) show(true, 'counts verified (the fingerprint could not be checked here)');
+    else show(false, `⚠ Data check failed: ${e.message}. Reload the page (Ctrl+F5); if it persists, please report it.`);
+  }
+}
+
 async function downloadCSV(r, btn) {
   const label = btn ? btn.textContent : '';
   if (btn) { btn.disabled = true; btn.textContent = '…'; }
   try {
     let d = (ds && ds.rec.id === r.id && ds.complete) ? ds : null;
     if (!d) { d = new Dataset(r, DATA); await d.load(() => {}); }
-    const parts = ['n;a;weight;level;jump\n'];
-    let buf = '';
-    for (let i = 0; i < r.terms; i++) {
-      const k = d.k[i];
-      buf += `${r.n0 + i};${d.a[i]};${k ? k : ''};${k ? d.L[i] : ''};${d.d[i]}\n`;
-      if (buf.length > 1 << 16) { parts.push(buf); buf = ''; }
-    }
-    parts.push(buf);
+    const parts = csvParts(d, r);
+    /* never save a file that differs from the published one */
+    try { await checkFingerprint(d, r); }
+    catch (e) { if (!/^sha256\.txt|no published/.test(e.message) && window.crypto && crypto.subtle) throw e; }
     const url = URL.createObjectURL(new Blob(parts, { type: 'text/csv' }));
     const a = document.createElement('a');
     a.href = url; a.download = `decompwlj_${r.anumber}.csv`;
