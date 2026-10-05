@@ -2983,10 +2983,59 @@ function recorderType() {
 async function h264Config(width, height) {
   if (!window.VideoEncoder || !window.VideoFrame) return null;
   for (const codec of ['avc1.640033', 'avc1.640028', 'avc1.4d0033', 'avc1.4d0028', 'avc1.42003e', 'avc1.42001f']) {
-    const cfg = { codec, width, height, bitrate: 10e6, framerate: VIDEO.fps, avc: { format: 'avc' } };
+    const cfg = { codec, width, height, bitrate: 10e6, framerate: VIDEO.fps, avc: { format: 'annexb' } };
     try { if ((await VideoEncoder.isConfigSupported(cfg)).supported) return cfg; } catch { /* the next one */ }
   }
   return null;
+}
+
+/* The encoder's H.264 is asked for in Annex B (start codes, with the SPS and PPS in the stream): not
+   every browser hands over the stream's configuration (Firefox gives none), so it is read from the
+   stream itself and each frame repacked for the MP4, as length-prefixed NAL units. */
+function nalUnits(b) {
+  if (!(b[0] === 0 && b[1] === 0 && (b[2] === 1 || (b[2] === 0 && b[3] === 1)))) return null;   /* not Annex B */
+  const out = []; let start = -1;
+  const push = (end) => { while (end > start && b[end - 1] === 0) end--; if (end > start) out.push(b.subarray(start, end)); };
+  for (let i = 0; i + 2 < b.length; i++)
+    if (b[i] === 0 && b[i + 1] === 0 && b[i + 2] === 1) { if (start >= 0) push(i); start = i + 3; i += 2; }
+  if (start >= 0) push(b.length);
+  return out;
+}
+function avcC(sps, pps) {                           /* the AVCDecoderConfigurationRecord of ISO 14496-15 */
+  const b = [1, sps[1], sps[2], sps[3], 0xff, 0xe1, sps.length >> 8, sps.length & 255, ...sps, 1, pps.length >> 8, pps.length & 255, ...pps];
+  if ([100, 110, 122, 144].includes(sps[1])) b.push(0xfd, 0xf8, 0xf8, 0);   /* High profiles: 4:2:0, 8 bits */
+  return new Uint8Array(b);
+}
+function h264Packer(muxer, width, height, frameDur) {
+  let config = null;
+  return (chunk, meta) => {
+    const b = new Uint8Array(chunk.byteLength); chunk.copyTo(b);
+    const dur = chunk.duration || frameDur, nals = nalUnits(b);
+    if (!nals) {                                     /* already length-prefixed: the browser's configuration comes with it */
+      if (!config && !(meta && meta.decoderConfig && meta.decoderConfig.description)) throw new Error('the encoder gave no H.264 configuration');
+      config = config || meta.decoderConfig;
+      muxer.addVideoChunkRaw(b, chunk.type, chunk.timestamp, dur, meta);
+      return;
+    }
+    let sps = null, pps = null; const keep = [];
+    for (const n of nals) {
+      const t = n[0] & 31;
+      if (t === 7) sps = sps || n; else if (t === 8) pps = pps || n; else if (t !== 9) keep.push(n);   /* 9: access unit delimiter */
+    }
+    let m;
+    if (!config) {
+      if (!sps || !pps) throw new Error('the encoder gave no H.264 parameter sets');
+      config = { codec: 'avc1.' + [...sps.subarray(1, 4)].map(x => x.toString(16).padStart(2, '0')).join(''),
+                 codedWidth: width, codedHeight: height, description: avcC(sps, pps),
+                 colorSpace: (meta && meta.decoderConfig && meta.decoderConfig.colorSpace) ||
+                             { primaries: 'bt709', transfer: 'bt709', matrix: 'bt709', fullRange: false } };
+      m = { decoderConfig: config };
+    }
+    const out = new Uint8Array(keep.reduce((n, u) => n + 4 + u.length, 0)), dv = new DataView(out.buffer);
+    let o = 0;
+    for (const u of keep) { dv.setUint32(o, u.length); out.set(u, o + 4); o += 4 + u.length; }
+    muxer.addVideoChunkRaw(out, chunk.type, chunk.timestamp, dur, m);
+  };
 }
 
 async function recordVideo() {
@@ -3111,7 +3160,9 @@ async function renderMP4(cfg, comp, direct, compose, save) {
     const { Muxer, ArrayBufferTarget } = await import('./vendor/mp4-muxer.min.mjs');
     const muxer = new Muxer({ target: new ArrayBufferTarget(), fastStart: 'in-memory',
                               video: { codec: 'avc', width: cfg.width, height: cfg.height, frameRate: VIDEO.fps } });
-    const enc = new VideoEncoder({ output: (chunk, meta) => muxer.addVideoChunk(chunk, meta), error: (e) => { fail = e; } });
+    const pack = h264Packer(muxer, cfg.width, cfg.height, Math.round(1e6 / VIDEO.fps));
+    const enc = new VideoEncoder({ output: (chunk, meta) => { try { if (!fail) pack(chunk, meta); } catch (e) { fail = e; } },
+                                   error: (e) => { fail = e; } });
     enc.configure(cfg);
     viz.stop();                                      /* the film's clock replaces the screen's */
     const n = Math.round(VIDEO.len * VIDEO.fps / 1000), T0 = performance.now(), dt = 1000 / VIDEO.fps;
@@ -3131,9 +3182,9 @@ async function renderMP4(cfg, comp, direct, compose, save) {
     if (done) {
       $('#recTime').textContent = 'finishing…';
       await enc.flush();
-      muxer.finalize();
+      if (!fail) muxer.finalize();
     }
-    enc.close();
+    if (enc.state !== 'closed') enc.close();
     if (done && !fail) save(new Blob([muxer.target.buffer], { type: 'video/mp4' }));
   } catch (e) { fail = e; }
   if (fail) alert(`The video could not be made: ${fail.message || fail}`);
