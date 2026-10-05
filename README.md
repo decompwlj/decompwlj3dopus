@@ -54,6 +54,8 @@ live example. Background: [decompwlj.com](https://decompwlj.com) and
 - 📱 **On phones** the controls open as a bottom sheet with the plot kept in view above it (Done,
   or swipe the handle down, to close), the family chips scroll sideways, and buttons are sized for
   fingers.
+- 🎬 **Video export**: the **video** button records 15 s of the current sequence (WebM, or MP4 in
+  Safari): the flat k–L plate, a smooth turn into 3-D and a slow rotation, with title, labels and legend.
 - 🌗 Light and dark themes, keyboard shortcuts, PNG snapshots.
 - 📦 Plain static files: no server code, no database, no build step.
 - 🔒 Privacy-friendly visit counts ([GoatCounter](https://www.goatcounter.com)): no cookies, no personal data.
