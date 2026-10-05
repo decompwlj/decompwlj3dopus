@@ -853,7 +853,7 @@ input[type=range] { width: 100%; accent-color: var(--accent); height: 18px; }
         <a id="pageLink2" class="chip" title="This sequence's page: counts, note, plate and CSV">sequence page</a>
         <a id="oeisLink" class="chip" target="_blank" rel="noopener">OEIS</a>
         <button id="snap" class="chip">snapshot</button>
-        <button id="videoBtn" class="chip" title="Make a 15-second MP4 video: the flat k–L plate, then one smooth move into 3-D and a slow rotation">video</button>
+        <button id="videoBtn" class="chip" title="Make a 10-second MP4 video: the flat plate on screen (k–L, k–d, L–d or edge; k–L from 3-D), then one smooth move into 3-D and a slow rotation">video</button>
         <button id="csvBtn" class="chip" title="n;a;weight;level;jump, one row per term; rebuilt from the data on demand">download CSV</button>
         <button id="share" class="chip" title="Copies a tag such as #primes.kLd.iso.solid. Add it to the end of this page's link to open the same view.">copy view tag</button>
       </div>
@@ -2963,15 +2963,16 @@ async function downloadCSV(r, btn) {
   }
 }
 
-/* ── video export: 15 s of the flat k–L plate turning into 3-D ── */
+/* ── video export: 10 s of a flat plate (k–L, k–d, L–d or edge) turning into 3-D ── */
 
 /* The canvas holds only the points and the frame; each video frame is composed on a second
    canvas with the axis labels, the title and a legend. Where the browser has an H.264 encoder
    (WebCodecs: Chrome, Edge, Safari, Firefox) the film is rendered frame by frame at exact times
    and packed into an .mp4, faster or slower than real time but always perfectly smooth; elsewhere
    the canvas is recorded live (MediaRecorder, .mp4 where possible, else .webm). */
-const VIDEO = { len: 15000, hold: 1500, turn: 4500, spin: 150, fps: 30 };   /* ms, ms, ms, degrees, frames/s */
+const VIDEO = { len: 10000, hold: 1000, turn: 3500, spin: 100, fps: 30 };   /* ms, ms, ms, degrees, frames/s */
 let recording = null;
+const PLATE_NAME = { xy: 'k-L', xz: 'k-d', yz: 'L-d', edge: 'edge' };
 
 function recorderType() {
   for (const t of ['video/mp4;codecs=avc1', 'video/mp4', 'video/webm;codecs=vp9', 'video/webm;codecs=vp8', 'video/webm'])
@@ -3043,8 +3044,9 @@ async function recordVideo() {
   if (!ds || !ds.complete) { alert('Wait until the sequence has finished loading.'); return; }
   disarmIntro();
   if (state.cmp) clearCompare();
-  /* start from the flat k–L plate, freshly framed */
-  document.querySelector('[data-view="xy"]').click();
+  /* start from the flat plate on screen (k–L, k–d, L–d or edge; k–L from 3-D), freshly framed */
+  const plate = state.view === 'iso' ? 'xy' : state.view;
+  document.querySelector(`[data-view="${plate}"]`).click();
   await new Promise(r => { const w = () => (viz.tween ? requestAnimationFrame(w) : r()); w(); });
   await new Promise(r => setTimeout(r, 150));
 
@@ -3062,7 +3064,7 @@ async function recordVideo() {
   const g = comp.getContext('2d'), px = comp.width / cssW;            /* composite pixels per CSS pixel */
   const css = getComputedStyle(document.documentElement), v = (n) => css.getPropertyValue(n).trim();
   const labels = viz.labels.map(el => ({ el, font: getComputedStyle(el).font, color: getComputedStyle(el).color }));
-  const r0 = rec, name = `decompwlj_${r0.anumber}_k-L-to-3D.${type.includes('mp4') ? 'mp4' : 'webm'}`;
+  const r0 = rec, name = `decompwlj_${r0.anumber}_${PLATE_NAME[plate]}-to-3D.${type.includes('mp4') ? 'mp4' : 'webm'}`;
 
   /* the film, as a function of its time t: hold the plate, then one continuous move: the flight
      into 3-D and a turn about the vertical that starts with it, gently, and ends with the film,
@@ -3146,7 +3148,7 @@ async function recordVideo() {
     if (t0 === null) return;
     const t = now - t0;
     direct(t, now);
-    $('#recTime').textContent = `recording ${Math.min(15, Math.floor(t / 1000))} / 15 s`;
+    $('#recTime').textContent = `recording ${Math.min(VIDEO.len / 1000, Math.floor(t / 1000))} / ${VIDEO.len / 1000} s`;
     if (t >= VIDEO.len + 120 && mr.state === 'recording') mr.stop();
   };
   viz.onFrame = (now) => { if (t0 === null && mr.state === 'recording') t0 = now; compose(); };
@@ -3174,7 +3176,7 @@ async function renderMP4(cfg, comp, direct, compose, save) {
       const frame = new VideoFrame(comp, { timestamp: Math.round(i * 1e6 / VIDEO.fps), duration: Math.round(1e6 / VIDEO.fps) });
       enc.encode(frame, { keyFrame: i % (2 * VIDEO.fps) === 0 });
       frame.close();
-      $('#recTime').textContent = `rendering ${Math.floor(i / VIDEO.fps)} / 15 s`;
+      $('#recTime').textContent = `rendering ${Math.floor(i / VIDEO.fps)} / ${VIDEO.len / 1000} s`;
       /* let the page breathe (and the cancel button work); keep the encoder's queue short */
       do await new Promise(r => setTimeout(r, 0)); while (enc.encodeQueueSize > 4 && !fail);
     }
