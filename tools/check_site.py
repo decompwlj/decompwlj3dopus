@@ -75,7 +75,7 @@ else:
         elif f'data-sha256="{sha[A]}"' not in (ROOT / 'seq' / A / 'index.html').read_text(): bad(f'seq/{A}/: does not carry its SHA-256')
     for A in set(sha) - set(ans): bad(f'data/sha256.txt: {A} is not in the catalogue')
 for p in ('learn/index.html', 'learn/learn.js', 'seq/csv.js', '404.html', 'robots.txt', 'og.png',
-          'favicon.svg', 'favicon.ico', 'apple-touch-icon.png', 'vendor/three.module.min.js', 'vendor/addons/controls/OrbitControls.js'):
+          'favicon.svg', 'favicon.ico', 'apple-touch-icon.png', 'vendor/three.module.min.js', 'vendor/addons/controls/OrbitControls.js', 'vendor/mp4-muxer.min.mjs'):
     if not (ROOT / p).is_file(): bad(f'missing {p}')
 
 # rebuild some sequences with the C generator and compare byte for byte
