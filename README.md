@@ -54,9 +54,9 @@ live example. Background: [decompwlj.com](https://decompwlj.com) and
 - 📱 **On phones** the controls open as a bottom sheet with the plot kept in view above it (Done,
   or swipe the handle down, to close), the family chips scroll sideways, and buttons are sized for
   fingers.
-- 🎬 **Video export**: the **video** button makes a 10 s MP4 of the current sequence: the flat
-  plate on screen (k–L, k–d, L–d or edge), then one continuous move into 3-D, the camera rising
-  to look down on the cloud, with title, labels and legend. Each frame is rendered at its exact
+- 🎬 **Video export**: the **video** button makes a 6 s MP4 of the current sequence: 1 s on the
+  flat plate on screen (k–L, k–d, L–d or edge), then 5 s of one continuous move into 3-D, the
+  camera rising to look down on the cloud, with title, labels and legend. Each frame is rendered at its exact
   time and encoded by the browser (WebCodecs H.264, packed with the vendored mp4-muxer), so the
   film is smooth on any machine; browsers without it record live (WebM).
 - 🌗 Light and dark themes, keyboard shortcuts, PNG snapshots.
