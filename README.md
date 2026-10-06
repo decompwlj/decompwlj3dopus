@@ -55,10 +55,10 @@ live example. Background: [decompwlj.com](https://decompwlj.com) and
   or swipe the handle down, to close), the family chips scroll sideways, and buttons are sized for
   fingers.
 - 🎬 **Video export**: the **video** button makes a 10 s MP4 of the current sequence: the flat
-  plate on screen (k–L, k–d, L–d or edge), then one continuous move into 3-D and a slow rotation,
-  with title, labels and legend. Each frame is rendered at its exact time and encoded by the browser
-  (WebCodecs H.264, packed with the vendored mp4-muxer), so the film is smooth on any machine;
-  browsers without it record live (WebM).
+  plate on screen (k–L, k–d, L–d or edge), then one continuous move into 3-D, the camera rising
+  to look down on the cloud, with title, labels and legend. Each frame is rendered at its exact
+  time and encoded by the browser (WebCodecs H.264, packed with the vendored mp4-muxer), so the
+  film is smooth on any machine; browsers without it record live (WebM).
 - 🌗 Light and dark themes, keyboard shortcuts, PNG snapshots.
 - 📦 Plain static files: no server code, no database, no build step.
 - 🔒 Privacy-friendly visit counts ([GoatCounter](https://www.goatcounter.com)): no cookies, no personal data.

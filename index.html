@@ -853,7 +853,7 @@ input[type=range] { width: 100%; accent-color: var(--accent); height: 18px; }
         <a id="pageLink2" class="chip" title="This sequence's page: counts, note, plate and CSV">sequence page</a>
         <a id="oeisLink" class="chip" target="_blank" rel="noopener">OEIS</a>
         <button id="snap" class="chip">snapshot</button>
-        <button id="videoBtn" class="chip" title="Make a 10-second MP4 video: the flat plate on screen (k–L, k–d, L–d or edge; k–L from 3-D), then one smooth move into 3-D and a slow rotation">video</button>
+        <button id="videoBtn" class="chip" title="Make a 10-second MP4 video: the flat plate on screen (k–L, k–d, L–d or edge; k–L from 3-D), then one smooth move into 3-D, rising to look down on the cloud">video</button>
         <button id="csvBtn" class="chip" title="n;a;weight;level;jump, one row per term; rebuilt from the data on demand">download CSV</button>
         <button id="share" class="chip" title="Copies a tag such as #primes.kLd.iso.solid. Add it to the end of this page's link to open the same view.">copy view tag</button>
       </div>
@@ -2972,7 +2972,7 @@ async function downloadCSV(r, btn) {
    (WebCodecs: Chrome, Edge, Safari, Firefox) the film is rendered frame by frame at exact times
    and packed into an .mp4, faster or slower than real time but always perfectly smooth; elsewhere
    the canvas is recorded live (MediaRecorder, .mp4 where possible, else .webm). */
-const VIDEO = { len: 10000, hold: 1000, turn: 3500, spin: 100, fps: 30 };   /* ms, ms, ms, degrees, frames/s */
+const VIDEO = { len: 10000, hold: 1000, turn: 3500, swing: -25, rise: 30, maxEl: 62, fps: 30 };   /* ms, ms, ms, degrees, degrees, degrees, frames/s */
 let recording = null;
 const PLATE_NAME = { xy: 'k-L', xz: 'k-d', yz: 'L-d', edge: 'edge' };
 
@@ -3069,10 +3069,19 @@ async function recordVideo() {
   const r0 = rec, name = `decompwlj_${r0.anumber}_${PLATE_NAME[plate]}-to-3D.${type.includes('mp4') ? 'mp4' : 'webm'}`;
 
   /* the film, as a function of its time t: hold the plate, then one continuous move: the flight
-     into 3-D and a turn about the vertical that starts with it, gently, and ends with the film,
-     so the camera never stops in between */
+     into 3-D, and with it, gently, the camera rising over the cloud (a tilt about the horizontal
+     axis, to look down on the k–d floor rather than from beside or under it) while it swings a
+     little around the vertical; both end with the film, so the camera never stops in between */
   let turned = false, base = null;
-  const up = new THREE.Vector3(0, 1, 0);
+  const rel = new THREE.Vector3();
+  const orbit = (c, tg, from, e) => {                /* `from` (relative to the target), raised and swung by e */
+    const r = from.length(), el0 = Math.asin(THREE.MathUtils.clamp(from.y / r, -1, 1)), az0 = Math.atan2(from.x, from.z);
+    const D = THREE.MathUtils.degToRad;
+    /* the rise eases off smoothly as the camera nears maxEl (a film from a plate seen from above starts high) */
+    const f = THREE.MathUtils.smoothstep((D(VIDEO.maxEl) - el0) / D(VIDEO.rise), 0, 1);
+    const el = el0 + D(VIDEO.rise) * e * f, az = az0 + D(VIDEO.swing) * e;
+    c.position.set(r * Math.cos(el) * Math.sin(az), r * Math.sin(el), r * Math.cos(el) * Math.cos(az)).add(tg);
+  };
   const direct = (t, now) => {
     if (!turned && t >= VIDEO.hold) {
       turned = true;
@@ -3083,12 +3092,12 @@ async function recordVideo() {
     }
     if (!turned) return;
     const s = Math.min(1, Math.max(0, (t - VIDEO.hold) / (VIDEO.len - VIDEO.hold)));
-    const ang = THREE.MathUtils.degToRad(VIDEO.spin) * s * s * (3 - 2 * s);
+    const e = s * s * (3 - 2 * s);
     const c = viz.camera, tg = viz.controls.target;
-    if (viz.tween) c.position.sub(tg).applyAxisAngle(up, ang).add(tg);   /* on top of the flight's own frame */
+    if (viz.tween) orbit(c, tg, rel.copy(c.position).sub(tg), e);   /* on top of the flight's own frame */
     else {
-      if (!base) base = c.position.clone().sub(tg);  /* landed: turn on from where the flight ended */
-      c.position.copy(base).applyAxisAngle(up, ang).add(tg);
+      if (!base) base = c.position.clone().sub(tg);  /* landed: carry on from where the flight ended */
+      orbit(c, tg, base, e);
     }
     c.lookAt(tg);
   };
