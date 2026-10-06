@@ -1907,7 +1907,9 @@ class Viz {
     const b = this.box, aspect = this.persp.aspect || 1;
     /* only the band between the top bar and the status bar is free: fit the box to it */
     const h = this.cells()[0].h, ins = this._insets(), band = Math.max(0.4, (h - ins.top - ins.bottom) / h);
-    const tv = Math.tan(THREE.MathUtils.degToRad(this.persp.fov) / 2), th = tv * aspect, tb = tv * band;
+    /* the resting field of view, not the camera's own: a view picked during a flight, while it is
+       narrowed for the dolly zoom, would otherwise land hundreds of times too far, past the far plane */
+    const tv = Math.tan(THREE.MathUtils.degToRad(Viz.FOV) / 2), th = tv * aspect, tb = tv * band;
     const { right, up } = this._basis(dir, up0);
     const c = new THREE.Vector3();
     let dist = 0, hh = 0;
@@ -2021,7 +2023,7 @@ class Viz {
     cam.fov = Viz.FOV; cam.near = 0.05; cam.far = 4000;
     if (tw.toFlat) {
       const o = this.ortho;
-      o.position.copy(tw.dir1).multiplyScalar(Math.max(tw.fit.dist, 40));
+      o.position.copy(tw.dir1).multiplyScalar(Math.min(Math.max(tw.fit.dist, 40), 2500));   /* well inside its ±5000 depth range */
       o.up.copy(tw.up1); o.zoom = 1;
       this.camera = o; this.projection = 'ortho';
       this.controls.target.set(0, 0, 0);
