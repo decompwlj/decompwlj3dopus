@@ -33,6 +33,22 @@ check(await p.evaluate(() => decompwlj.state.view) === 'xy', 'a card opens the k
 await p.mouse.move(700, 450); await p.mouse.down(); await p.mouse.move(640, 410, { steps: 8 }); await p.mouse.up();
 check(await p.evaluate(() => decompwlj.state.view) === 'iso', 'a drag turns it into 3-D');
 
+/* a view picked during a flight (as when a gallery card opens a second sequence) still lands with
+   the graph inside the camera's depth range, and drawn */
+for (const [a, z] of [['xy', 'iso'], ['iso', 'xy']]) {
+  await p.evaluate(([a, z]) => { const v = decompwlj.viz; v.view(a); v._tick(performance.now() + 200); v.view(z); }, [a, z]);
+  await p.waitForTimeout(1500);
+  const r = await p.evaluate(() => {
+    const v = decompwlj.viz, c = v.camera, g = v.canvas, x = document.createElement('canvas');
+    const dist = c.position.distanceTo(v.controls.target), far = c.far;
+    x.width = g.width; x.height = g.height; const k = x.getContext('2d'); k.drawImage(g, 0, 0);
+    const d = k.getImageData(0, 0, x.width, x.height).data; let n = 0;
+    for (let i = 0; i < d.length; i += 16) if (Math.max(d[i], d[i + 1], d[i + 2]) - Math.min(d[i], d[i + 1], d[i + 2]) > 60) n++;
+    return { dist: Math.round(dist), far, n };
+  });
+  check(r.dist < r.far / 2 && r.n > 200, `${a} → ${z} picked mid-flight: camera at ${r.dist} (far ${r.far}), ${r.n} coloured pixels`);
+}
+
 /* data of a sample of sequences: every chunk decodes to the catalogue's counts */
 const res = await p.evaluate(async () => {
   const cat = decompwlj.all, step = Math.max(1, Math.floor(cat.length / 60)), bad = [];
