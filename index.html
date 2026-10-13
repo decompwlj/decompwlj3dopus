@@ -3171,7 +3171,8 @@ async function renderMP4(cfg, comp, direct, compose, save) {
   let fail = null;
   try {
     const { Muxer, ArrayBufferTarget } = await import('./vendor/mp4-muxer.min.mjs');
-    const muxer = new Muxer({ target: new ArrayBufferTarget(), fastStart: 'in-memory',
+    /* 'offset': Firefox's encoder may stamp its first frame at 1/30 s, not 0; the film then starts at 0 all the same */
+    const muxer = new Muxer({ target: new ArrayBufferTarget(), fastStart: 'in-memory', firstTimestampBehavior: 'offset',
                               video: { codec: 'avc', width: cfg.width, height: cfg.height, frameRate: VIDEO.fps } });
     const pack = h264Packer(muxer, cfg.width, cfg.height, Math.round(1e6 / VIDEO.fps));
     const enc = new VideoEncoder({ output: (chunk, meta) => { try { if (!fail) pack(chunk, meta); } catch (e) { fail = e; } },
