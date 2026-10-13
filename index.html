@@ -3009,15 +3009,19 @@ function avcC(sps, pps) {                           /* the AVCDecoderConfigurati
   if ([100, 110, 122, 144].includes(sps[1])) b.push(0xfd, 0xf8, 0xf8, 0);   /* High profiles: 4:2:0, 8 bits */
   return new Uint8Array(b);
 }
+/* The frames are held until the encoder is done, then handed to the muxer in the order they came
+   (decode order) with their display times: an encoder using B-frames (Firefox's) returns them out
+   of display order, and the MP4 then needs a decode time per frame, no later than its display time. */
 function h264Packer(muxer, width, height, frameDur) {
   let config = null;
-  return (chunk, meta) => {
+  const held = [];
+  const pack = (chunk, meta) => {
     const b = new Uint8Array(chunk.byteLength); chunk.copyTo(b);
     const dur = chunk.duration || frameDur, nals = nalUnits(b);
     if (!nals) {                                     /* already length-prefixed: the browser's configuration comes with it */
       if (!config && !(meta && meta.decoderConfig && meta.decoderConfig.description)) throw new Error('the encoder gave no H.264 configuration');
       config = config || meta.decoderConfig;
-      muxer.addVideoChunkRaw(b, chunk.type, chunk.timestamp, dur, meta);
+      held.push({ data: b, type: chunk.type, pts: chunk.timestamp, dur, meta });
       return;
     }
     let sps = null, pps = null; const keep = [];
@@ -3037,8 +3041,20 @@ function h264Packer(muxer, width, height, frameDur) {
     const out = new Uint8Array(keep.reduce((n, u) => n + 4 + u.length, 0)), dv = new DataView(out.buffer);
     let o = 0;
     for (const u of keep) { dv.setUint32(o, u.length); out.set(u, o + 4); o += 4 + u.length; }
-    muxer.addVideoChunkRaw(out, chunk.type, chunk.timestamp, dur, m);
+    held.push({ data: out, type: chunk.type, pts: chunk.timestamp, dur, meta: m });
   };
+  /* decode times: the display times in increasing order, moved back by the least amount D that keeps
+     each frame's decode time at or before its display time (D = 0 without B-frames) */
+  pack.finish = () => {
+    const sorted = held.map(h => h.pts).sort((a, b) => a - b);
+    const D = Math.max(0, ...held.map((h, k) => sorted[k] - h.pts));
+    held.forEach((h, k) => {
+      const dts = sorted[k] - D;
+      muxer.addVideoChunkRaw(h.data, h.type, h.pts, h.dur, h.meta, h.pts - dts);
+    });
+    held.length = 0;
+  };
+  return pack;
 }
 
 async function recordVideo() {
@@ -3196,7 +3212,7 @@ async function renderMP4(cfg, comp, direct, compose, save) {
     if (done) {
       $('#recTime').textContent = 'finishing…';
       await enc.flush();
-      if (!fail) muxer.finalize();
+      if (!fail) { pack.finish(); muxer.finalize(); }
     }
     if (enc.state !== 'closed') enc.close();
     if (done && !fail) save(new Blob([muxer.target.buffer], { type: 'video/mp4' }));
