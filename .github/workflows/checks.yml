@@ -1,12 +1,17 @@
 # decompwlj 3D — checks on every pull request and every push to main.
-#   data:    every row of every sequence verified by an independent program (tools/verify_all.c:
-#            k·L + d = a, k > d, k the least divisor of a − d above d, the catalogue's counts),
-#            the published CSV fingerprints on a sample, the generator compiles cleanly, the
-#            site is complete (tools/check_site.py), four
-#            sequences rebuild byte for byte, audit.py re-verifies one sequence in 25, and the
-#            static pages are in step with the catalogue (tools/seo.py writes the same HTML).
-#   browser: a Chromium smoke test of the gallery, the viewer, a sequence page and its CSV,
-#            and the "How it works" page (tests/smoke.mjs).
+#   rows:    eight parallel runners, an eighth of the sequences each, together all 5000:
+#            every row verified by an independent program (tools/verify_all.c: k·L + d = a, k > d,
+#            k the least divisor of a − d above d, the catalogue's counts, the first terms equal to
+#            the OEIS record), every published CSV fingerprint recomputed and every gallery plate
+#            redrawn from the data and compared pixel by pixel (tools/check_derived.py).
+#   site:    the generator compiles cleanly, four sequences rebuild byte for byte, the site is
+#            complete and every OEIS link is right (tools/check_site.py), audit.py re-verifies one
+#            sequence in 25, and the static pages are in step with the catalogue (tools/seo.py
+#            writes the same HTML).
+#   data:    passes when all of the above pass (the name the pull requests show).
+#   browser: a Chromium smoke test of the gallery, the viewer (60 sequences: every point drawn at
+#            its term, the viewer's own fingerprint check, the OEIS link), a sequence page and its
+#            CSV, and the "How it works" page (tests/smoke.mjs).
 name: checks
 
 on:
@@ -23,9 +28,32 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  data:
+  rows:
+    name: rows ${{ matrix.shard }}/8
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [0, 1, 2, 3, 4, 5, 6, 7]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Tools
+        run: |
+          pip install -q numpy pillow
+          sudo apt-get install -y -qq zlib1g-dev > /dev/null
+          cc -O2 -Wall -Werror -o tools/verify_all tools/verify_all.c -lz
+      - name: Every row, verified independently (tools/verify_all.c)
+        run: python3 tools/verify_all.py --jobs 4 --shard ${{ matrix.shard }}/8
+      - name: Every CSV fingerprint and gallery plate, from the data (tools/check_derived.py)
+        run: python3 tools/check_derived.py --jobs 4 --shard ${{ matrix.shard }}/8
+
+  site:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -35,15 +63,8 @@ jobs:
         run: pip install numpy pillow zopfli
       - name: Compile the generator (warnings are errors)
         run: cc -O2 -Wall -Werror -o /tmp/decompwlj_gen tools/decompwlj_gen.c -lm
-      - name: Site complete, and four sequences rebuilt byte for byte
+      - name: Site complete, OEIS links right, and four sequences rebuilt byte for byte
         run: python3 tools/check_site.py --regen /tmp/decompwlj_gen primes,a030632,a032917,a124594
-      - name: Every row of every sequence, verified independently (tools/verify_all.c)
-        run: |
-          sudo apt-get install -y -qq zlib1g-dev > /dev/null
-          cc -O2 -Wall -Werror -o tools/verify_all tools/verify_all.c -lz
-          python3 tools/verify_all.py --jobs 4
-      - name: Published fingerprints, one sequence in 25 (tools/fingerprint.py)
-        run: python3 tools/fingerprint.py --check --every 25
       - name: Audit one sequence in 25
         run: python3 tools/audit.py data --every 25 --sample 50 | tail -n 3
       - name: Static pages in step with the catalogue
@@ -51,6 +72,20 @@ jobs:
           python3 tools/seo.py
           # the images depend on the Pillow build; the HTML, sitemap and scripts must not change
           git diff --stat --exit-code -- '*.html' '*.xml' '*.js' '*.txt'
+
+  data:
+    needs: [rows, site]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Every row, fingerprint, plate, page and OEIS link checked
+        env:
+          ROWS: ${{ needs.rows.result }}
+          SITE: ${{ needs.site.result }}
+        run: |
+          echo "rows: $ROWS   site: $SITE"
+          [ "$ROWS" = success ] && [ "$SITE" = success ]
 
   browser:
     runs-on: ubuntu-latest

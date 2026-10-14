@@ -1,6 +1,7 @@
 # decompwlj 3D — the full integrity check, every week and on demand: every row of every
-# sequence re-verified by an independent program, and every published CSV fingerprint
-# recomputed from the data. A failure here means the published numbers changed.
+# sequence re-verified by an independent program, every published CSV fingerprint recomputed and
+# every gallery plate redrawn from the data, and every OEIS link checked. A failure here means the
+# published numbers, or what the site shows of them, changed.
 name: integrity
 
 on:
@@ -26,7 +27,9 @@ jobs:
           cc -O2 -Wall -Werror -o tools/verify_all tools/verify_all.c -lz
       - name: Every row of every sequence (tools/verify_all.c)
         run: python3 tools/verify_all.py --jobs 4
-      - name: Every published CSV fingerprint (tools/fingerprint.py)
-        run: python3 tools/fingerprint.py --check
-      - name: The site is complete (tools/check_site.py)
+      - name: Every published CSV fingerprint and gallery plate, from the data (tools/check_derived.py)
+        run: |
+          pip install -q numpy pillow
+          python3 tools/check_derived.py --jobs 4
+      - name: The site is complete, every OEIS link right (tools/check_site.py)
         run: python3 tools/check_site.py

@@ -3,7 +3,7 @@
 first terms against the OEIS records (oeis.json).
 
     cc -O2 -o tools/verify_all tools/verify_all.c -lz
-    python3 tools/verify_all.py [--jobs 4] [--only id,id,...] [--bin tools/verify_all]
+    python3 tools/verify_all.py [--jobs 4] [--shard i/n] [--only id,id,...] [--bin tools/verify_all]
 
 Every row of every sequence is checked (see verify_all.c): the chunk format, the identity
 a = k·L + d, k > d, k the least divisor of a − d above d, decomposition exactly when a > 2d,
@@ -15,6 +15,8 @@ ROOT = pathlib.Path(__file__).resolve().parent.parent
 arg = lambda k, d: sys.argv[sys.argv.index(k) + 1] if k in sys.argv else d
 jobs, binp = int(arg('--jobs', 4)), arg('--bin', str(ROOT / 'tools' / 'verify_all'))
 rows = list(csv.DictReader(open(ROOT / 'data' / 'catalog.csv', newline='')))
+if '--shard' in sys.argv:                          # i/n: every n-th sequence from the i-th, for parallel runners
+    si, sn = (int(x) for x in arg('--shard', '0/1').split('/')); rows = rows[si::sn]
 if '--only' in sys.argv:
     want = set(arg('--only', '').split(',')); rows = [r for r in rows if r['id'] in want or r['anumber'] in want]
 oeis = json.load(open(ROOT / 'tools' / 'oeis.json'))
