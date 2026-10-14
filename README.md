@@ -40,7 +40,9 @@ live example. Background: [decompwlj.com](https://decompwlj.com) and
   **sorting** (A-number, name, level share, ties, forced level, largest terms) and **filters**
   (the OEIS keywords **core** and **nice**, with ties, every term decomposes, level ≥ 50 %, forced
   level ≥ 90 %), remembered in the browser;
-  cards and images load as you scroll.
+  cards and images load as you scroll. A **sequence of the day** (from the OEIS core and nice
+  ones) and the **recently viewed** sequences (kept in the browser) sit at the top; on phones the
+  intro shortens and the sort and filters fold behind one **Filters** button.
 - 🧊 **3-D viewer** (three.js / WebGL) of log k, log L, log d: preset views (3D, k–L, k–d, L–d,
   edge), point size and opacity, density mode, the L = 1 line, filters on n and d, a sweep along n.
   Changing view is one smooth camera flight (the perspective flattens into the 2-D views and back,

@@ -26,10 +26,13 @@ await p.goto(BASE + '/'); await p.waitForSelector('#grid .card');
 const total = Number(await p.textContent('#homeTotal'));
 check(total >= 1000, `gallery total ${total}`);
 check(await p.locator('#grid .card').count() > 10, 'gallery shows cards');
+check(/^Today: A\d{6}/.test(await p.textContent('#today')), 'the gallery shows a sequence of the day');
 
 /* a card opens the flat k–L view; a drag turns it into 3-D */
 await p.locator('.card .open').first().click(); await p.waitForTimeout(2500);
 check(await p.evaluate(() => decompwlj.state.view) === 'xy', 'a card opens the k–L view');
+check(await p.evaluate(() => JSON.parse(localStorage.getItem('dwlj-recent') || '[]')[0] === decompwlj.state.id),
+      'the opened sequence is remembered as recently viewed');
 await p.mouse.move(700, 450); await p.mouse.down(); await p.mouse.move(640, 410, { steps: 8 }); await p.mouse.up();
 check(await p.evaluate(() => decompwlj.state.view) === 'iso', 'a drag turns it into 3-D');
 

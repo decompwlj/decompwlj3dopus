@@ -494,6 +494,29 @@ input[type=range] { width: 100%; accent-color: var(--accent); height: 18px; }
 .home-title h1 { margin: 0; font-size: clamp(22px, 2.6vw, 30px); font-weight: 650; letter-spacing: -.02em; text-wrap: balance; }
 .home-title p { margin: 8px 0 0; max-width: 72ch; color: var(--fg-2); font-size: 13.5px; line-height: 1.6; }
 .home-title p i { font-family: var(--mono); color: var(--fg); }
+.intro-more, .intro-dot { display: none; }
+.intro-more { padding: 0 2px; font: inherit; color: var(--accent); background: none; border: 0; cursor: pointer; text-decoration: underline dotted; text-underline-offset: 3px; }
+.home-title p.today { margin: 10px 0 0; font-size: 13px; color: var(--fg-3); }
+.today a { color: var(--fg); text-decoration: none; }
+.today a:hover { color: var(--accent); }
+.today .an { font-family: var(--mono); font-size: 12px; color: var(--accent); margin-right: 6px; }
+.filt-btn { display: none; align-items: center; gap: 7px; padding: 9px 14px; font: 600 13px var(--sans);
+  color: var(--fg); background: var(--bg-2); border: 1px solid var(--line); border-radius: 8px; cursor: pointer; }
+.filt-btn[aria-expanded="true"] { border-color: var(--accent); }
+.filt-btn small { font: 11px var(--mono); padding: 1px 6px; border-radius: 999px; color: #fff; background: var(--accent); }
+.filt-btn small[hidden] { display: none; }
+/* the sequences viewed in this browser: one thin row, only when there are some */
+.recent-bar { display: flex; align-items: center; gap: 10px; margin: 2px 0 -6px; min-width: 0; font-size: 12.5px; }
+.recent-bar[hidden] { display: none; }
+.recent-lbl { flex: none; color: var(--fg-3); font-size: 12px; }
+.recent-list { display: flex; gap: 6px 14px; min-width: 0; overflow-x: auto; scrollbar-width: none; }
+.recent-list::-webkit-scrollbar { display: none; }
+.recent-list a { flex: none; max-width: 26ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--fg-2); text-decoration: none; }
+.recent-list a:hover { color: var(--accent); }
+.recent-list a .an { font: 11px var(--mono); color: var(--fg-3); margin-right: 5px; }
+.recent-clear { flex: none; width: 24px; height: 24px; padding: 0; font-size: 15px; line-height: 1; color: var(--fg-3);
+  background: none; border: 1px solid transparent; border-radius: 6px; cursor: pointer; }
+.recent-clear:hover { color: var(--fg); border-color: var(--line); }
 .home-links { display: flex; gap: 14px; font-size: 12px; }
 .home-links a { color: var(--fg-3); text-decoration: none; }
 .home-links a:hover { color: var(--accent); }
@@ -647,6 +670,14 @@ input[type=range] { width: 100%; accent-color: var(--accent); height: 18px; }
   .fam-chip { flex: none; }
   .home-links { flex-wrap: wrap; gap: 6px 14px; }
   .home-links a { white-space: nowrap; }
+  /* the top of the gallery, lighter: the intro's first sentence (the rest behind "more"), and the
+     sort and "show only" filters behind one Filters button, so the first plates show on the first screen */
+  #homeIntro:not(.open) .intro-rest { display: none; }
+  #homeIntro:not(.open) .intro-dot, #homeIntro:not(.open) .intro-more { display: inline; }
+  .filt-btn { display: inline-flex; }
+  .sort-bar:not(.open) { display: none; }
+  .home-tools { gap: 10px; }
+  .recent-list { -webkit-mask-image: linear-gradient(90deg, #000 85%, transparent); mask-image: linear-gradient(90deg, #000 85%, transparent); }
 }
 /* short screens (a phone held sideways): the catalogue becomes a drawer too, the top bar slims */
 @media (max-height: 500px) and (min-width: 721px) {
@@ -695,9 +726,11 @@ input[type=range] { width: 100%; accent-color: var(--accent); height: 18px; }
       <div class="home-title">
         <a class="brand" href="#home"><span class="brand-mark" aria-hidden="true"></span><span class="brand-text">decompwlj<span class="brand-dim"> 3D</span></span></a>
         <h1>Weight × level + jump, <span id="homeTotal">5000</span> sequences</h1>
-        <p>Every term of a strictly increasing sequence is written <i>a</i>(n) = <i>k</i>(n)·<i>L</i>(n) + <i>d</i>(n):
+        <p id="homeIntro">Every term of a strictly increasing sequence is written <i>a</i>(n) = <i>k</i>(n)·<i>L</i>(n) + <i>d</i>(n)<span class="intro-rest">:
           the jump <i>d</i> = a(n+1) − a(n), the weight <i>k</i> the least divisor of a − d above d, the level <i>L</i> = (a − d)/k.
-          10⁵ terms per sequence. Open a plate to explore it in three dimensions; the A-number under it opens the sequence on the OEIS.</p>
+          10⁵ terms per sequence. Open a plate to explore it in three dimensions; the A-number under it opens the sequence on the OEIS.</span><span class="intro-dot">.</span>
+          <button id="introMore" type="button" class="intro-more" aria-expanded="false" aria-controls="homeIntro">more</button></p>
+        <p id="today" class="today" hidden></p>
       </div>
       <nav class="home-links" aria-label="References">
         <a href="learn/">How it works</a>
@@ -710,6 +743,7 @@ input[type=range] { width: 100%; accent-color: var(--accent); height: 18px; }
     <div class="home-tools">
       <div class="home-search"><input id="homeSearch" type="search" placeholder="Search by name, A-number or family" autocomplete="off" spellcheck="false" aria-label="Search sequences"></div>
       <button id="randomSeq" type="button" class="rand-btn" title="Open a random sequence (R); with a search, a random match"><svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true"><rect x="1.5" y="1.5" width="13" height="13" rx="3" fill="none" stroke="currentColor" stroke-width="1.4"/><circle cx="5" cy="5" r="1.3" fill="currentColor"/><circle cx="11" cy="5" r="1.3" fill="currentColor"/><circle cx="8" cy="8" r="1.3" fill="currentColor"/><circle cx="5" cy="11" r="1.3" fill="currentColor"/><circle cx="11" cy="11" r="1.3" fill="currentColor"/></svg>Random sequence</button>
+      <button id="filtToggle" type="button" class="filt-btn" aria-expanded="false" aria-controls="sortBar">Filters<small id="filtCount" hidden></small></button>
       <span id="homeCount" class="home-count"></span>
       <div class="home-key" aria-hidden="true">
         <span><i style="--c:var(--t-weight)"></i>weight k ≤ L</span>
@@ -718,8 +752,13 @@ input[type=range] { width: 100%; accent-color: var(--accent); height: 18px; }
         <span><b class="edge"></b>kL = A</span>
       </div>
     </div>
+    <div id="recentBar" class="recent-bar" hidden>
+      <span class="recent-lbl">Recently viewed</span>
+      <div id="recentList" class="recent-list"></div>
+      <button id="recentClear" type="button" class="recent-clear" title="Forget the sequences viewed in this browser" aria-label="Clear the recently viewed sequences">×</button>
+    </div>
     <div id="famBar" class="fam-bar" role="group" aria-label="Filter by family"></div>
-    <div class="sort-bar">
+    <div id="sortBar" class="sort-bar">
       <label class="sort-sel">Sort <select id="homeSort" aria-label="Sort the sequences">
         <option value="an">A-number</option>
         <option value="name">Name, A → Z</option>
@@ -2321,6 +2360,49 @@ function saveGallery() {
   try { localStorage.setItem('dwlj-gallery', JSON.stringify({ sort: home.sort, flags: [...home.flags] })); } catch {}
 }
 
+/* the sequences opened in the viewer, newest first: kept in this browser only, six at most */
+const RECENT_MAX = 6;
+function recentIds() {
+  try { const v = JSON.parse(localStorage.getItem('dwlj-recent') || '[]'); return Array.isArray(v) ? v : []; } catch { return []; }
+}
+function rememberVisit(id) {
+  try { localStorage.setItem('dwlj-recent', JSON.stringify([id, ...recentIds().filter(x => x !== id)].slice(0, RECENT_MAX))); } catch {}
+}
+function renderRecent() {
+  const recs = recentIds().map(id => all.find(r => r.id === id)).filter(Boolean);
+  $('#recentBar').hidden = !recs.length;
+  $('#recentList').replaceChildren(...recs.map(r => {
+    const a = document.createElement('a');
+    a.href = '#' + r.id; a.title = `${r.anumber} ${r.name}`;
+    const an = document.createElement('span'); an.className = 'an'; an.textContent = r.anumber;
+    a.append(an, r.name);
+    return a;
+  }));
+}
+
+/* the sequence of the day: one of the OEIS core and nice sequences, the same for everyone on a
+   given (UTC) date, stepping through the pool in a scattered order */
+function renderToday() {
+  const pool = all.filter(r => /\b(core|nice)\b/.test(r.keywords || ''));
+  if (!pool.length) return;
+  const day = Math.floor(Date.now() / 86400000);
+  const r = pool[(day * 7919) % pool.length];
+  const el = $('#today');
+  const a = document.createElement('a');
+  a.href = '#' + r.id; a.title = `Open ${r.anumber} in the viewer`;
+  const an = document.createElement('span'); an.className = 'an'; an.textContent = r.anumber;
+  a.append(an, r.name);
+  el.replaceChildren('Today: ', a);
+  el.hidden = false;
+}
+
+/* phones: the active filters, counted on the Filters button (sort order included) */
+function syncFiltCount() {
+  const n = home.flags.size + (home.sort !== 'an' ? 1 : 0);
+  $('#filtCount').hidden = !n;
+  $('#filtCount').textContent = String(n);
+}
+
 let all = [], view = [], rec = null, ds = null, viz = null, list = null, abort = null;
 let viewerReady = null;               // Promise, set on the first visit to the viewer
 let recB = null, dsB = null, abortB = null;   // the comparison sequence
@@ -2414,6 +2496,18 @@ const PLATE_SVG =
 
 function bindHome() {
   buildFamBar();
+  renderToday(); renderRecent(); syncFiltCount();
+  $('#introMore').addEventListener('click', () => {
+    $('#homeIntro').classList.add('open'); $('#introMore').setAttribute('aria-expanded', 'true');
+  });
+  $('#filtToggle').addEventListener('click', () => {
+    const open = $('#sortBar').classList.toggle('open');
+    $('#filtToggle').setAttribute('aria-expanded', String(open));
+  });
+  $('#recentClear').addEventListener('click', () => {
+    try { localStorage.removeItem('dwlj-recent'); } catch {}
+    renderRecent();
+  });
   /* back to the top: the button shows once the gallery has scrolled a screen or so */
   const scroller = $('#home'), top = $('#toTop');
   scroller.addEventListener('scroll', () => { top.hidden = scroller.scrollTop < 900; }, { passive: true });
@@ -2466,6 +2560,7 @@ function showHome() {
   track('/', 'Gallery');
   if (state.cmp) clearCompare();          /* a comparison ends with a visit to the gallery */
   disarmIntro();
+  renderRecent();
   renderHome();
 }
 
@@ -2490,6 +2585,7 @@ function renderHome(force) {
     const own = FLAGS.find(f => f[0] === b.dataset.flag)[3];
     b.lastChild.textContent = String(base.filter(r => own(r) && others.every(t => t(r))).length);
   }
+  syncFiltCount();
   home.shown = 0;
   const n = home.hits.length, filtered = home.q.trim() || home.fam || home.flags.size;
   $('#homeTotal').textContent = String(all.length);
@@ -2732,6 +2828,7 @@ async function select(id) {
   const signal = abort.signal;
 
   rec = r; state.id = id;
+  rememberVisit(id);
   list.select(id);
   writeHash();
 
