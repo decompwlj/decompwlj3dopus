@@ -3,8 +3,10 @@
      python3 -m http.server 8765 &        from the repository root
      node tests/smoke.mjs                  needs the playwright package and its Chromium
 
-   Loads the gallery, opens a sequence from a card (the k–L view) and in the 3-D viewer, checks
-   that the data of a sample of sequences decodes to their catalogue counts, downloads a CSV from a
+   Loads the gallery, opens a sequence from a card (the k–L view) and in the 3-D viewer; for a
+   sample of 60 sequences checks that the data decode to their catalogue counts, that the graph
+   draws every decomposable term exactly at its log k, log L, log d in its class, that the viewer
+   finds the published SHA-256 and that the OEIS link is the sequence's own; downloads a CSV from a
    sequence page, and runs the live example of the "How it works" page.  Fails on any page error
    or any 4xx/5xx response.  PLAYWRIGHT names another place to load playwright from. */
 import { createRequire } from 'module';
@@ -76,17 +78,52 @@ await p.click('#resetFilters'); await p.waitForTimeout(300);
 check(await p.evaluate(() => decompwlj.state.LLo === 0 && decompwlj.state.LHi === 1), 'reset clears the brushes');
 check(await p.locator('#simList li').count() === 8, 'eight similar sequences are listed');
 
-/* data of a sample of sequences: every chunk decodes to the catalogue's counts */
+/* a sample of sequences, each in the viewer: the data decode to the catalogue's counts; the graph
+   holds one point per decomposable term, at exactly log₁₀ k, log₁₀ L, log₁₀ d in the frame the axes
+   show, coloured by its class, with k·L + d = a; the viewer's own check finds the published SHA-256;
+   and the OEIS link is the sequence's own */
 const res = await p.evaluate(async () => {
   const cat = decompwlj.all, step = Math.max(1, Math.floor(cat.length / 60)), bad = [];
-  let ok = 0;
-  for (let i = 0; i < cat.length; i += step) {
-    await decompwlj.select(cat[i].id); const ds = decompwlj.ds;
-    if (ds && ds.complete && ds.rec.id === cat[i].id && ds.count === ds.rec.decomposable) ok++; else bad.push(cat[i].id);
+  let ok = 0, points = 0;
+  const L10 = (v) => Math.log10(v);
+  for (let s = 0; s < cat.length; s += step) {
+    const id = cat[s].id, why = [];
+    await decompwlj.select(id);
+    const ds = decompwlj.ds, v = decompwlj.viz, r = ds && ds.rec;
+    if (!(ds && ds.complete && r.id === id && ds.count === r.decomposable)) why.push('load');
+    else {
+      /* the frame of the axes: k and L from 10⁰, d from its smallest decade; centred */
+      const lo = [0, 0, Math.floor(L10(r.dmin))];
+      const hi = [r.kmax, r.Lmax, r.dmax].map((m, j) => Math.max(lo[j] + 1, Math.ceil(L10(Math.max(1, m)))));
+      const off = [0, 1, 2].map(j => lo[j] + (hi[j] - lo[j]) / 2);
+      if (v._n !== ds.count) why.push(`${v._n} points drawn for ${ds.count} terms`);
+      let worst = 0, cls = 0, sum = 0;
+      for (let i = 0; i < v._n && why.length === 0; i++) {
+        const row = ds.row[i], a = ds.a[row], k = ds.k[row], L = ds.L[row], d = ds.d[row];
+        if (k * L + d !== a) sum++;
+        const want = [L10(k) - off[0], L10(L) - off[1], L10(d) - off[2]];
+        for (let j = 0; j < 3; j++) worst = Math.max(worst, Math.abs(v._pos[i * 3 + j] - want[j]));
+        if (v._meta[i * 4] !== (k === L ? 2 : k > L ? 1 : 0)) cls++;
+      }
+      if (worst > 1e-4) why.push(`a point is ${worst.toExponential(1)} decades from its term`);
+      if (cls) why.push(`${cls} points in the wrong class`);
+      if (sum) why.push(`${sum} terms with k·L + d ≠ a`);
+      points += v._n;
+      if (document.querySelector('#oeisLink').href !== `https://oeis.org/${r.anumber}`) why.push('OEIS link ' + document.querySelector('#oeisLink').href);
+      let txt = '';
+      for (const t0 = Date.now(); Date.now() - t0 < 30000; await new Promise(f => setTimeout(f, 40))) {
+        txt = document.querySelector('#verify').textContent;
+        if (/^(✓ data verified|⚠)/.test(txt)) break;
+      }
+      if (!txt.startsWith('✓ data verified')) why.push('fingerprint: ' + (txt.slice(0, 80) || 'no answer'));
+    }
+    if (why.length) bad.push(`${id}: ${why.join('; ')}`); else ok++;
   }
-  return { ok, bad };
+  return { ok, bad, points };
 });
-check(res.bad.length === 0 && res.ok > 30, `sample of sequences loads in the viewer (${res.ok} ok${res.bad.length ? ', bad ' + res.bad.join(' ') : ''})`);
+check(res.bad.length === 0 && res.ok > 30,
+      `sample of sequences in the viewer: ${res.ok} decode to their counts, ${res.points.toLocaleString('en')} points drawn exactly at their terms ` +
+      `in their class, fingerprints as published, OEIS links their own${res.bad.length ? '; FAILED ' + res.bad.join(' | ') : ''}`);
 
 /* the viewer verifies the numbers it shows against the published fingerprint */
 await p.goto(BASE + '/#A000040');

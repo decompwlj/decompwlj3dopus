@@ -287,9 +287,16 @@ The numbers are protected at every step, from the generator to the file a visito
   compares the SHA-256 of the sequence with the published one: the Sequence panel says
   "✓ data verified" or shows a warning. Both CSV buttons compare the file's SHA-256 with the
   published one and **refuse to save a file that differs**.
+- **The graphs**: every gallery plate is redrawn from the data and compared pixel by pixel
+  (`tools/check_derived.py`); in the browser test, sixty sequences are loaded in the viewer and
+  every point drawn (6 million) must sit exactly at log k, log L, log d of its term, in its class.
+- **The OEIS links**: every A-number is well formed and unique, its OEIS record (`tools/oeis.json`)
+  has the catalogue's name and an offset at or before the data's first index, its first terms equal
+  the data's, and the viewer and every sequence page link to `https://oeis.org/<A-number>`.
 - **Afterwards**, anyone can check downloaded CSVs: `sha256sum -c sha256.txt`.
-- **Continuously**: every pull request re-verifies every row and a sample of the fingerprints;
-  `.github/workflows/integrity.yml` re-verifies everything, fingerprints included, every week.
+- **Continuously**: every pull request checks all of the above for all 5000 sequences: every
+  row, every fingerprint, every plate, every OEIS link. `.github/workflows/integrity.yml` repeats
+  it every week.
 
 The pipeline above ends, when data change, with:
 
@@ -301,14 +308,23 @@ python3 tools/seo.py                                                            
 
 ### Automatic checks
 
-Every pull request and push to `main` runs [`checks.yml`](.github/workflows/checks.yml): the
-generator compiles with `-Werror`; `tools/check_site.py` finds every file in place and rebuilds
-four sequences byte for byte; `audit.py` re-verifies one sequence in 25 from the site's own chunks;
-`seo.py` must rewrite the same HTML; and `tests/smoke.mjs` drives Chromium through the gallery,
-the viewer, sixty sequences, a CSV download and the How it works page. Locally:
+Every pull request and push to `main` runs [`checks.yml`](.github/workflows/checks.yml), in
+parallel jobs so that checking everything takes no longer than sampling did:
+
+- **rows 0/8 … 7/8**: eight runners, an eighth of the sequences each: `verify_all` on every row,
+  and `check_derived.py` on every CSV fingerprint and every plate;
+- **site**: the generator compiles with `-Werror`; `tools/check_site.py` finds every file in place,
+  checks every OEIS link and rebuilds four sequences byte for byte; `audit.py` re-verifies one
+  sequence in 25 from the site's own chunks; `seo.py` must rewrite the same HTML;
+- **data**: passes when the rows and the site pass;
+- **browser**: `tests/smoke.mjs` drives Chromium through the gallery, the viewer, sixty sequences
+  (every point drawn checked against its term), a CSV download and the How it works page.
+
+Locally:
 
 ```sh
 python3 tools/check_site.py && python3 tools/audit.py data --every 25
+python3 tools/check_derived.py                          # every fingerprint and plate (about 7 min on 4 cores)
 python3 -m http.server 8765 & node tests/smoke.mjs      # needs: npm install playwright
 ```
 

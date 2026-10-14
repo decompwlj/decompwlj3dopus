@@ -43,6 +43,22 @@ for r in rows:
         t = page.read_text()
         if f'share/{i}.jpg' not in t or f'thumbs/{i}.webp' not in t: bad(f'seq/{A}/: does not point to its images')
     if A not in oeis: bad(f'{i}: {A} missing from tools/oeis.json')
+    else:
+        # the OEIS link: a well-formed A-number whose record this sequence is: its name is the
+        # OEIS name (or its start, trimmed), its terms start at or after the OEIS offset, and the
+        # record holds enough terms for verify_all.py to compare the first ones with the data
+        o = oeis[A]
+        if not re.fullmatch(r'A\d{6}', A): bad(f'{i}: malformed A-number {A!r}')
+        name = r['name'].rstrip('.…').strip()
+        if not name or not o['name'].startswith(name): bad(f'{i}: name {r["name"][:40]!r} is not the OEIS name of {A} ({o["name"][:40]!r})')
+        if int(r['n0']) < o['offset']: bad(f'{i}: starts at n = {r["n0"]}, before the OEIS offset {o["offset"]} of {A}')
+        if len(o['terms']) - (int(r['n0']) - o['offset']) < 12: bad(f'{i}: the OEIS record of {A} holds too few terms to compare')
+    if page.is_file():
+        # every link of the page to an OEIS entry is well formed, and the page links to its own
+        links = re.findall(r'href="https://oeis\.org/([^"]*)"', t)
+        if A not in links: bad(f'seq/{A}/: no link to https://oeis.org/{A}')
+        for x in links:
+            if not re.fullmatch(r'A\d{6}|search\?q=keyword:\w+', x): bad(f'seq/{A}/: odd OEIS link https://oeis.org/{x}')
 
 # leftovers of sequences that are gone
 known, knownA = set(ids), set(ans)
@@ -56,6 +72,9 @@ for p in (ROOT / 'seq').iterdir():
 
 # counts written in the pages
 html = (ROOT / 'index.html').read_text()
+# the viewer and the gallery build every OEIS link from the A-number alone
+if 'function oeisUrl(r) { return `https://oeis.org/${r.anumber}`; }' not in html:
+    bad('index.html: oeisUrl no longer builds https://oeis.org/<A-number>')
 for pat in (r'<span id="homeTotal">(\d+)</span>', r'Search (\d+) sequences', r'for (\d+) integer sequences</title>'):
     m = re.search(pat, html)
     if not m: bad(f'index.html: {pat} not found')
@@ -96,4 +115,5 @@ if '--regen' in sys.argv:
 
 if errors:
     sys.exit(f'{len(errors)} problem(s)')
-print(f'site complete: {N} sequences, {len(fams)} families, every page, plate, share image and OEIS record in place')
+print(f'site complete: {N} sequences, {len(fams)} families, every page, plate, share image and OEIS record in place; '
+      f'every OEIS link well formed, to the record whose name, offset and terms it carries')
