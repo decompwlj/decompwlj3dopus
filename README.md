@@ -44,12 +44,10 @@ live example. Background: [decompwlj.com](https://decompwlj.com) and
   ones) and the **recently viewed** sequences (kept in the browser) sit at the top; on phones the
   intro shortens and the sort and filters fold behind one **Filters** button.
 - 🧊 **3-D viewer** (three.js / WebGL) of log k, log L, log d: preset views (3D, k–L, k–d, L–d,
-  edge), point size and opacity, density mode, the L = 1 line, filters on n and d, a sweep along n.
+  edge), point size and opacity, density mode, the L = 1 line, a filter on n and a sweep along it.
   Changing view is one smooth camera flight (the perspective flattens into the 2-D views and back,
   a "dolly zoom"), and a new sequence fades in. The views fit the free space of any screen, from a
   phone (portrait or sideways) to QHD and UHD, with points and labels scaled to the canvas.
-- 📊 **Distributions**: histograms of k, L and d over the shown terms (weight stacked under level);
-  drag across one to filter the cloud by that range, click to clear.
 - 🧭 **Similar sequences**: the eight nearest in the catalogue's decomposition figures (level, tie,
   L = 1, forced and decomposable shares; ranges of a, k, L and d), each one click from the viewer
   or from a comparison.
