@@ -382,41 +382,13 @@ details.grp[open] > summary { margin-bottom: 8px; }
 .slider-row output { font: 11px var(--mono); color: var(--fg-2); text-align: right; font-variant-numeric: tabular-nums; }
 input[type=range] { width: 100%; accent-color: var(--accent); height: 18px; }
 
-.range2 { margin: 8px 0 2px; }
-.range2 .r2h { display: flex; justify-content: space-between; align-items: baseline; }
-.range2 label { font-size: 11.5px; color: var(--fg-3); }
-.range2 .dual { display: grid; gap: 2px; margin: 2px 0; }
-.range2 output { font: 11px var(--mono); color: var(--fg-2); }
-
 .stats { display: grid; grid-template-columns: auto 1fr; gap: 3px 12px; margin: 0; font: 11.5px var(--mono); font-variant-numeric: tabular-nums; }
 .stats dt { color: var(--fg-3); }
 .stats dd { margin: 0; text-align: right; color: var(--fg); }
 .stats dd.c-level { color: var(--c-level); } .stats dd.c-weight { color: var(--c-weight); }
 .stats dd.c-level-b { color: var(--c-level-b); } .stats dd.c-weight-b { color: var(--c-weight-b); }
 
-/* distributions: stacked histograms (weight under level), brushed by dragging */
-.hkey { display: flex; gap: 14px; margin: 0 0 6px; font-size: 11px; color: var(--fg-2); }
-.hkey .sw { display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin-right: 5px; vertical-align: 0; }
-.sw.w { background: var(--c-weight); } .sw.l { background: var(--c-level); }
-.hist { margin: 8px 0 2px; }
-.hist .hh { display: flex; justify-content: space-between; align-items: baseline; font-size: 11.5px; color: var(--fg-3); }
-.hist output { font: 11px var(--mono); color: var(--fg-2); }
-.hsvg { display: block; width: 100%; height: 52px; margin-top: 3px; cursor: crosshair; touch-action: pan-y; user-select: none; }
-.hsvg[hidden], .hist .hx[hidden] { display: none; }
-.hsvg .base { stroke: var(--line-2); stroke-width: 1; }
-.hsvg .w { fill: var(--c-weight); } .hsvg .l { fill: var(--c-level); }
-.hsvg .out { opacity: .25; }
-.hsvg .brush { fill: color-mix(in oklab, var(--accent) 14%, transparent); }
-.hsvg .edge { fill: var(--accent); }
-.hsvg .hov { fill: var(--fg); opacity: .08; }
-.hist .hx { display: flex; justify-content: space-between; font: 10px var(--mono); color: var(--fg-3); margin-top: 2px; }
-.hist .hflat { margin: 2px 0 0; font-size: 11px; color: var(--fg-3); }
 .hnote { margin: 8px 0 0; font-size: 11px; line-height: 1.5; color: var(--fg-3); }
-.htip {
-  position: fixed; z-index: 30; pointer-events: none; padding: 6px 8px; white-space: pre;
-  font: 11px/1.45 var(--mono); color: var(--fg); background: var(--bg-2);
-  border: 1px solid var(--line-2); border-radius: 6px; box-shadow: var(--shadow);
-}
 /* similar sequences */
 .sim { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
 .sim li { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 2px 8px; padding: 5px 0; border-bottom: 1px solid var(--line); }
@@ -885,38 +857,26 @@ input[type=range] { width: 100%; accent-color: var(--accent); height: 18px; }
     <section class="grp">
       <h2>Filters</h2>
       <div class="slider-row"><label for="fReveal">terms n</label><input type="range" id="fReveal" min="0" max="1" step="0.0005" value="1"><output id="fRevealOut">all</output></div>
-      <div class="range2">
-        <div class="r2h"><label for="fDLo">jump d</label><output id="fDOut">all</output></div>
-        <div class="dual"><input type="range" id="fDLo" min="0" max="1" step="0.001" value="0" aria-label="smallest jump"><input type="range" id="fDHi" min="0" max="1" step="0.001" value="1" aria-label="largest jump"></div>
-      </div>
       <div class="btn-row">
         <button id="play" class="chip" title="sweep along the sequence (Space)">▶ play</button>
         <button id="resetFilters" class="chip">reset</button>
       </div>
     </section>
 
-    <section class="grp" id="distGrp">
-      <h2>Distributions <small>drag across one to filter</small></h2>
-      <div class="hkey" aria-hidden="true"><span><i class="sw w"></i>weight k ≤ L</span><span><i class="sw l"></i>level k &gt; L</span></div>
-      <div class="hist" data-ax="k">
-        <div class="hh"><span>weight k</span><output>all</output></div>
-        <svg class="hsvg" role="img" aria-label="Distribution of weight k over the shown terms, in decades; drag across it to filter"></svg>
-        <div class="hx"><span></span><span></span></div>
-        <p class="hflat" hidden></p>
+    <section class="grp">
+      <h2>Sequence</h2>
+      <p id="fullName" class="fullname"></p>
+      <dl id="stats" class="stats"></dl>
+      <p id="note" class="note"></p>
+      <p id="verify" class="verify" aria-live="polite"></p>
+      <div class="btn-row">
+        <a id="pageLink2" class="chip" title="This sequence's page: counts, note, plate and CSV">sequence page</a>
+        <a id="oeisLink" class="chip" target="_blank" rel="noopener">OEIS</a>
+        <button id="snap" class="chip">snapshot</button>
+        <button id="videoBtn" class="chip" title="Make a 6-second MP4 video: 1 s on the flat plate on screen (k–L, k–d, L–d or edge; k–L from 3-D), then 5 s of one smooth move into 3-D, rising to look down on the cloud">video</button>
+        <button id="csvBtn" class="chip" title="n;a;weight;level;jump, one row per term; rebuilt from the data on demand">download CSV</button>
+        <button id="share" class="chip" title="Copies a tag such as #primes.kLd.iso.solid. Add it to the end of this page's link to open the same view.">copy view tag</button>
       </div>
-      <div class="hist" data-ax="L">
-        <div class="hh"><span>level L</span><output>all</output></div>
-        <svg class="hsvg" role="img" aria-label="Distribution of level L over the shown terms, in decades; drag across it to filter"></svg>
-        <div class="hx"><span></span><span></span></div>
-        <p class="hflat" hidden></p>
-      </div>
-      <div class="hist" data-ax="d">
-        <div class="hh"><span>jump d</span><output>all</output></div>
-        <svg class="hsvg" role="img" aria-label="Distribution of jump d over the shown terms, in decades; drag across it to filter"></svg>
-        <div class="hx"><span></span><span></span></div>
-        <p class="hflat" hidden></p>
-      </div>
-      <p id="histNote" class="hnote" hidden>Of the first sequence; a brush filters both.</p>
     </section>
 
     <section class="grp" id="cmpGrp">
@@ -937,22 +897,6 @@ input[type=range] { width: 100%; accent-color: var(--accent); height: 18px; }
         <button id="cmpRandom" class="chip" title="compare with a random sequence">random</button>
         <button id="cmpSwap" class="chip" disabled title="make the second sequence the main one">swap</button>
         <button id="cmpClear" class="chip" disabled title="back to one sequence">clear</button>
-      </div>
-    </section>
-
-    <section class="grp">
-      <h2>Sequence</h2>
-      <p id="fullName" class="fullname"></p>
-      <dl id="stats" class="stats"></dl>
-      <p id="note" class="note"></p>
-      <p id="verify" class="verify" aria-live="polite"></p>
-      <div class="btn-row">
-        <a id="pageLink2" class="chip" title="This sequence's page: counts, note, plate and CSV">sequence page</a>
-        <a id="oeisLink" class="chip" target="_blank" rel="noopener">OEIS</a>
-        <button id="snap" class="chip">snapshot</button>
-        <button id="videoBtn" class="chip" title="Make a 6-second MP4 video: 1 s on the flat plate on screen (k–L, k–d, L–d or edge; k–L from 3-D), then 5 s of one smooth move into 3-D, rising to look down on the cloud">video</button>
-        <button id="csvBtn" class="chip" title="n;a;weight;level;jump, one row per term; rebuilt from the data on demand">download CSV</button>
-        <button id="share" class="chip" title="Copies a tag such as #primes.kLd.iso.solid. Add it to the end of this page's link to open the same view.">copy view tag</button>
       </div>
     </section>
 
@@ -1488,17 +1432,14 @@ class Dataset {
     return out;
   }
 
-  /** Counts under the live filters — recomputed on the CPU, ~1 ms at 2·10⁵.  `kl`: the k and L
-   *  brushes in log₁₀ (kLo, kHi, LLo, LHi), or none. */
-  stats(dLo, dHi, nMax, kl) {
+  /** Counts under the live filters — recomputed on the CPU, ~1 ms at 2·10⁵. */
+  stats(dLo, dHi, nMax) {
     const logd = this.field('d'), cls = this.cls, one = this.one;
-    const lk = kl ? this.field('k') : null, lL = kl ? this.field('L') : null;
     let weight = 0, level = 0, tie = 0, lone = 0;
     const n = Math.min(this.count, nMax);
     for (let i = 0; i < n; i++) {
       const x = logd[i];
       if (x < dLo || x > dHi) continue;
-      if (kl && (lk[i] < kl[0] || lk[i] > kl[1] || lL[i] < kl[2] || lL[i] > kl[3])) continue;
       const c = cls[i];
       if (c === 1) level++; else { weight++; if (c === 2) tie++; }
       if (one[i]) lone++;
@@ -1534,7 +1475,6 @@ const VERT = /* glsl */`
   attribute vec4 meta;          // x class(0 w,1 l,2 tie)  y log10 d  z index  w L==1
   uniform float uSize, uDpr, uAtten, uNMax, uHiOne, uRef, uOrthoAtt, uScale;
   uniform vec2  uD;
-  uniform vec4  uKL;            // the k and L brushes, in world x and y: kLo, kHi, LLo, LHi
   uniform vec3  uShow;          // weight, level, tie
   uniform vec3  cWeight, cLevel, cTie, cOne;
   varying vec3 vColor;
@@ -1543,7 +1483,6 @@ const VERT = /* glsl */`
     float show = (cls > 0.5 && cls < 1.5) ? uShow.y : (cls > 1.5 ? uShow.z : uShow.x);
     if (meta.z > uNMax) show = 0.0;
     if (meta.y < uD.x || meta.y > uD.y) show = 0.0;
-    if (position.x < uKL.x || position.x > uKL.y || position.y < uKL.z || position.y > uKL.w) show = 0.0;
     /* a filtered-out point leaves the clip volume: a size of 0 alone is clamped to 1 px by the
        GPU, which would still draw it as a faint dot */
     if (show < 0.5) { gl_Position = vec4(2.0, 2.0, 2.0, 1.0); gl_PointSize = 0.0; vColor = vec3(0.0); return; }
@@ -1621,7 +1560,6 @@ class Viz {
       uNMax:    { value: 1e9 },
       uHiOne:   { value: 0 },
       uD:       { value: new THREE.Vector2(-9, 99) },
-      uKL:      { value: new THREE.Vector4(-99, 99, -99, 99) },
       uShow:    { value: new THREE.Vector3(1, 1, 1) },
       uOpacity: { value: 0.85 },
       uFade:    { value: 1 },        /* a new sequence's cloud fades in */
@@ -2186,7 +2124,7 @@ class Viz {
 
     const u = this.uniforms;
     const dLo = u.uD.value.x, dHi = u.uD.value.y;
-    const show = u.uShow.value, kl = u.uKL.value;
+    const show = u.uShow.value;
     let best = -1, bestSet = 0, bestScore = Infinity;
     for (const set of sets) {
     const pos = set ? this._pos2 : this._pos, meta = set ? this._meta2 : this._meta;
@@ -2199,8 +2137,6 @@ class Viz {
       if (meta[i * 4 + 2] > nMax) break;
       const md = meta[i * 4 + 1];
       if (md < dLo || md > dHi) continue;
-      const wx = pos[i * 3], wy = pos[i * 3 + 1];
-      if (wx < kl.x || wx > kl.y || wy < kl.z || wy > kl.w) continue;
       const ax = pos[i * 3] - ox, ay = pos[i * 3 + 1] - oy, az = pos[i * 3 + 2] - oz;
       const t = ax * ux + ay * uy + az * uz;
       if (t <= 0.01) continue;
@@ -2325,8 +2261,7 @@ const MODES = ['solid', 'density'];
 const state = {
   id: null, x: 'k', y: 'L', z: 'd', view: 'iso', mode: 'solid',
   show: { weight: true, level: true, tie: true }, hiOne: false,
-  reveal: 1, dLo: 0, dHi: 1,
-  kLo: 0, kHi: 1, LLo: 0, LHi: 1,          // the k and L brushes of the distributions, as d: fractions of the range
+  reveal: 1,
   cmp: null, split: false,              // the sequence compared with, and its layout
 };
 const home = { q: '', fam: '', hits: [], sort: 'an', flags: new Set() };
@@ -2920,12 +2855,7 @@ function rebuildFrame() {
     { box: $('#showBox').checked, plane: $('#showPlane').checked }
   );
   const [dl, dh] = bounds('d');
-  $('#fDLo').value = 0; $('#fDHi').value = 1;
-  state.dLo = 0; state.dHi = 1;
-  state.kLo = 0; state.kHi = 1; state.LLo = 0; state.LHi = 1;
-  viz.uniforms.uD.value.set(dl - 0.001, dh + 0.001);
-  viz.uniforms.uKL.value.set(-99, 99, -99, 99);
-  $('#fDOut').textContent = 'all';
+  viz.uniforms.uD.value.set(dl - 0.001, dh + 0.001);   /* every jump: the frame's whole range */
   $('#stRange').textContent =
     `a ≤ ${fmt.format(rec.amax)} · k ≤ ${fmt.format(rec.kmax)} · L ≤ ${fmt.format(rec.Lmax)} · d ≤ ${fmt.format(rec.dmax)}`;
 }
@@ -2949,16 +2879,6 @@ function applyFilters() {
   u.uNMax.value = Math.round(state.reveal * ds.count);
   viz.uniforms2.uNMax.value = dsB ? Math.round(state.reveal * dsB.count) : 1e9;
   u.uHiOne.value = state.hiOne ? 1 : 0;
-  const [dl, dh] = bounds('d');
-  const span = dh - dl || 1;
-  u.uD.value.set(dl + state.dLo * span - 0.001, dl + state.dHi * span + 0.001);
-  /* the k and L brushes: log₁₀ ranges, then world x and y (the frame's own shift) */
-  const kl = brushLogs();
-  u.uKL.value.set(-99, 99, -99, 99);
-  if (kl && frame) {
-    const wx = (v) => v - frame.lo[0] - frame.box[0] / 2, wy = (v) => v - frame.lo[1] - frame.box[1] / 2;
-    u.uKL.value.set(wx(kl[0]), wx(kl[1]), wy(kl[2]), wy(kl[3]));
-  }
   viz.dirty = true;
   refreshStats();
 }
@@ -2969,7 +2889,7 @@ function refreshStats() {
   statTimer = setTimeout(() => {
     if (!ds) return;
     const u = viz.uniforms;
-    const s = ds.stats(u.uD.value.x, u.uD.value.y, u.uNMax.value, brushLogs());
+    const s = ds.stats(u.uD.value.x, u.uD.value.y, u.uNMax.value);
     $('#lgWeight').textContent = fmt.format(s.weight);
     $('#lgLevel').textContent = fmt.format(s.level);
     $('#lgTie').textContent = fmt.format(s.tie);
@@ -2992,163 +2912,14 @@ function refreshStats() {
     put('level line L = 1', fmt.format(rec.level_one));
     if (Number.isFinite(rec.forced)) put('forced  ℓ ≤ d²', `${fmt.format(rec.forced)}  ${pct(rec.forced / rec.decomposable)}`);
     $('#stats').replaceChildren(dl);
-    drawHists();
     if (dsB) {
-      const t = dsB.stats(u.uD.value.x, u.uD.value.y, viz.uniforms2.uNMax.value, brushLogs());
+      const t = dsB.stats(u.uD.value.x, u.uD.value.y, viz.uniforms2.uNMax.value);
       $('#lgWeightB').textContent = fmt.format(t.weight);
       $('#lgLevelB').textContent = fmt.format(t.level);
       $('#stDots').textContent = `${fmt.format(s.shown)} + ${fmt.format(t.shown)} dots` +
         (ds.complete && dsB.complete ? '' : ' loading');
     }
   }, 40);
-}
-
-/* ── distributions: k, L and d over the shown terms, with brushes ───────
-   Each histogram counts the terms that pass every filter but its own brush (the usual
-   crossfilter), stacked weight (k ≤ L, ties included) under level (k > L), over the
-   axis's range in decades: the same range as the jump slider and the frame. Dragging
-   across one sets its brush (snapped to the bins); a click without a drag clears it. */
-const HIST_BINS = 40;
-const BRUSH = { k: ['kLo', 'kHi'], L: ['LLo', 'LHi'], d: ['dLo', 'dHi'] };
-let hists = null;                                   /* the last counts, for the read-out */
-
-/** The k and L brushes as log₁₀ limits (kLo, kHi, LLo, LHi), or null when neither is set. */
-function brushLogs() {
-  if (state.kLo <= 0 && state.kHi >= 1 && state.LLo <= 0 && state.LHi >= 1) return null;
-  const lim = (f, a, b) => {
-    const [lo, hi] = bounds(f), span = hi - lo || 1;
-    return [state[a] <= 0 ? -99 : lo + state[a] * span - 0.001, state[b] >= 1 ? 99 : lo + state[b] * span + 0.001];
-  };
-  return [...lim('k', 'kLo', 'kHi'), ...lim('L', 'LLo', 'LHi')];
-}
-
-function computeHists() {
-  const n = Math.min(ds.count, viz.uniforms.uNMax.value), B = HIST_BINS;
-  const sh = state.show, cls = ds.cls, H = {};
-  for (const f of ['k', 'L', 'd']) {
-    const [lo, hi] = bounds(f), span = hi - lo, [a, b] = BRUSH[f];
-    const flat = !(span > 1e-9);
-    H[f] = { f, lo, hi, flat, w: new Float64Array(B), l: new Float64Array(B), v: ds.field(f),
-             min: state[a] <= 0 || flat ? -Infinity : lo + state[a] * span - 0.001,
-             max: state[b] >= 1 || flat ? Infinity : lo + state[b] * span + 0.001,
-             scale: flat ? 0 : B / span };
-  }
-  const { k, L, d } = H;
-  for (let i = 0; i < n; i++) {
-    const c = cls[i];
-    if (c === 1 ? !sh.level : c === 2 ? !sh.tie : !sh.weight) continue;
-    const vk = k.v[i], vL = L.v[i], vd = d.v[i];
-    const ok = vk >= k.min && vk <= k.max, oL = vL >= L.min && vL <= L.max, od = vd >= d.min && vd <= d.max;
-    const put = (h, v) => {
-      const j = Math.min(B - 1, Math.max(0, Math.floor((v - h.lo) * h.scale)));
-      if (c === 1) h.l[j]++; else h.w[j]++;
-    };
-    if (oL && od) put(k, vk);
-    if (ok && od) put(L, vL);
-    if (ok && oL) put(d, vd);
-  }
-  return H;
-}
-
-const SVGNS = 'http://www.w3.org/2000/svg';
-function svgEl(tag, attrs) { const e = document.createElementNS(SVGNS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); return e; }
-const fmtLog = (v) => fmt.format(Math.round(10 ** v));
-
-function drawHists() {
-  if (!ds || $('#distGrp').offsetParent === null) return;
-  hists = computeHists();
-  $('#histNote').hidden = !recB;
-  for (const box of document.querySelectorAll('.hist')) {
-    const h = hists[box.dataset.ax], svg = box.querySelector('svg'), [a, b] = BRUSH[h.f];
-    const on = state[a] > 0 || state[b] < 1;
-    box.querySelector('output').textContent = on
-      ? `${fmtLog(h.lo + state[a] * (h.hi - h.lo))} … ${fmtLog(h.lo + state[b] * (h.hi - h.lo))}` : 'all';
-    const ends = box.querySelectorAll('.hx span');
-    ends[0].textContent = fmtLog(h.lo); ends[1].textContent = fmtLog(h.hi);
-    /* a constant field (d = 1 for the naturals) has no spread to draw or to brush */
-    svg.hidden = box.querySelector('.hx').hidden = h.flat;
-    const flat = box.querySelector('.hflat');
-    flat.hidden = !h.flat;
-    if (h.flat) { flat.textContent = `${h.f} = ${fmtLog(h.lo)} for every term`; continue; }
-    const W = svg.clientWidth || 260, Ht = svg.clientHeight || 52, B = HIST_BINS, slot = W / B;
-    svg.setAttribute('viewBox', `0 0 ${W} ${Ht}`);
-    let max = 0;
-    for (let j = 0; j < B; j++) max = Math.max(max, h.w[j] + h.l[j]);
-    const kids = [];
-    const x0 = state[a] * W, x1 = state[b] * W;
-    if (on) kids.push(svgEl('rect', { class: 'brush', x: x0, y: 0, width: Math.max(1, x1 - x0), height: Ht }));
-    const top = 3, room = Ht - top - 1;
-    for (let j = 0; j < B; j++) {
-      const tot = h.w[j] + h.l[j];
-      if (!tot) continue;
-      const out = on && ((j + 1) / B <= state[a] + 1e-9 || j / B >= state[b] - 1e-9) ? ' out' : '';
-      const x = j * slot + 1, bw = Math.max(1, slot - 2);           /* a 2 px gap between bars */
-      const hw = h.w[j] / max * room, hl = h.l[j] / max * room;
-      let y = Ht - 1;
-      if (hw > 0) { kids.push(svgEl('rect', { class: 'w' + out, x, y: y - Math.max(1, hw), width: bw, height: Math.max(1, hw) })); y -= Math.max(1, hw) + (hl > 0 ? 2 : 0); }
-      if (hl > 0) kids.push(svgEl('rect', { class: 'l' + out, x, y: y - Math.max(1, hl), width: bw, height: Math.max(1, hl) }));
-    }
-    kids.push(svgEl('line', { class: 'base', x1: 0, x2: W, y1: Ht - 0.5, y2: Ht - 0.5 }));
-    if (on) for (const ex of [x0, x1]) kids.push(svgEl('rect', { class: 'edge', x: Math.min(W - 2, Math.max(0, ex - 1)), y: 0, width: 2, height: Ht }));
-    if (box._hov !== undefined) kids.push(svgEl('rect', { class: 'hov', x: box._hov * slot, y: 0, width: slot, height: Ht }));
-    svg.replaceChildren(...kids);
-  }
-}
-
-/* the jump range read-out, shared by its slider and its histogram */
-function showDRange() {
-  const [dl, dh] = bounds('d'); const span = dh - dl || 1;
-  const a = Math.round(10 ** (dl + state.dLo * span)), b = Math.round(10 ** (dl + state.dHi * span));
-  $('#fDOut').textContent = (state.dLo <= 0 && state.dHi >= 1) ? 'all' : `${fmt.format(a)} … ${fmt.format(b)}`;
-}
-
-function bindHists() {
-  const tip = document.createElement('div');
-  tip.className = 'htip'; tip.hidden = true;
-  document.body.append(tip);
-  for (const box of document.querySelectorAll('.hist')) {
-    const f = box.dataset.ax, [a, b] = BRUSH[f], svg = box.querySelector('svg');
-    const frac = (e) => { const r = svg.getBoundingClientRect(); return Math.min(1, Math.max(0, (e.clientX - r.left) / r.width)); };
-    let drag = null;
-    const set = (lo, hi) => {
-      state[a] = lo; state[b] = hi;
-      if (f === 'd') { $('#fDLo').value = lo; $('#fDHi').value = hi; showDRange(); }
-      applyFilters();
-    };
-    const read = (e) => {
-      const h = hists && hists[f];
-      if (!h || h.flat) { tip.hidden = true; return; }
-      const j = Math.min(HIST_BINS - 1, Math.floor(frac(e) * HIST_BINS)), step = (h.hi - h.lo) / HIST_BINS;
-      tip.textContent = `${f} ${fmtLog(h.lo + j * step)} … ${fmtLog(h.lo + (j + 1) * step)}\n` +
-        `weight ${fmt.format(h.w[j])}   level ${fmt.format(h.l[j])}`;
-      tip.hidden = false;
-      const w = tip.offsetWidth;
-      tip.style.left = Math.max(8, Math.min(innerWidth - w - 8, e.clientX - w / 2)) + 'px';
-      tip.style.top = Math.max(8, e.clientY - tip.offsetHeight - 14) + 'px';
-      if (box._hov !== j) { box._hov = j; drawHists(); }
-    };
-    svg.addEventListener('pointerdown', (e) => {
-      if (e.button !== 0 && e.pointerType === 'mouse') return;
-      svg.setPointerCapture(e.pointerId);
-      drag = { x: e.clientX, at: frac(e) };
-    });
-    svg.addEventListener('pointermove', (e) => {
-      if (!drag) return read(e);
-      if (Math.abs(e.clientX - drag.x) < 3) return;
-      const B = HIST_BINS, p = frac(e);
-      set(Math.floor(Math.min(drag.at, p) * B) / B, Math.max(Math.ceil(Math.max(drag.at, p) * B) / B, Math.floor(Math.min(drag.at, p) * B) / B + 1 / B));
-      drawHists(); read(e);
-    });
-    const end = (e) => {
-      if (!drag) return;
-      if (Math.abs(e.clientX - drag.x) < 3) set(0, 1);           /* a click clears the brush */
-      drag = null; drawHists();
-    };
-    svg.addEventListener('pointerup', end);
-    svg.addEventListener('pointercancel', () => { drag = null; });
-    svg.addEventListener('pointerleave', () => { tip.hidden = true; if (box._hov !== undefined) { box._hov = undefined; drawHists(); } });
-  }
-  new ResizeObserver(() => drawHists()).observe($('#distGrp'));
 }
 
 /* ── similar sequences: nearest in the catalogue's own figures ─────────── */
@@ -3716,22 +3487,10 @@ function bindUI() {
   slider('#fReveal', '#fRevealOut', v => { state.reveal = v; applyFilters(); },
          v => v >= 1 ? 'all' : fmt.format(Math.round(v * (ds ? ds.count : 0))));
 
-  const dOut = showDRange;
-  bindHists();
-  $('#fDLo').addEventListener('input', () => {
-    state.dLo = Math.min(parseFloat($('#fDLo').value), state.dHi);
-    $('#fDLo').value = state.dLo; applyFilters(); dOut();
-  });
-  $('#fDHi').addEventListener('input', () => {
-    state.dHi = Math.max(parseFloat($('#fDHi').value), state.dLo);
-    $('#fDHi').value = state.dHi; applyFilters(); dOut();
-  });
   $('#resetFilters').addEventListener('click', () => {
-    state.reveal = 1; state.dLo = 0; state.dHi = 1;
-    state.kLo = 0; state.kHi = 1; state.LLo = 0; state.LHi = 1;
+    state.reveal = 1;
     state.show = { weight: true, level: true, tie: true };
     $('#fReveal').value = 1; $('#fRevealOut').textContent = 'all';
-    $('#fDLo').value = 0; $('#fDHi').value = 1; $('#fDOut').textContent = 'all';
     document.querySelectorAll('.lg').forEach(b => b.classList.toggle('off', b.dataset.class === 'one' ? !state.hiOne : false));
     applyFilters();
   });

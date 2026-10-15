@@ -54,28 +54,6 @@ for (const [a, z] of [['xy', 'iso'], ['iso', 'xy']]) {
   check(r.dist < r.far / 2 && r.n > 200, `${a} → ${z} picked mid-flight: camera at ${r.dist} (far ${r.far}), ${r.n} coloured pixels`);
 }
 
-/* the distributions: drawn, and a drag across the L histogram filters the cloud; the dots shown
-   equal the points inside the brush, counted here from the uploaded positions */
-await p.evaluate(() => document.querySelector('#distGrp').scrollIntoView());
-await p.waitForTimeout(300);
-check(await p.locator('.hist[data-ax="L"] svg rect').count() > 5, 'the L histogram is drawn');
-const hb = await p.locator('.hist[data-ax="L"] svg').boundingBox();
-await p.mouse.move(hb.x + hb.width * 0.55, hb.y + 20); await p.mouse.down();
-await p.mouse.move(hb.x + hb.width * 0.98, hb.y + 20, { steps: 5 }); await p.mouse.up();
-await p.waitForTimeout(500);
-const br = await p.evaluate(() => {
-  const v = decompwlj.viz, kl = v.uniforms.uKL.value, uD = v.uniforms.uD.value, pos = v._pos, meta = v._meta;
-  let n = 0;
-  for (let i = 0; i < v._n; i++) {
-    const y = pos[i * 3 + 1], md = meta[i * 4 + 1];
-    if (y >= kl.z && y <= kl.w && md >= uD.x && md <= uD.y) n++;
-  }
-  return { shown: Number(document.querySelector('#stDots').textContent.replace(/\D/g, '')), n, total: v._n,
-           out: document.querySelector('.hist[data-ax="L"] output').textContent };
-});
-check(br.shown === br.n && br.n > 0 && br.n < br.total, `an L brush (${br.out}) shows ${br.shown} of ${br.total} points; counted inside: ${br.n}`);
-await p.click('#resetFilters'); await p.waitForTimeout(300);
-check(await p.evaluate(() => decompwlj.state.LLo === 0 && decompwlj.state.LHi === 1), 'reset clears the brushes');
 check(await p.locator('#simList li').count() === 8, 'eight similar sequences are listed');
 
 /* a sample of sequences, each in the viewer: the data decode to the catalogue's counts; the graph
