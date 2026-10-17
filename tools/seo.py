@@ -31,7 +31,7 @@ AUTHOR_URL = 'https://oeis.org/wiki/User:R%C3%A9mi_Eismann'      # the author's 
 # the author, in the structured data of every page (the home page carries the full record)
 PERSON = {'@type': 'Person', '@id': 'https://decompwlj.net/#remi-eismann', 'name': AUTHOR,
           'alternateName': ['Remi Eismann', 'decompwlj'], 'url': AUTHOR_URL,
-          'sameAs': [AUTHOR_URL, 'https://decompwlj.com', 'https://x.com/decompwlj']}
+          'sameAs': [AUTHOR_URL, 'https://decompwlj.com', 'https://x.com/decompwlj', 'https://mathstodon.xyz/@decompwlj']}
 # visit counts: GoatCounter, no cookies and no personal data (see index.html); '' leaves them out
 GOATCOUNTER_URL = 'https://decompwlj.goatcounter.com/count'
 GOATCOUNTER = (f'<script data-goatcounter="{GOATCOUNTER_URL}" async src="https://gc.zgo.at/count.js"></script>'
