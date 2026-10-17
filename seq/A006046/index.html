@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Total number of odd entries in first n rows of Pascal&#x27;s… (A006046) · weight × level + jump</title>
 <meta name="description" content="A006046, Total number of odd entries in first n rows of Pascal&#x27;s triangle: a(0) = 0, a(1) = 1, a(2k) = 3*a(k), a(2k+1) = 2*a(k) + a(k+1).  a(n) = Sum_{i=0..n-1} 2^wt(i): 100,000 terms decomposed as a(n) = k·L + d; 55.21 % in the level class (k &gt; L), 44.79 % in the weight class. 17 different gaps…">
+<meta name="author" content="Rémi Eismann">
+<link rel="author" href="https://oeis.org/wiki/User:R%C3%A9mi_Eismann">
 <link rel="canonical" href="https://decompwlj.net/seq/A006046/">
 <link rel="icon" href="../../favicon.ico" sizes="32x32">
 <link rel="icon" href="../../favicon.svg" type="image/svg+xml">
@@ -20,7 +22,7 @@
 <meta property="og:image:width" content="600">
 <meta property="og:image:height" content="315">
 <meta name="twitter:card" content="summary_large_image">
-<script type="application/ld+json">{"@context":"https://schema.org","@type":"Dataset","name":"A006046: Total number of odd entries in first n rows of Pascal's triangle: a(0) = 0, a(1) = 1, a(2k) = 3*a(k), a(2k+1) = 2*a(k) + a(k+1).  a(n) = Sum_{i=0..n-1} 2^wt(i) — weight × level + jump","description":"A006046, Total number of odd entries in first n rows of Pascal's triangle: a(0) = 0, a(1) = 1, a(2k) = 3*a(k), a(2k+1) = 2*a(k) + a(k+1).  a(n) = Sum_{i=0..n-1} 2^wt(i): 100,000 terms decomposed as a(n) = k·L + d; 55.21 % in the level class (k > L), 44.79 % in the weight class. 17 different gaps…","url":"https://decompwlj.net/seq/A006046/","identifier":"A006046","isBasedOn":"https://oeis.org/A006046","keywords":["integer sequence","OEIS","A006046","summatory","weight","level","jump","decomposition"],"image":"https://decompwlj.net/thumbs/pascalodd.webp","includedInDataCatalog":{"@type":"DataCatalog","name":"decompwlj 3D","url":"https://decompwlj.net/"},"distribution":[{"@type":"DataDownload","encodingFormat":"application/gzip","contentUrl":"https://decompwlj.net/data/seq/pascalodd/chunk-000.bin.gz"},{"@type":"DataDownload","encodingFormat":"application/gzip","contentUrl":"https://decompwlj.net/data/seq/pascalodd/chunk-001.bin.gz"}]}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"Dataset","name":"A006046: Total number of odd entries in first n rows of Pascal's triangle: a(0) = 0, a(1) = 1, a(2k) = 3*a(k), a(2k+1) = 2*a(k) + a(k+1).  a(n) = Sum_{i=0..n-1} 2^wt(i) — weight × level + jump","description":"A006046, Total number of odd entries in first n rows of Pascal's triangle: a(0) = 0, a(1) = 1, a(2k) = 3*a(k), a(2k+1) = 2*a(k) + a(k+1).  a(n) = Sum_{i=0..n-1} 2^wt(i): 100,000 terms decomposed as a(n) = k·L + d; 55.21 % in the level class (k > L), 44.79 % in the weight class. 17 different gaps…","url":"https://decompwlj.net/seq/A006046/","identifier":"A006046","isBasedOn":"https://oeis.org/A006046","creator":{"@type":"Person","@id":"https://decompwlj.net/#remi-eismann","name":"Rémi Eismann","alternateName":["Remi Eismann","decompwlj"],"url":"https://oeis.org/wiki/User:R%C3%A9mi_Eismann","sameAs":["https://oeis.org/wiki/User:R%C3%A9mi_Eismann","https://decompwlj.com","https://x.com/decompwlj","https://mathstodon.xyz/@decompwlj"]},"keywords":["integer sequence","OEIS","A006046","summatory","weight","level","jump","decomposition","decompwlj","decomposition into weight × level + jump"],"image":"https://decompwlj.net/thumbs/pascalodd.webp","includedInDataCatalog":{"@type":"DataCatalog","name":"decompwlj 3D","url":"https://decompwlj.net/"},"distribution":[{"@type":"DataDownload","encodingFormat":"application/gzip","contentUrl":"https://decompwlj.net/data/seq/pascalodd/chunk-000.bin.gz"},{"@type":"DataDownload","encodingFormat":"application/gzip","contentUrl":"https://decompwlj.net/data/seq/pascalodd/chunk-001.bin.gz"}]}</script>
 <script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://decompwlj.net/"},{"@type":"ListItem","position":2,"name":"All sequences","item":"https://decompwlj.net/seq/"},{"@type":"ListItem","position":3,"name":"summatory","item":"https://decompwlj.net/family/summatory/"},{"@type":"ListItem","position":4,"name":"A006046","item":"https://decompwlj.net/seq/A006046/"}]}</script>
 </head>
 <body>
@@ -61,7 +63,7 @@
 <nav class="pn" aria-label="Neighbouring sequences"><a class="prev" href="../A006004/" title="a(n) = C(n+2,3) + C(n,3) + C(n-1,3)">← A006004 a(n) = C(n+2,3) + C(n,3) + C(n-1,3)</a><a class="next" href="../A006049/" title="Numbers k such that k and k+1 have the same number of distinct prime divisors">A006049 Numbers k such that k and k+1 have the same… →</a></nav>
 </main>
 <footer class="foot">
-  <span>decompwlj 3D — the decomposition a(n) = k·L + d for 5000 integer sequences</span>
+  <span>decompwlj 3D — the decomposition into weight × level + jump, a(n) = k·L + d, by <a href="https://oeis.org/wiki/User:R%C3%A9mi_Eismann" rel="author">Rémi Eismann</a>, for 5000 integer sequences</span>
   <a href="https://arxiv.org/abs/0711.0865" rel="noopener">arXiv:0711.0865</a>
   <a href="https://oeis.org" rel="noopener">OEIS</a>
 </footer>

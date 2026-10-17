@@ -26,6 +26,12 @@ import csv, html, json, pathlib, re, sys
 HERE = pathlib.Path(__file__).resolve().parent
 ROOT = HERE.parent
 SITE = 'decompwlj 3D'
+AUTHOR = 'Rémi Eismann'
+AUTHOR_URL = 'https://oeis.org/wiki/User:R%C3%A9mi_Eismann'      # the author's main identity: the OEIS user page
+# the author, in the structured data of every page (the home page carries the full record)
+PERSON = {'@type': 'Person', '@id': 'https://decompwlj.net/#remi-eismann', 'name': AUTHOR,
+          'alternateName': ['Remi Eismann', 'decompwlj'], 'url': AUTHOR_URL,
+          'sameAs': [AUTHOR_URL, 'https://decompwlj.com', 'https://x.com/decompwlj', 'https://mathstodon.xyz/@decompwlj']}
 # visit counts: GoatCounter, no cookies and no personal data (see index.html); '' leaves them out
 GOATCOUNTER_URL = 'https://decompwlj.goatcounter.com/count'
 GOATCOUNTER = (f'<script data-goatcounter="{GOATCOUNTER_URL}" async src="https://gc.zgo.at/count.js"></script>'
@@ -82,6 +88,8 @@ def page(up, path, title, desc, body, image=None, ld=()):
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{e(title)}</title>
 <meta name="description" content="{e(desc)}">
+<meta name="author" content="{AUTHOR}">
+<link rel="author" href="{AUTHOR_URL}">
 <link rel="canonical" href="{e(url)}">
 {icons(up)}
 <link rel="stylesheet" href="{up}css/pages.css">
@@ -105,7 +113,7 @@ def page(up, path, title, desc, body, image=None, ld=()):
 {body}
 </main>
 <footer class="foot">
-  <span>{SITE} — the decomposition a(n) = k·L + d for {N} integer sequences</span>
+  <span>{SITE} — the decomposition into weight × level + jump, a(n) = k·L + d, by <a href="{AUTHOR_URL}" rel="author">{AUTHOR}</a>, for {N} integer sequences</span>
   <a href="https://arxiv.org/abs/0711.0865" rel="noopener">arXiv:0711.0865</a>
   <a href="https://oeis.org" rel="noopener">OEIS</a>
 </footer>
@@ -269,8 +277,9 @@ for i, r in enumerate(rows):
 <nav class="pn" aria-label="Neighbouring sequences">{f'<a class="prev" href="../{prev_r["anumber"]}/" title="{e(prev_r["name"])}">← {prev_r["anumber"]} {e(clip(prev_r["name"], 50))}</a>' if prev_r else ''}{f'<a class="next" href="../{next_r["anumber"]}/" title="{e(next_r["name"])}">{next_r["anumber"]} {e(clip(next_r["name"], 50))} →</a>' if next_r else ''}</nav>'''
     ld = [{'@context': 'https://schema.org', '@type': 'Dataset', 'name': f'{A}: {name} — weight × level + jump',
            'description': desc if len(desc) >= 50 else desc + ' Decomposition into weight × level + jump.',
-           'url': f'{BASE}/seq/{A}/', 'identifier': A, 'isBasedOn': f'https://oeis.org/{A}',
-           'keywords': ['integer sequence', 'OEIS', A, fam, 'weight', 'level', 'jump', 'decomposition'],
+           'url': f'{BASE}/seq/{A}/', 'identifier': A, 'isBasedOn': f'https://oeis.org/{A}', 'creator': PERSON,
+           'keywords': ['integer sequence', 'OEIS', A, fam, 'weight', 'level', 'jump', 'decomposition', 'decompwlj',
+                        'decomposition into weight × level + jump'],
            'image': f'{BASE}/thumbs/{r["id"]}.webp',
            'includedInDataCatalog': {'@type': 'DataCatalog', 'name': SITE, 'url': f'{BASE}/'},
            'distribution': [{'@type': 'DataDownload', 'encodingFormat': 'application/gzip',
@@ -524,8 +533,8 @@ role of a starting point: the divisors up to d are skipped, as if the sieve bega
     <a href="../seq/A000027/">natural numbers</a> (d = 1: the weight is the least divisor of a − 1 above 1),
     the <a href="../seq/A000290/">squares</a>.</li>
 </ul>
-<p class="lead">The decomposition is described in <a href="https://arxiv.org/abs/0711.0865" rel="noopener">arXiv:0711.0865</a>
-and on <a href="https://decompwlj.com" rel="noopener">decompwlj.com</a>.</p>
+<p class="lead">The decomposition into weight × level + jump (decompwlj) is due to Rémi Eismann; it is described in
+<a href="https://arxiv.org/abs/0711.0865" rel="noopener">arXiv:0711.0865</a> and on <a href="https://decompwlj.com" rel="noopener">decompwlj.com</a>.</p>
 <script src="learn.js" defer></script>'''
 write('learn/index.html', page('../', 'learn/', 'How it works: weight × level + jump · decompwlj 3D',
       'The decomposition a(n) = k·L + d of an integer sequence, step by step: the jump, the weight and the level, three worked '
