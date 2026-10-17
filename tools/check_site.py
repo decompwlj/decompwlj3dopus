@@ -58,7 +58,8 @@ for r in rows:
         links = re.findall(r'href="https://oeis\.org/([^"]*)"', t)
         if A not in links: bad(f'seq/{A}/: no link to https://oeis.org/{A}')
         for x in links:
-            if not re.fullmatch(r'A\d{6}|search\?q=keyword:\w+', x): bad(f'seq/{A}/: odd OEIS link https://oeis.org/{x}')
+            # an entry, a keyword search, or the author's OEIS user page (the footer credit)
+            if not re.fullmatch(r'A\d{6}|search\?q=keyword:\w+|wiki/User:R%C3%A9mi_Eismann', x): bad(f'seq/{A}/: odd OEIS link https://oeis.org/{x}')
 
 # leftovers of sequences that are gone
 known, knownA = set(ids), set(ans)

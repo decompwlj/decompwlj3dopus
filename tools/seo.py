@@ -27,10 +27,11 @@ HERE = pathlib.Path(__file__).resolve().parent
 ROOT = HERE.parent
 SITE = 'decompwlj 3D'
 AUTHOR = 'Rémi Eismann'
+AUTHOR_URL = 'https://oeis.org/wiki/User:R%C3%A9mi_Eismann'      # the author's main identity: the OEIS user page
 # the author, in the structured data of every page (the home page carries the full record)
 PERSON = {'@type': 'Person', '@id': 'https://decompwlj.net/#remi-eismann', 'name': AUTHOR,
-          'alternateName': ['Remi Eismann', 'decompwlj'], 'url': 'https://decompwlj.com',
-          'sameAs': ['https://decompwlj.com', 'https://mathstodon.xyz/@decompwlj']}
+          'alternateName': ['Remi Eismann', 'decompwlj'], 'url': AUTHOR_URL,
+          'sameAs': [AUTHOR_URL, 'https://decompwlj.com', 'https://mathstodon.xyz/@decompwlj']}
 # visit counts: GoatCounter, no cookies and no personal data (see index.html); '' leaves them out
 GOATCOUNTER_URL = 'https://decompwlj.goatcounter.com/count'
 GOATCOUNTER = (f'<script data-goatcounter="{GOATCOUNTER_URL}" async src="https://gc.zgo.at/count.js"></script>'
@@ -88,6 +89,7 @@ def page(up, path, title, desc, body, image=None, ld=()):
 <title>{e(title)}</title>
 <meta name="description" content="{e(desc)}">
 <meta name="author" content="{AUTHOR}">
+<link rel="author" href="{AUTHOR_URL}">
 <link rel="canonical" href="{e(url)}">
 {icons(up)}
 <link rel="stylesheet" href="{up}css/pages.css">
@@ -111,7 +113,7 @@ def page(up, path, title, desc, body, image=None, ld=()):
 {body}
 </main>
 <footer class="foot">
-  <span>{SITE} — the decomposition into weight × level + jump, a(n) = k·L + d, by <a href="https://decompwlj.com" rel="author">{AUTHOR}</a>, for {N} integer sequences</span>
+  <span>{SITE} — the decomposition into weight × level + jump, a(n) = k·L + d, by <a href="{AUTHOR_URL}" rel="author">{AUTHOR}</a>, for {N} integer sequences</span>
   <a href="https://arxiv.org/abs/0711.0865" rel="noopener">arXiv:0711.0865</a>
   <a href="https://oeis.org" rel="noopener">OEIS</a>
 </footer>
