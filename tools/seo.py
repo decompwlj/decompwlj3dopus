@@ -14,7 +14,7 @@ data/catalog.csv, next to index.html:
     learn/index.html, learn.js    how it works: the decomposition step by step, with a live example
     family/<family>/index.html    the sequences of one family
     404.html                      not-found page; /A000040 redirects to /seq/A000040/
-    sitemap.xml, robots.txt       for the crawlers
+    sitemap.xml, robots.txt       for the crawlers; each page's <lastmod> is kept in tools/lastmod.json
     og.png                        1200 x 630 preview for links shared on social sites
     share/<id>.jpg                600 x 315 preview of each sequence page
                                   (both need Pillow; skipped without it)
@@ -586,13 +586,50 @@ a sequence also opens by its A-number, as in <a href="/seq/A000040/">/seq/A00004
 ''')
 
 # ── sitemap and robots ──────────────────────────────────────────────────────
+# Every page written here gets a <lastmod> in the sitemap, so crawlers know what changed. The date
+# lives in tools/lastmod.json with a fingerprint of the page: a page whose fingerprint changes is
+# dated today (UTC); an unchanged one keeps its date, so a run on the same pages writes the same
+# sitemap (the workflow checks it). A page not yet in the file takes the date of the last commit
+# that touched it (or today, if it differs from that commit). The home page, edited by hand rather
+# than written here, carries no date.
+LASTMOD = ROOT / 'tools' / 'lastmod.json'
+def lastmod_dates(rels):
+    import datetime, hashlib, subprocess
+    try: old = json.loads(LASTMOD.read_text())
+    except (OSError, ValueError): old = {}
+    today = datetime.datetime.now(datetime.timezone.utc).date().isoformat()
+    seed, dirty = {}, set()
+    if any(r not in old for r in rels):
+        try:
+            log = subprocess.run(['git', 'log', '--format=%x00%cs', '--name-only', '--', 'seq', 'family', 'learn/index.html'],
+                                 cwd=ROOT, capture_output=True, text=True, check=True).stdout
+            date = None
+            for line in log.splitlines():
+                if line.startswith('\0'): date = line[1:]
+                elif line and date: seed.setdefault(line, date)
+            dirty = {l[3:] for l in subprocess.run(['git', 'status', '--porcelain', '--', 'seq', 'family', 'learn'],
+                                                   cwd=ROOT, capture_output=True, text=True).stdout.splitlines()}
+        except (OSError, subprocess.CalledProcessError): pass
+    new = {}
+    for r in rels:
+        h = hashlib.sha1((ROOT / r).read_bytes()).hexdigest()[:16]
+        if r in old and old[r][0] == h: new[r] = old[r]
+        elif r in old or r in dirty or r not in seed: new[r] = [h, today]
+        else: new[r] = [h, seed[r]]
+    LASTMOD.write_text('{\n' + ',\n'.join(f'{json.dumps(r)}: {json.dumps(new[r])}' for r in sorted(new)) + '\n}\n')
+    return {r: v[1] for r, v in new.items()}
+
 urls = [(f'{BASE}/', f'{BASE}/og.png'), (f'{BASE}/learn/', None), (f'{BASE}/seq/', None)]
 urls += [(f'{BASE}/family/{slug(f)}/', None) for f in fam_order]
 urls += [(f'{BASE}/seq/{r["anumber"]}/', f'{BASE}/thumbs/{r["id"]}.webp') for r in rows]
+rel_of = lambda u: u[len(BASE) + 1:] + 'index.html'
+dates = lastmod_dates([rel_of(u) for u, _ in urls if u != f'{BASE}/'])
 sm = ['<?xml version="1.0" encoding="UTF-8"?>',
       '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">']
 for u, im in urls:
-    sm.append(f'<url><loc>{e(u)}</loc>' + (f'<image:image><image:loc>{e(im)}</image:loc></image:image>' if im else '') + '</url>')
+    lm = dates.get(rel_of(u)) if u != f'{BASE}/' else None
+    sm.append(f'<url><loc>{e(u)}</loc>' + (f'<lastmod>{lm}</lastmod>' if lm else '') +
+              (f'<image:image><image:loc>{e(im)}</image:loc></image:image>' if im else '') + '</url>')
 sm.append('</urlset>')
 write('sitemap.xml', '\n'.join(sm) + '\n')
 write('seq/csv.js', CSV_JS)
