@@ -340,6 +340,9 @@ python3 -m http.server 8765 & node tests/smoke.mjs      # needs: npm install pla
 
 - The decomposition into weight × level + jump: Rémi Eismann —
   [arXiv:0711.0865](https://arxiv.org/abs/0711.0865), [decompwlj.com](https://decompwlj.com).
+- The decomposition data (`data/`: a, d, k, L for every term, computed by the programs in `tools/`):
+  Rémi Eismann and Claude, dedicated to the public domain under
+  [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/).
 - Sequence names, offsets and reference terms: [the OEIS](https://oeis.org), CC BY-SA 4.0, read
   from [github.com/oeis/oeisdata](https://github.com/oeis/oeisdata).
 - [three.js](https://threejs.org) r169, © 2010–2024 three.js authors, MIT (`vendor/LICENSE-three.js.txt`).

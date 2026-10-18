@@ -32,6 +32,14 @@ AUTHOR_URL = 'https://oeis.org/wiki/User:R%C3%A9mi_Eismann'      # the author's 
 PERSON = {'@type': 'Person', '@id': 'https://decompwlj.net/#remi-eismann', 'name': AUTHOR,
           'alternateName': ['Remi Eismann', 'decompwlj'], 'url': AUTHOR_URL,
           'sameAs': [AUTHOR_URL, 'https://decompwlj.com', 'https://x.com/decompwlj', 'https://mathstodon.xyz/@decompwlj']}
+# the data were made by the author with Claude (Anthropic's AI model), which wrote the programs and the site
+CLAUDE = {'@type': 'Organization', 'name': 'Claude', 'description': 'AI model by Anthropic', 'url': 'https://claude.ai'}
+# the decomposition data (a, d, k, L for every term) are computed here: dedicated to the public domain;
+# the sequence names and the reference terms come from the OEIS, under CC BY-SA 4.0
+DATA_LICENSE = 'https://creativecommons.org/publicdomain/zero/1.0/'
+OEIS_LICENSE = 'https://creativecommons.org/licenses/by-sa/4.0/'
+CREDIT = (f'{AUTHOR} and Claude. Data: CC0 1.0 (public domain). Sequence names and reference terms: '
+          'The On-Line Encyclopedia of Integer Sequences (https://oeis.org), CC BY-SA 4.0.')
 # visit counts: GoatCounter, no cookies and no personal data (see index.html); '' leaves them out
 GOATCOUNTER_URL = 'https://decompwlj.goatcounter.com/count'
 GOATCOUNTER = (f'<script data-goatcounter="{GOATCOUNTER_URL}" async src="https://gc.zgo.at/count.js"></script>'
@@ -116,6 +124,7 @@ def page(up, path, title, desc, body, image=None, ld=()):
   <span>{SITE} — the decomposition into weight × level + jump, a(n) = k·L + d, by <a href="{AUTHOR_URL}" rel="author">{AUTHOR}</a>, for {N} integer sequences</span>
   <a href="https://arxiv.org/abs/0711.0865" rel="noopener">arXiv:0711.0865</a>
   <a href="https://oeis.org" rel="noopener">OEIS</a>
+  <span class="lic">Data: <a href="{DATA_LICENSE}" rel="license noopener">CC0 1.0</a> (public domain) · sequence names from the OEIS: <a href="{OEIS_LICENSE}" rel="noopener">CC BY-SA 4.0</a></span>
 </footer>
 </body>
 </html>
@@ -277,7 +286,8 @@ for i, r in enumerate(rows):
 <nav class="pn" aria-label="Neighbouring sequences">{f'<a class="prev" href="../{prev_r["anumber"]}/" title="{e(prev_r["name"])}">← {prev_r["anumber"]} {e(clip(prev_r["name"], 50))}</a>' if prev_r else ''}{f'<a class="next" href="../{next_r["anumber"]}/" title="{e(next_r["name"])}">{next_r["anumber"]} {e(clip(next_r["name"], 50))} →</a>' if next_r else ''}</nav>'''
     ld = [{'@context': 'https://schema.org', '@type': 'Dataset', 'name': f'{A}: {name} — weight × level + jump',
            'description': desc if len(desc) >= 50 else desc + ' Decomposition into weight × level + jump.',
-           'url': f'{BASE}/seq/{A}/', 'identifier': A, 'isBasedOn': f'https://oeis.org/{A}', 'creator': PERSON,
+           'url': f'{BASE}/seq/{A}/', 'identifier': A, 'isBasedOn': f'https://oeis.org/{A}', 'creator': [PERSON, CLAUDE],
+           'license': DATA_LICENSE, 'creditText': CREDIT,
            'keywords': ['integer sequence', 'OEIS', A, fam, 'weight', 'level', 'jump', 'decomposition', 'decompwlj',
                         'decomposition into weight × level + jump'],
            'image': f'{BASE}/thumbs/{r["id"]}.webp',
