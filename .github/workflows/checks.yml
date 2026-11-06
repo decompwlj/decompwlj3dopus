@@ -89,7 +89,8 @@ jobs:
           [ "$ROWS" = success ] && [ "$SITE" = success ]
 
   browser:
-    runs-on: ubuntu-latest
+    # pinned: Playwright 1.56.1 has no Chromium build for ubuntu-latest's 26.04 image
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
