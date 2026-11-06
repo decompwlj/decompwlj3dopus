@@ -48,6 +48,8 @@ live example. Background: [decompwlj.com](https://decompwlj.com) and
   Changing view is one smooth camera flight (the perspective flattens into the 2-D views and back,
   a "dolly zoom"), and a new sequence fades in. The views fit the free space of any screen, from a
   phone (portrait or sideways) to QHD and UHD, with points and labels scaled to the canvas.
+- 🔬 **Lab** ([`/lab/`](https://decompwlj.net/lab/)): a second mode, separate from the viewer, that sets each
+  sequence against randomised **controls** in seven linked panels. See [The Lab](#the-lab) below.
 - 🧭 **Similar sequences**: the eight nearest in the catalogue's decomposition figures (level, tie,
   L = 1, forced and decomposable shares; ranges of a, k, L and d), each one click from the viewer
   or from a comparison.
@@ -67,6 +69,41 @@ live example. Background: [decompwlj.com](https://decompwlj.com) and
 - 🌗 Light and dark themes, keyboard shortcuts, PNG snapshots.
 - 📦 Plain static files: no server code, no database, no build step.
 - 🔒 Privacy-friendly visit counts ([GoatCounter](https://www.goatcounter.com)): no cookies, no personal data.
+
+## The Lab
+
+![The Lab: the primes against their residue controls](docs/img/lab.webp)
+
+The Lab asks one question of each sequence: how much of what the decomposition shows comes from the
+sequence itself, and how much would any sequence with the same jumps and the same congruences show?
+Each record keeps its jump d and the residue of ℓ = a − d modulo M. ℓ is then redrawn at random
+within ±25 % and decomposed again with the same kernel. M runs through 1, 2, 6, 30, 210, 2310 and
+30030, so the control learns the sequence's congruences one prime at a time.
+
+- **Plates.** The sequence and its control, on the same records, as square weight–level plates (log k
+  against log L, equal scales: the diagonal k = L is the class boundary).
+- **The residue ladder.** The level share and the L = 1 share, sequence minus control, at each M,
+  with ±2σ. A step where the gap closes names a modulus that carries the structure. Click a step to use
+  that control in every chart.
+- **Level share along n.** The sequence against the control band, by window. Drag to keep a range of n.
+- **Jumps.** The commonest jumps. Click one to keep only that jump.
+- **The congruence lock.** r · Pr[r | ℓ] for the primes r ≤ 113, against chance (1) and the
+  Hardy–Littlewood value r/(r − 2) of consecutive primes.
+- **Columns and lines.** How often each small weight k and level L occurs, sequence against control.
+- **Your sequence.** Paste a list or an OEIS b-file. It is decomposed in the browser and set against
+  the same controls. Nothing is uploaded.
+
+The filters (a range of n, one jump, the modulus M) apply to every chart and are kept in the link:
+`/lab/#primes.M210.g6.n1000-50000`. The controls run in worker threads on a seeded random subsample
+of 10,000 or 25,000 records, or on all of them, so every figure is reproducible. The kernel
+(`lab/kernel.js`) is exact below 2⁵³. It uses trial division, a deterministic Miller–Rabin test and
+Pollard–Brent rho, all in doubles with exact products. It was checked against PARI/GP 2.15.4 on 55,003
+cases, adversarial ones included, and against 180,000 published rows of 60 sequences up to 9·10¹⁵.
+
+The Lab shows where a sequence departs from its controls. It does not explain why. When ℓ is small next
+to M, the control can barely move it: the ladder's *frozen* column gives the share of such records,
+and where it is large the gap at that M is understated. For the primes, what remains after M = 30030
+is the Hardy–Littlewood local factor of every larger prime, which no finite M keeps.
 
 ## Run it locally
 
@@ -185,6 +222,7 @@ a hard reload (Ctrl+F5, Cmd+Shift+R) clears the cached `index.html` and `data/ca
 | `/#primes.kLd.iso.solid.vs-A001359` | a comparison (add `.split` for side by side) |
 | `/seq/A000040/` (or `/A000040`) | the sequence's static page, with **Download CSV** |
 | `/seq/`, `/family/primes/`, `/learn/` | all sequences, one family, how it works |
+| `/lab/#primes` (or `/lab/#A000040`) | the Lab, on a sequence; add `.M30`, `.g6`, `.n1000-50000` for a modulus, a jump, a range of n |
 
 **Keys** — gallery: `/` search, `R` random, `T` theme, `Home` top. Viewer: `G`/`Esc` gallery,
 `↑`/`↓` neighbouring sequence, `R` random, `1`–`5` views, `V` overlay/side by side, `C`/`P` side
@@ -209,9 +247,10 @@ Sequence panel) leads back to the sequence's page; browsers that support it cros
 | `share/<id>.jpg` | Link previews of the sequence pages (600 × 315) |
 | `seq/`, `family/`, `learn/`, `404.html`, `sitemap.xml`, `robots.txt`, `og.png` | Static pages, written by `tools/seo.py` |
 | `css/pages.css` | Stylesheet of the static pages |
+| `lab/` | The Lab: `index.html`, `lab.js` (charts, filters), `worker.js` (controls), `kernel.js` (the exact kernel) |
 | `vendor/` | three.js r169 and OrbitControls, unmodified; mp4-muxer 5.2.2, minified (MIT) |
 | `tools/` | Generator, OEIS metadata, encoders, audit and page builders (not needed at runtime) |
-| `tests/smoke.mjs`, `.github/workflows/checks.yml` | Automatic checks |
+| `tests/smoke.mjs`, `tests/lab.mjs`, `.github/workflows/checks.yml` | Automatic checks |
 | `deploy/` | Apache and nginx examples |
 | `docs/SEQUENCES.md` | Every sequence by family, and how the data was verified |
 | `docs/img/` | The screenshots of this README |
@@ -316,7 +355,10 @@ parallel jobs so that checking everything takes no longer than sampling did:
   sequence in 25 from the site's own chunks; `seo.py` must rewrite the same HTML;
 - **data**: passes when the rows and the site pass;
 - **browser**: `tests/smoke.mjs` drives Chromium through the gallery, the viewer, sixty sequences
-  (every point drawn checked against its term), a CSV download and the How it works page.
+  (every point drawn checked against its term), a CSV download and the How it works page;
+  `tests/lab.mjs` runs the Lab on the primes and on the sequence with the largest terms. It checks the
+  kernel against the published rows, every control record against its rules (by brute force where
+  ℓ′ < 10⁷), the seeded ladder after a reload, the filters and the link, a pasted sequence, and a phone width.
 
 Locally:
 
@@ -324,6 +366,7 @@ Locally:
 python3 tools/check_site.py && python3 tools/audit.py data --every 25
 python3 tools/check_derived.py                          # every fingerprint and plate (about 7 min on 4 cores)
 python3 -m http.server 8765 & node tests/smoke.mjs      # needs: npm install playwright
+node tests/lab.mjs                                      # the Lab
 ```
 
 ## Troubleshooting
