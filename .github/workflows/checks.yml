@@ -11,7 +11,8 @@
 #   data:    passes when all of the above pass (the name the pull requests show).
 #   browser: a Chromium smoke test of the gallery, the viewer (60 sequences: every point drawn at
 #            its term, the viewer's own fingerprint check, the OEIS link), a sequence page and its
-#            CSV, and the "How it works" page (tests/smoke.mjs).
+#            CSV, and the "How it works" page (tests/smoke.mjs); the Lab: its kernel against the
+#            published rows, every control record against its rules, the filters (tests/lab.mjs).
 name: checks
 
 on:
@@ -88,7 +89,8 @@ jobs:
           [ "$ROWS" = success ] && [ "$SITE" = success ]
 
   browser:
-    runs-on: ubuntu-latest
+    # pinned: Playwright 1.56.1 has no Chromium build for ubuntu-latest's 26.04 image
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
@@ -104,3 +106,4 @@ jobs:
           python3 -m http.server 8765 > /dev/null 2>&1 &
           sleep 2
           node tests/smoke.mjs
+          node tests/lab.mjs

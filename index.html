@@ -724,6 +724,7 @@ input[type=range] { width: 100%; accent-color: var(--accent); height: 18px; }
       </div>
       <nav class="home-links" aria-label="References">
         <a href="learn/">How it works</a>
+        <a href="lab/" title="Each sequence against randomised controls: linked, interactive charts">Lab</a>
         <a href="seq/">All sequences</a>
         <a href="https://decompwlj.com" target="_blank" rel="noopener">decompwlj.com</a>
         <a href="https://arxiv.org/abs/0711.0865" target="_blank" rel="noopener">arXiv:0711.0865</a>
@@ -814,7 +815,7 @@ input[type=range] { width: 100%; accent-color: var(--accent); height: 18px; }
       <button id="catShow" class="icon-btn ghost" title="Show catalogue (C)" aria-label="Show catalogue">&#9776;</button>
       <div class="title-block">
         <h1 id="seqName">—</h1>
-        <div id="seqSub" class="sub"><a class="oeis" target="_blank" rel="noopener" title="Open this sequence on the OEIS"></a> · <a id="pageLink" class="page" title="This sequence's page: counts, note, plate and CSV">sequence page</a><span id="seqSubRest"></span><span id="seqVs" class="vs"></span></div>
+        <div id="seqSub" class="sub"><a class="oeis" target="_blank" rel="noopener" title="Open this sequence on the OEIS"></a> · <a id="pageLink" class="page" title="This sequence's page: counts, note, plate and CSV">sequence page</a> · <a id="labLink" class="page" title="This sequence in the Lab: against its residue controls">lab</a><span id="seqSubRest"></span><span id="seqVs" class="vs"></span></div>
       </div>
       <div class="spacer"></div>
       <div id="loadState" class="load-state"></div>
@@ -895,6 +896,7 @@ input[type=range] { width: 100%; accent-color: var(--accent); height: 18px; }
       <p id="verify" class="verify" aria-live="polite"></p>
       <div class="btn-row">
         <a id="pageLink2" class="chip" title="This sequence's page: counts, note, plate and CSV">sequence page</a>
+        <a id="labLink2" class="chip" title="This sequence in the Lab: against its residue controls">lab</a>
         <a id="oeisLink" class="chip" target="_blank" rel="noopener">OEIS</a>
         <button id="snap" class="chip">snapshot</button>
         <button id="videoBtn" class="chip" title="Make a 6-second MP4 video: 1 s on the flat plate on screen (k–L, k–d, L–d or edge; k–L from 3-D), then 5 s of one smooth move into 3-D, rising to look down on the cloud">video</button>
@@ -2795,6 +2797,7 @@ async function select(id) {
   const an = $('#seqSub').querySelector('a');
   an.href = oeisUrl(r); an.textContent = r.anumber;
   $('#pageLink').href = $('#pageLink2').href = `seq/${r.anumber}/`;
+  $('#labLink').href = $('#labLink2').href = `lab/#${r.id}`;
   $('#seqSubRest').textContent = ` · ${r.family} · n = ${fmt.format(r.n0)} … ${fmt.format(r.n0 + r.terms - 1)}`;
   $('#fullName').textContent = r.name;
   $('#note').textContent = r.note || '';

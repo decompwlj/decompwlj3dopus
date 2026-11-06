@@ -1,0 +1,299 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>decompwlj Lab: each sequence against its controls</title>
+<meta name="description" content="decompwlj Lab: the decomposition into weight × level + jump of 5000 OEIS sequences, each set against randomised controls that keep its jumps and its residues mod 1, 2, 6, 30, 210, 2310, 30030. Linked, interactive charts.">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="icon" href="../favicon.ico" sizes="any">
+<script data-goatcounter="https://decompwlj.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>
+<style>
+[hidden] { display: none !important; }
+:root {
+  --bg: #0b0e14; --bg-2: #11151f; --bg-3: #171c28; --line: #232a39; --line-2: #2f394d;
+  --fg: #e6ebf5; --fg-2: #9aa6bd; --fg-3: #64708a; --accent: #7aa2ff;
+  --c-weight: #4c8dff; --c-level: #ff8c42; --c-tie: #ffe45c; --c-one: #55e0c0;
+  --c-ctrl: #8a93a6; --c-ref: #c9a227;
+  --mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+  --sans: system-ui, -apple-system, "Segoe UI", Inter, Roboto, sans-serif;
+  color-scheme: dark;
+}
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    --bg: #f6f7fa; --bg-2: #ffffff; --bg-3: #eef1f7; --line: #dde2ec; --line-2: #c6cfdf;
+    --fg: #11151f; --fg-2: #4c5670; --fg-3: #6b768d; --accent: #2f5fd0;
+    --c-weight: #2f6fdb; --c-level: #e2661a; --c-tie: #b8860b; --c-one: #0f9c86;
+    --c-ctrl: #7d8597; --c-ref: #9a7a0a;
+    color-scheme: light;
+  }
+}
+:root[data-theme="light"] {
+  --bg: #f6f7fa; --bg-2: #ffffff; --bg-3: #eef1f7; --line: #dde2ec; --line-2: #c6cfdf;
+  --fg: #11151f; --fg-2: #4c5670; --fg-3: #6b768d; --accent: #2f5fd0;
+  --c-weight: #2f6fdb; --c-level: #e2661a; --c-tie: #b8860b; --c-one: #0f9c86;
+  --c-ctrl: #7d8597; --c-ref: #9a7a0a;
+  color-scheme: light;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; background: var(--bg); color: var(--fg); font: 14px/1.5 var(--sans); }
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+button, input, textarea, select { font: inherit; color: inherit; }
+
+/* ── header ───────────────────────────────────────── */
+header.top {
+  position: sticky; top: 0; z-index: 20; display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px;
+  padding: 10px 20px; background: color-mix(in oklab, var(--bg) 92%, transparent);
+  border-bottom: 1px solid var(--line); backdrop-filter: blur(8px);
+}
+.brand { display: flex; align-items: center; gap: 8px; font-weight: 600; color: var(--fg); white-space: nowrap; }
+.brand:hover { text-decoration: none; }
+.brand .dim { color: var(--fg-3); font-weight: 500; }
+.picker { position: relative; flex: 1 1 320px; max-width: 520px; }
+#q { width: 100%; padding: 7px 10px; background: var(--bg-3); border: 1px solid var(--line); border-radius: 8px; outline: none; }
+#q:focus { border-color: var(--accent); }
+#hits { position: absolute; left: 0; right: 0; top: calc(100% + 4px); max-height: 60vh; overflow: auto; margin: 0; padding: 4px;
+  list-style: none; background: var(--bg-2); border: 1px solid var(--line-2); border-radius: 8px; box-shadow: 0 8px 30px rgba(0,0,0,.35); }
+#hits li { padding: 6px 8px; border-radius: 6px; cursor: pointer; display: flex; gap: 8px; align-items: baseline; }
+#hits li[aria-selected="true"], #hits li:hover { background: var(--bg-3); }
+#hits .an { font: 11px var(--mono); color: var(--fg-3); flex: none; }
+#hits .nm { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.nav { display: flex; gap: 6px; flex-wrap: wrap; margin-left: auto; }
+.chip { padding: 5px 10px; font-size: 12.5px; color: var(--fg-2); background: var(--bg-3); border: 1px solid var(--line); border-radius: 999px; cursor: pointer; white-space: nowrap; }
+.chip:hover { color: var(--fg); border-color: var(--line-2); text-decoration: none; }
+.chip[aria-pressed="true"] { color: var(--fg); border-color: var(--accent); background: color-mix(in oklab, var(--accent) 18%, var(--bg-3)); }
+
+/* ── page ─────────────────────────────────────────── */
+main { max-width: 1480px; margin: 0 auto; padding: 16px 20px 40px; }
+.title h1 { margin: 0; font-size: 20px; letter-spacing: -.01em; }
+.title .sub { font: 12px var(--mono); color: var(--fg-3); margin-top: 2px; }
+.title .sub a { color: var(--fg-2); }
+.lede { color: var(--fg-2); max-width: 980px; margin: 8px 0 0; font-size: 13.5px; }
+.status { font: 12px var(--mono); color: var(--fg-3); margin: 8px 0 0; min-height: 1.5em; }
+.status.ok { color: var(--fg-2); }
+.status.bad { color: var(--c-level); }
+#progress { height: 2px; background: var(--line); margin-top: 6px; border-radius: 1px; overflow: hidden; }
+#progress i { display: block; height: 100%; width: 0; background: var(--accent); transition: width .2s linear; }
+
+.filters { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; margin: 14px 0 12px; font-size: 12.5px; color: var(--fg-2); }
+.filters b { color: var(--fg); font-weight: 600; font-variant-numeric: tabular-nums; }
+.filters .sep { width: 1px; height: 18px; background: var(--line); }
+.filters select { background: var(--bg-3); border: 1px solid var(--line); border-radius: 6px; padding: 3px 6px; }
+
+.grid { display: grid; gap: 14px; grid-template-columns: repeat(12, minmax(0, 1fr)); }
+.card { background: var(--bg-2); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px 12px; min-width: 0; }
+.card h2 { margin: 0; font-size: 13.5px; font-weight: 600; }
+.card .cap { margin: 2px 0 8px; font-size: 12px; color: var(--fg-3); line-height: 1.45; }
+.card .cap i { color: var(--fg-2); }
+.span3 { grid-column: span 3; } .span4 { grid-column: span 4; } .span5 { grid-column: span 5; }
+.span6 { grid-column: span 6; } .span7 { grid-column: span 7; } .span8 { grid-column: span 8; } .span12 { grid-column: span 12; }
+@media (max-width: 1100px) { .span3, .span4, .span5, .span6, .span7, .span8 { grid-column: span 6; } }
+@media (max-width: 720px)  { .grid > * { grid-column: span 12 !important; } main { padding: 12px 12px 32px; } header.top { padding: 8px 12px; } }
+
+.plot { position: relative; width: 100%; }
+.plot canvas { display: block; width: 100%; height: 100%; touch-action: none; }
+.sq { aspect-ratio: 1 / 1; }
+.wide { height: 260px; }
+.mid { height: 280px; }
+.legend { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 11.5px; color: var(--fg-2); margin-top: 6px; }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.legend i { display: inline-block; width: 14px; height: 3px; border-radius: 2px; background: var(--c); }
+.legend i.dot { width: 8px; height: 8px; border-radius: 50%; }
+.legend i.band { height: 8px; opacity: .45; }
+.legend i.dash { background: repeating-linear-gradient(90deg, var(--c) 0 4px, transparent 4px 7px); }
+
+table.num { width: 100%; border-collapse: collapse; font-size: 12.5px; font-variant-numeric: tabular-nums; }
+table.num th, table.num td { padding: 4px 6px; text-align: right; border-bottom: 1px solid var(--line); white-space: nowrap; }
+table.num th:first-child, table.num td:first-child { text-align: left; color: var(--fg-2); font-weight: 500; }
+table.num th { color: var(--fg-3); font-weight: 500; font-size: 11.5px; }
+table.num tr.sel td { background: color-mix(in oklab, var(--accent) 12%, transparent); }
+table.num tbody tr { cursor: pointer; }
+table.num td.z { color: var(--fg); font-weight: 600; }
+.tw { overflow-x: auto; max-width: 100%; }
+html, body { overflow-x: hidden; }
+.note { font-size: 11.5px; color: var(--fg-3); margin: 8px 0 0; }
+
+#tip { position: fixed; z-index: 50; pointer-events: none; padding: 6px 9px; font: 12px/1.45 var(--mono); white-space: pre;
+  background: var(--bg-2); border: 1px solid var(--line-2); border-radius: 8px; box-shadow: 0 6px 24px rgba(0,0,0,.35); font-variant-numeric: tabular-nums; }
+#tip b { color: var(--fg); }
+#tip .m { color: var(--fg-3); }
+
+details.method { margin-top: 18px; background: var(--bg-2); border: 1px solid var(--line); border-radius: 12px; padding: 10px 14px; }
+details.method summary { cursor: pointer; font-weight: 600; font-size: 13.5px; }
+details.method p, details.method li { font-size: 13px; color: var(--fg-2); max-width: 980px; }
+details.method code { font: 12px var(--mono); color: var(--fg); }
+
+dialog { background: var(--bg-2); color: var(--fg); border: 1px solid var(--line-2); border-radius: 12px; width: min(680px, 94vw); padding: 16px 18px; }
+dialog::backdrop { background: rgba(4,6,10,.6); }
+dialog h3 { margin: 0 0 6px; font-size: 15px; }
+dialog p { font-size: 12.5px; color: var(--fg-2); margin: 4px 0 8px; }
+dialog textarea { width: 100%; height: 220px; resize: vertical; padding: 8px; background: var(--bg-3); border: 1px solid var(--line); border-radius: 8px; font: 12px var(--mono); }
+dialog input[type=text] { width: 100%; padding: 6px 8px; background: var(--bg-3); border: 1px solid var(--line); border-radius: 8px; margin-bottom: 8px; }
+dialog .row { display: flex; gap: 8px; justify-content: flex-end; align-items: center; margin-top: 10px; }
+dialog .err { color: var(--c-level); font-size: 12.5px; margin-right: auto; }
+footer { max-width: 1480px; margin: 0 auto; padding: 0 20px 30px; font-size: 12px; color: var(--fg-3); }
+</style>
+</head>
+<body>
+<header class="top">
+  <a class="brand" href="../" title="decompwlj 3D: the gallery">
+    <svg viewBox="0 0 32 32" width="22" height="22" aria-hidden="true"><rect width="32" height="32" rx="6" fill="var(--bg-3)"/><circle cx="10" cy="21" r="3" fill="var(--c-weight)"/><circle cx="19" cy="13" r="3" fill="var(--c-level)"/><circle cx="25" cy="7" r="2" fill="var(--c-tie)"/></svg>
+    <span>decompwlj <span class="dim">Lab</span></span>
+  </a>
+  <div class="picker">
+    <input id="q" type="search" placeholder="Search 5000 sequences: name, A-number or family" autocomplete="off" spellcheck="false"
+           role="combobox" aria-expanded="false" aria-controls="hits" aria-label="Choose a sequence">
+    <ul id="hits" role="listbox" hidden></ul>
+  </div>
+  <nav class="nav" aria-label="Site">
+    <button id="pasteBtn" class="chip" type="button" title="Decompose a sequence of your own and set it against the same controls">your sequence…</button>
+    <a id="viewerLink" class="chip" href="../" title="This sequence in the 3-D viewer">3-D viewer</a>
+    <a id="pageLink" class="chip" href="../seq/" title="This sequence's page">sequence page</a>
+    <a class="chip" href="../learn/">how it works</a>
+    <button id="themeBtn" class="chip" type="button">theme</button>
+  </nav>
+</header>
+
+<main>
+  <section class="title">
+    <h1 id="seqName">—</h1>
+    <div id="seqSub" class="sub"></div>
+    <p class="lede">Every chart sets the sequence (in colour) against a <b>control</b> (in grey). The control keeps each term's jump
+      <i>d</i> and the residue of ℓ = a − d modulo <i>M</i>, and redraws ℓ at random within ±25 % before decomposing it again. As
+      <i>M</i> runs through 1, 2, 6, 30, 210, 2310, 30030, the control learns the sequence's congruences prime by prime. The gap
+      that remains shows what the decomposition sees beyond the density and those residues.</p>
+    <p id="status" class="status" aria-live="polite"></p>
+    <div id="progress"><i></i></div>
+  </section>
+
+  <div class="filters" role="group" aria-label="Filters for every chart">
+    <span>terms <b id="fN">all</b></span>
+    <button id="clearN" class="chip" type="button" hidden>all n</button>
+    <span class="sep"></span>
+    <span>jump <b id="fG">all</b></span>
+    <button id="clearG" class="chip" type="button" hidden>all jumps</button>
+    <span class="sep"></span>
+    <span>control <b id="fM">M = 1</b></span>
+    <span class="sep"></span>
+    <label>records in the control
+      <select id="sampleSel">
+        <option value="10000">10,000</option>
+        <option value="25000" selected>25,000</option>
+        <option value="100000">all</option>
+      </select></label>
+  </div>
+
+  <div class="grid">
+    <section class="card span4" aria-labelledby="hPlateA">
+      <h2 id="hPlateA">Weight–level plate: the sequence</h2>
+      <p class="cap">log₁₀ <i>k</i> across, log₁₀ <i>L</i> up, equal scales, so the diagonal <i>k</i> = <i>L</i> separates the two classes:
+        <span style="color:var(--c-weight)">weight</span> above it, <span style="color:var(--c-level)">level</span> below.
+        Dashed lines: <i>k·L</i> = 10<sup>j</sup>.</p>
+      <div class="plot sq"><canvas id="plateA" aria-label="Weight-level plate of the sequence"></canvas></div>
+    </section>
+    <section class="card span4" aria-labelledby="hPlateB">
+      <h2 id="hPlateB">The same records, controlled</h2>
+      <p class="cap" id="capPlateB">The same records after the control: same jumps, ℓ redrawn in its class mod <i>M</i>. Columns and lines that survive here are carried by the residues the control keeps.</p>
+      <div class="plot sq"><canvas id="plateB" aria-label="Weight-level plate of the control"></canvas></div>
+    </section>
+    <section class="card span4" aria-labelledby="hLadder">
+      <h2 id="hLadder">The residue ladder</h2>
+      <p class="cap">Level share of the sequence minus that of the control, in percentage points, as the control keeps more residues.
+        Whiskers: ±2σ of the control. Click a step to use that control everywhere.</p>
+      <div class="plot mid"><canvas id="ladder" aria-label="Level-share difference against the modulus M"></canvas></div>
+      <div class="legend"><span><i class="dot" style="--c:var(--c-level)"></i>level share</span><span><i class="dot" style="--c:var(--c-one)"></i>L = 1 share</span><span><i style="--c:var(--fg-3)"></i>zero: no difference</span></div>
+      <div class="tw"><table class="num" id="ladderTable" aria-label="The residue ladder as a table">
+        <thead><tr><th>M</th><th>level Δ</th><th>z</th><th>L=1 Δ</th><th>z</th><th>frozen</th></tr></thead><tbody></tbody>
+      </table></div>
+    </section>
+
+    <section class="card span8" aria-labelledby="hAlong">
+      <h2 id="hAlong">Level share along the sequence</h2>
+      <p class="cap">The sequence (line) against the control (grey band, ±2σ), in 30 windows of <i>n</i>. Drag across the chart to keep a
+        range of <i>n</i> for every chart; double-click to clear.</p>
+      <div class="plot wide"><canvas id="along" aria-label="Level share by window of n"></canvas></div>
+      <div class="legend"><span><i style="--c:var(--c-level)"></i>sequence</span><span><i class="band" style="--c:var(--c-ctrl)"></i>control ±2σ</span></div>
+    </section>
+    <section class="card span4" aria-labelledby="hGaps">
+      <h2 id="hGaps">Jumps</h2>
+      <p class="cap">How often each jump <i>d</i> occurs (the 24 commonest). Click a bar to keep that jump for every chart; click it again to clear.</p>
+      <div class="plot wide"><canvas id="gaps" aria-label="Distribution of the jumps"></canvas></div>
+    </section>
+
+    <section class="card span6" aria-labelledby="hLock">
+      <h2 id="hLock">The congruence lock</h2>
+      <p class="cap">For each prime <i>r</i>, how much more often <i>r</i> divides ℓ than it would at random: <i>r</i>·Pr[<i>r</i> | ℓ], over the
+        records with <i>d</i> &lt; <i>r</i>. 1 is chance; <i>r</i>/(<i>r</i> − 2) is the Hardy–Littlewood value for consecutive primes
+        (ℓ ≡ 0 mod <i>r</i> is one admissible class in <i>r</i> − 2). Whiskers: ±2σ.</p>
+      <div class="plot mid"><canvas id="lock" aria-label="r times the probability that r divides l, by prime r"></canvas></div>
+      <div class="legend"><span><i class="dot" style="--c:var(--accent)"></i>sequence</span><span><i class="dot" style="--c:var(--c-ctrl)"></i>control</span><span><i class="dash" style="--c:var(--c-ref)"></i>r/(r − 2)</span><span><i style="--c:var(--fg-3)"></i>1: chance</span></div>
+    </section>
+    <section class="card span6" aria-labelledby="hCols">
+      <h2 id="hCols">Columns and lines</h2>
+      <p class="cap">Share of the records whose weight is <i>k</i> (columns of the plate) or whose level is <i>L</i> (its lines), for the
+        smallest values: the sequence (bars) against the control (ticks).</p>
+      <div style="display:flex; gap:6px; margin-bottom:6px">
+        <button class="chip" id="colK" type="button" aria-pressed="true">weight k</button>
+        <button class="chip" id="colL" type="button" aria-pressed="false">level L</button>
+      </div>
+      <div class="plot mid"><canvas id="cols" aria-label="Share of records by weight or level value"></canvas></div>
+      <div class="legend"><span><i class="dot" style="--c:var(--c-weight)" id="colsKey"></i><span id="colsKeyTxt">sequence</span></span><span><i style="--c:var(--c-ctrl)"></i>control</span></div>
+    </section>
+
+    <section class="card span12" aria-labelledby="hNum">
+      <h2 id="hNum">The numbers</h2>
+      <p class="cap">Under the filters above. The sequence's shares use every record in the filter; the control and the Δ use the control's
+        records (the same records, paired).</p>
+      <div class="tw"><table class="num" id="numTable"><thead><tr><th></th><th>records</th><th>level</th><th>weight</th><th>ties</th><th>L = 1</th><th>forced (ℓ ≤ d²)</th></tr></thead><tbody></tbody></table></div>
+    </section>
+  </div>
+
+  <details class="method">
+    <summary>Method, and what the Lab cannot tell you</summary>
+    <ul>
+      <li><b>The decomposition.</b> d = a(n+1) − a(n), ℓ = a − d when a &gt; 2d; the weight k is the least divisor of ℓ above d and
+        the level L = ℓ/k; a term is in the level class when k &gt; L (ties count as weight). The sequences' own data are the
+        published files of decompwlj 3D, checked here against their SHA-256 fingerprints.</li>
+      <li><b>The control.</b> For each record, keep d and c = ℓ mod M; draw ℓ′ uniformly among the integers ≡ c (mod M) in
+        [max(d + 1, ⌈0.75 ℓ⌉), ⌊1.25 ℓ⌋]; decompose ℓ′ with the same jump. The density, the jumps and the residues mod M are the
+        sequence's own; everything else is random. Seeds are fixed (FNV-1a of the sequence id, M and the replicate), so every
+        figure is reproducible.</li>
+      <li><b>Frozen records.</b> When ℓ is small next to M, its class has few members in the window and the control barely moves
+        it. The ladder table gives the share of records with fewer than 16 members; where it is large, the Δ at that M is
+        understated, not explained.</li>
+      <li><b>Records.</b> The control runs on a random subsample of the decomposable records (never a fixed stride: strides alias
+        with the arithmetic). The plates show that subsample for both panels, so their densities match.</li>
+      <li><b>σ.</b> The whiskers use the larger of the binomial bound √(p(1 − p)/N) on the control's share and the spread
+        of its replicates. A difference of 2σ in one of 7 steps is not by itself a discovery.</li>
+      <li><b>The kernel.</b> Exact below 2^53: trial division, deterministic Miller–Rabin, Pollard–Brent rho, in doubles with
+        exact products. Checked against PARI/GP 2.15.4 and against the published rows.</li>
+      <li><b>What it is not.</b> A Δ that survives M = 30030 says that something beyond the residues mod 30030 shapes the
+        decomposition; it does not say what. For the primes the remaining step is the Hardy–Littlewood local factor of every
+        larger prime r, which no finite M keeps.</li>
+    </ul>
+  </details>
+</main>
+<footer>decompwlj Lab, a second mode of <a href="../">decompwlj 3D</a> · the decomposition: Rémi Eismann,
+  <a href="https://arxiv.org/abs/0711.0865" rel="noopener">arXiv:0711.0865</a>, <a href="https://decompwlj.com" rel="noopener">decompwlj.com</a></footer>
+
+<dialog id="paste" aria-labelledby="pasteH">
+  <form method="dialog" id="pasteForm">
+    <h3 id="pasteH">Your sequence</h3>
+    <p>Paste a strictly increasing sequence of non-negative integers below 2<sup>53</sup>, at least 50 terms (at most 100,001):
+      separated by commas, spaces or new lines, or an OEIS b-file (lines “n a(n)”). The last term only gives the jump of the one before it.
+      Nothing leaves your browser.</p>
+    <input id="pasteName" type="text" placeholder="Name (optional)" maxlength="120">
+    <textarea id="pasteText" spellcheck="false" placeholder="2, 3, 5, 7, 11, 13, …"></textarea>
+    <div class="row"><span id="pasteErr" class="err" aria-live="polite"></span>
+      <button class="chip" value="cancel" formnovalidate>cancel</button>
+      <button class="chip" id="pasteGo" value="go" aria-pressed="true">decompose</button></div>
+  </form>
+</dialog>
+<div id="tip" hidden></div>
+
+<script src="kernel.js"></script>
+<script src="lab.js"></script>
+</body>
+</html>
