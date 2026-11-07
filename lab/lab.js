@@ -3,7 +3,7 @@
  * The page loads one sequence from the published chunks of decompwlj 3D (the same files, the
  * same checks: exact divisions, continuity, the catalogue's counts, the SHA-256 fingerprint),
  * draws a random subsample of its decomposable records, and asks worker threads for the
- * record-level control at M = 1, 2, 6, 30, 210, 2310, 30030 (see worker.js).  Every chart reads
+ * record-level control at M = lcm(1..n) = 1, 2, 6, 12, …, 360360, or a modulus of one's own (see worker.js).  Every chart reads
  * the same three filters: a range of n, one jump d, and the control's modulus M.
  */
 (() => {
@@ -11,7 +11,12 @@
 
 const $ = (s) => document.querySelector(s);
 const DATA = '../data';
-const LADDER = [1, 2, 6, 30, 210, 2310, 30030];
+/* lcm(1, …, n): each step adds exactly one prime power, named in ADDS, so a change in Δ at a step is
+ * attributable to that prime power alone (2, 3, 4 = 2², 5, 7, 8 = 2³, 9 = 3², 11, 13) */
+const LADDER = [1, 2, 6, 12, 60, 420, 840, 2520, 27720, 360360];
+const ADDS = { 2: '2', 6: '3', 12: '4 = 2²', 60: '5', 420: '7', 840: '8 = 2³', 2520: '9 = 3²', 27720: '11', 360360: '13' };
+const OWN_MAX = 10000000;        /* a modulus of your own: 2 … 10^7 */
+const FROZEN_MAX = 0.5;          /* a step where more than half the records are frozen says little */
 const REPS = 2;
 const BINS = 30;
 const LOCK_R = [3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61, 67, 71, 73, 79, 83, 89, 97, 101, 103, 107, 109, 113];
@@ -37,7 +42,8 @@ const fmtInt = (x) => x.toLocaleString('en-US');
 const fmtNum = (x) => x < 1e6 ? fmtInt(x) : x.toExponential(2).replace('e+', 'e');
 const pct = (x, dp = 2) => (100 * x).toFixed(dp) + ' %';
 const signed = (v, dp) => { const t = Math.abs(v).toFixed(dp); return +t === 0 ? '0' : (v < 0 ? '−' : '+') + t; };
-const pts = (x, dp = 2) => (x >= 0 ? '+' : '−') + Math.abs(100 * x).toFixed(dp);
+const fz = (z) => (Math.abs(z) < 0.05 ? '0.0' : (z < 0 ? '−' : '') + Math.abs(z).toFixed(1));
+const pts = (x, dp = 2) => { const t = Math.abs(100 * x).toFixed(dp); return +t === 0 ? t : (x > 0 ? '+' : '−') + t; };
 const setStatus = (t, cls = '') => { const s = $('#status'); s.textContent = t; s.className = 'status ' + cls; };
 const setProgress = (f) => { $('#progress i').style.width = `${Math.round(100 * Math.min(1, f))}%`; };
 
@@ -167,8 +173,9 @@ function parseHash() {
   const o = { id: parts[0] || 'primes' };
   for (const p of parts.slice(1)) {
     let m;
-    if ((m = /^M(\d+)$/.exec(p)) && LADDER.includes(+m[1])) o.M = +m[1];
+    if ((m = /^M(\d+)$/.exec(p)) && +m[1] >= 1 && +m[1] <= OWN_MAX) o.M = +m[1];
     else if ((m = /^g(\d+)$/.exec(p))) o.g = +m[1];
+    else if ((m = /^own(\d+)$/.exec(p)) && +m[1] >= 1 && +m[1] <= OWN_MAX && !LADDER.includes(+m[1])) o.own = +m[1];
     else if ((m = /^n(\d+)-(\d+)$/.exec(p))) o.n = [+m[1], +m[2]];
   }
   return o;
@@ -177,6 +184,7 @@ function writeHash() {
   if (!st.rec || st.rec.custom) return;
   let h = `#${st.rec.id}`;
   if (st.M !== 1) h += `.M${st.M}`;
+  if (st.ownM && st.ownM !== st.M) h += `.own${st.ownM}`;
   if (st.g !== null) h += `.g${st.g}`;
   if (st.rLo > 0 || st.rHi < st.N - 1) h += `.n${st.n0 + st.rLo}-${st.n0 + st.rHi}`;
   if (h !== location.hash) history.replaceState(null, '', h);
@@ -267,7 +275,7 @@ async function verifyFingerprint(r, gen) {
 function refreshStatus() {
   const left = st.total ? st.total - st.done : 0;
   const v = st.verified || 'counts verified';
-  const c = left > 0 ? ` · controls ${Math.floor(100 * st.done / st.total)} %` : st.total ? ` · ${LADDER.length * REPS} controls on ${fmtInt(st.sub.length)} records` : '';
+  const c = left > 0 ? ` · controls ${Math.floor(100 * st.done / st.total)} %` : st.total ? ` · ${st.ctrl.size} controls on ${fmtInt(st.sub.length)} records` : '';
   setStatus(v + c, st.verifiedOk === false ? 'bad' : 'ok');
 }
 
@@ -294,6 +302,7 @@ function afterLoad(o) {
   for (let i = 0; i < st.N; i++) if (st.k[i]) dec.push(i);
   st.dec = Int32Array.from(dec);
   st.M = o.M || 1;
+  st.ownM = o.M && !LADDER.includes(o.M) ? o.M : o.own || null;
   st.g = o.g !== undefined ? o.g : null;
   st.rLo = 0; st.rHi = st.N - 1;
   if (o.n) { st.rLo = Math.max(0, o.n[0] - st.n0); st.rHi = Math.min(st.N - 1, o.n[1] - st.n0); if (st.rHi < st.rLo) { st.rLo = 0; st.rHi = st.N - 1; } }
@@ -316,52 +325,78 @@ function stopWorkers() {
   st.cgen++;
   for (const w of st.workers) w.terminate();
   st.workers = []; st.ctrl.clear(); st.done = 0; st.total = 0;
+  st.queue = []; st.queued = new Set(); st.progress = new Map();
 }
+
+/** the moduli shown: the ladder, then your own M if it is not on it */
+const steps = () => (st.ownM && !LADDER.includes(st.ownM) ? [...LADDER, st.ownM] : LADDER);
 
 function startControls() {
   stopWorkers();
   st.sub = drawSubsample();
-  const gen = st.cgen, S = st.sub.length;
-  const l = new Float64Array(S), d = new Float64Array(S);
-  for (let j = 0; j < S; j++) { const r = st.sub[j]; d[j] = st.d[r]; l[j] = st.a[r] - st.d[r]; }
-  const tasks = [];
-  for (let rep = 0; rep < REPS; rep++) for (const M of LADDER) tasks.push({ M, rep });
-  /* the selected M first, so its charts fill in first */
-  tasks.sort((x, y) => (x.rep - y.rep) || ((y.M === st.M) - (x.M === st.M)));
-  st.total = tasks.length * S; st.done = 0;
-  const W = Math.max(1, Math.min(4, (navigator.hardwareConcurrency || 2) - 1));
-  const progress = new Map();
-  let q = 0;
-  const feed = (w) => {
-    if (q >= tasks.length) { w.terminate(); st.workers = st.workers.filter(x => x !== w); return; }
-    const t = tasks[q++], task = `${t.M}|${t.rep}`;
-    progress.set(task, 0);
-    w.postMessage({ type: 'control', task, l, d, M: t.M, seed: DWLJ.seedOf(`${st.rec.id}|M${t.M}|r${t.rep}|${S}`) });
-  };
-  for (let i = 0; i < Math.min(W, tasks.length); i++) {
-    const w = new Worker('worker.js');
-    w.onmessage = (e) => {
-      if (gen !== st.cgen) return;
-      const m = e.data;
-      if (m.type === 'progress') {
-        st.done += m.done - progress.get(m.task); progress.set(m.task, m.done);
-        setProgress(0.15 + 0.85 * st.done / st.total); refreshStatus();
-      } else if (m.type === 'control') {
-        st.done += S - progress.get(m.task); progress.set(m.task, S);
-        st.ctrl.set(m.task, { lp: m.lp, k: m.k, frozen: m.frozen });
-        setProgress(0.15 + 0.85 * st.done / st.total); refreshStatus();
-        schedule();
-        feed(w);
-      } else if (m.type === 'error') {
-        setStatus(`control failed: ${m.message}`, 'bad');
-      }
-    };
-    w.onerror = (e) => { if (gen === st.cgen) setStatus(`a worker failed: ${e.message || 'unknown error'}`, 'bad'); };
-    st.workers.push(w);
-    feed(w);
-  }
+  const S = st.sub.length;
+  st.inL = new Float64Array(S); st.inD = new Float64Array(S);
+  for (let j = 0; j < S; j++) { const r = st.sub[j]; st.inD[j] = st.d[r]; st.inL[j] = st.a[r] - st.d[r]; }
+  st.queue = []; st.queued = new Set(); st.progress = new Map();
+  queueControls(steps());
   setProgress(0.15);
   schedule();
+}
+
+/** run the controls at these moduli (both replicates) unless already done or queued;
+ *  the selected M goes first, so its charts fill in first */
+function queueControls(Ms) {
+  const tasks = [];
+  for (let rep = 0; rep < REPS; rep++) for (const M of Ms) {
+    const key = `${M}|${rep}`;
+    if (!st.queued.has(key)) { st.queued.add(key); tasks.push({ M, rep, key }); }
+  }
+  if (!tasks.length) return;
+  tasks.sort((x, y) => (x.rep - y.rep) || ((y.M === st.M) - (x.M === st.M)));
+  st.queue.push(...tasks);
+  st.total += tasks.length * st.inL.length;
+  const W = Math.max(1, Math.min(4, (navigator.hardwareConcurrency || 2) - 1));
+  while (st.workers.length < W && st.queue.length) spawn();
+}
+
+function spawn() {
+  const gen = st.cgen, S = st.inL.length;
+  const w = new Worker('worker.js');
+  const feed = () => {
+    if (!st.queue.length) { w.terminate(); st.workers = st.workers.filter(x => x !== w); return; }
+    const t = st.queue.shift();
+    st.progress.set(t.key, 0);
+    w.postMessage({ type: 'control', task: t.key, l: st.inL, d: st.inD, M: t.M, seed: DWLJ.seedOf(`${st.rec.id}|M${t.M}|r${t.rep}|${S}`) });
+  };
+  w.onmessage = (e) => {
+    if (gen !== st.cgen) return;
+    const m = e.data;
+    if (m.type === 'progress') {
+      st.done += m.done - st.progress.get(m.task); st.progress.set(m.task, m.done);
+      setProgress(0.15 + 0.85 * st.done / st.total); refreshStatus();
+    } else if (m.type === 'control') {
+      st.done += S - st.progress.get(m.task); st.progress.set(m.task, S);
+      st.ctrl.set(m.task, { lp: m.lp, k: m.k, frozen: m.frozen });
+      setProgress(0.15 + 0.85 * st.done / st.total); refreshStatus();
+      schedule();
+      feed();
+    } else if (m.type === 'error') {
+      setStatus(`control failed: ${m.message}`, 'bad');
+    }
+  };
+  w.onerror = (e) => { if (gen === st.cgen) setStatus(`a worker failed: ${e.message || 'unknown error'}`, 'bad'); };
+  st.workers.push(w);
+  feed();
+}
+
+/** your own modulus: shown after the ladder, selected, computed on demand */
+function setOwnM(M) {
+  if (!(Number.isInteger(M) && M >= 1 && M <= OWN_MAX)) return false;
+  if (!LADDER.includes(M)) st.ownM = M;
+  st.M = M;
+  if (st.sub) queueControls([M]);
+  schedule();
+  return true;
 }
 
 /* ═══════════════ statistics ═══════════════ */
@@ -446,10 +481,13 @@ function frame(ctx, box, xr, yr, o = {}) {
     ctx.textAlign = 'right'; ctx.fillText(o.yf ? o.yf(v) : String(v), x0 - 6, y);
   }
   ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+  let right = -Infinity;
   for (const v of o.xt || ticks(xr[0], xr[1])) {
     const x = X(v); if (o.xgrid) { ctx.beginPath(); ctx.moveTo(Math.round(x) + 0.5, y0); ctx.lineTo(Math.round(x) + 0.5, y1); ctx.stroke(); }
     const t = o.xf ? o.xf(v) : String(v), tw = ctx.measureText(t).width;
-    ctx.fillText(t, Math.min(Math.max(x, x0 + tw / 2), x1 - tw / 2), y1 + 6);   /* kept inside the frame */
+    const cx = Math.min(Math.max(x, x0 + tw / 2), x1 - tw / 2);       /* kept inside the frame */
+    if (cx - tw / 2 < right + 5) continue;                             /* and never on top of the last one */
+    ctx.fillText(t, cx, y1 + 6); right = cx + tw / 2;
   }
   ctx.textBaseline = 'middle';
   if (o.xl) { ctx.textAlign = 'right'; ctx.textBaseline = 'bottom'; ctx.fillText(o.xl, x1, box.h); ctx.textBaseline = 'middle'; }
@@ -480,14 +518,15 @@ function drawPlate(cv, which) {
   const ml = 40, mb = 34, mt = 8, mr = 8, s = Math.min(w - ml - mr, h - mt - mb);
   const box = { x0: ml, y0: mt, x1: ml + s, y1: mt + s, h };
   const tk = ticks(0, T, 5);
-  const { X, Y } = frame(ctx, box, [0, T], [0, T], { xt: tk, yt: tk, xgrid: true, xl: 'log₁₀ k', yl: 'log₁₀ L' });
+  const pad = 0.025 * T;                     /* the same on both axes: the aspect stays equal */
+  const { X, Y } = frame(ctx, box, [-pad, T], [-pad, T], { xt: tk, yt: tk, xgrid: true, xl: 'log₁₀ k', yl: 'log₁₀ L' });
   const ct = which === 'B' ? reps(st.M)[0] : null;
   if (which === 'B' && !ct) { ctx.fillStyle = css('--fg-3'); ctx.textAlign = 'center'; ctx.fillText(`control M = ${st.M}: computing…`, ml + s / 2, mt + s / 2); return; }
   /* guides: k·L = 10^j, then the diagonal */
   ctx.save(); ctx.beginPath(); ctx.rect(box.x0, box.y0, s, s); ctx.clip();
   ctx.setLineDash([3, 4]); ctx.strokeStyle = css('--line-2');
-  for (let j = 1; j <= 2 * T; j++) { ctx.beginPath(); ctx.moveTo(X(0), Y(j)); ctx.lineTo(X(j), Y(0)); ctx.stroke(); }
-  ctx.setLineDash([]); ctx.strokeStyle = css('--fg-3'); ctx.beginPath(); ctx.moveTo(X(0), Y(0)); ctx.lineTo(X(T), Y(T)); ctx.stroke();
+  for (let j = 1; j <= 2 * T; j++) { ctx.beginPath(); ctx.moveTo(X(-pad), Y(j + pad)); ctx.lineTo(X(j + pad), Y(-pad)); ctx.stroke(); }
+  ctx.setLineDash([]); ctx.strokeStyle = css('--fg-3'); ctx.beginPath(); ctx.moveTo(X(-pad), Y(-pad)); ctx.lineTo(X(T), Y(T)); ctx.stroke();
   const cw = css('--c-weight'), cl = css('--c-level'), cf = css('--fg-3');
   const n = st.sub.length, ps = n > 40000 ? 1.4 : n > 15000 ? 1.8 : 2.4;
   const pass = (filtered) => {
@@ -535,19 +574,23 @@ function drawPlate(cv, which) {
 let ladderRows = [];
 function computeLadder() {
   const obsSub = obsCounts(st.sub || []);
-  ladderRows = LADDER.map(M => ladderRow(M, obsSub));
+  ladderRows = steps().map(M => ladderRow(M, obsSub));
 }
 
 function drawLadder() {
   const cv = $('#ladder'), { ctx, w, h } = setup(cv);
+  const Ms = steps(), nL = LADDER.length;
   const rows = ladderRows.filter(Boolean);
+  const weak = (r) => r && r.frozen > FROZEN_MAX;
   const tb = $('#ladderTable tbody');
-  tb.replaceChildren(...LADDER.map((M, i) => {
+  tb.replaceChildren(...Ms.map((M, i) => {
     const r = ladderRows[i], tr = document.createElement('tr');
     if (M === st.M) tr.className = 'sel';
-    const cells = r ? [fmtInt(M), pts(r.level.delta), r.level.z.toFixed(1), pts(r.one.delta), r.one.z.toFixed(1), pct(r.frozen, 1)]
-                    : [fmtInt(M), '…', '', '…', '', ''];
-    cells.forEach((t, j) => { const td = document.createElement('td'); td.textContent = t; if (j === 2 || j === 4) td.className = 'z'; tr.append(td); });
+    if (weak(r)) tr.classList.add('weak');
+    const adds = i >= nL ? 'yours' : i === 0 ? '' : `+${ADDS[M]}`;
+    const cells = r ? [fmtInt(M), adds, pts(r.level.delta), fz(r.level.z), pts(r.one.delta), fz(r.one.z), pct(r.frozen, 1)]
+                    : [fmtInt(M), adds, '…', '', '…', '', ''];
+    cells.forEach((t, j) => { const td = document.createElement('td'); td.textContent = t; if (j === 3 || j === 5) td.className = 'z'; tr.append(td); });
     tr.addEventListener('click', () => setM(M));
     return tr;
   }));
@@ -556,33 +599,44 @@ function drawLadder() {
   for (const r of rows) for (const key of ['level', 'one']) { lo = Math.min(lo, r[key].delta - 2 * r[key].sigma); hi = Math.max(hi, r[key].delta + 2 * r[key].sigma); }
   const pad = (hi - lo) * 0.08 || 0.005; lo -= pad; hi += pad;
   const box = { x0: 58, y0: 8, x1: w - 10, y1: h - 34, h };
-  const xs = (i) => i;
-  const { X, Y } = frame(ctx, box, [-0.5, LADDER.length - 0.5], [lo, hi], {
-    xt: LADDER.map((_, i) => i), xf: (i) => ((box.x1 - box.x0) / LADDER.length < 46 && LADDER[i] >= 1000 ? `${+(LADDER[i] / 1000).toFixed(1)}k` : fmtInt(LADDER[i])), yf: (v) => signed(100 * v, Math.abs(hi - lo) < 0.02 ? 2 : 1), xl: 'M', yl: 'Δ, points' });
+  /* your own M sits after a gap */
+  const xs = (i) => (i < nL ? i : i + 0.6);
+  const xmax = xs(Ms.length - 1) + 0.5;
+  const crowded = (box.x1 - box.x0) / (xmax + 0.5) < 46;
+  const { X, Y } = frame(ctx, box, [-0.5, xmax], [lo, hi], {
+    xt: Ms.map((_, i) => xs(i)), xf: (x) => { const M = Ms[x < nL ? x : Math.round(x - 0.6)]; return !crowded || M < 1000 ? fmtInt(M) : M < 10000 ? `${(M / 1000).toFixed(1)}k` : `${Math.round(M / 1000)}k`; },
+    yf: (v) => signed(100 * v, Math.abs(hi - lo) < 0.02 ? 2 : 1), xl: 'M', yl: 'Δ, points' });
   ctx.strokeStyle = css('--fg-3'); ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(box.x0, Math.round(Y(0)) + 0.5); ctx.lineTo(box.x1, Math.round(Y(0)) + 0.5); ctx.stroke();
-  const sel = LADDER.indexOf(st.M);
-  ctx.fillStyle = css('--accent'); ctx.globalAlpha = 0.1; ctx.fillRect(X(sel - 0.5), box.y0, X(sel + 0.5) - X(sel - 0.5), box.y1 - box.y0); ctx.globalAlpha = 1;
+  if (Ms.length > nL) { const xg = X(nL - 0.5 + 0.3); ctx.strokeStyle = css('--line-2'); ctx.setLineDash([2, 3]); ctx.beginPath(); ctx.moveTo(xg, box.y0); ctx.lineTo(xg, box.y1); ctx.stroke(); ctx.setLineDash([]); }
+  const sel = Ms.indexOf(st.M);
+  if (sel >= 0) { ctx.fillStyle = css('--accent'); ctx.globalAlpha = 0.1; ctx.fillRect(X(xs(sel) - 0.5), box.y0, X(xs(sel) + 0.5) - X(xs(sel) - 0.5), box.y1 - box.y0); ctx.globalAlpha = 1; }
   const targets = [];
   for (const [key, col, off] of [['level', css('--c-level'), -0.12], ['one', css('--c-one'), 0.12]]) {
+    /* the line joins the informative ladder steps only */
     ctx.strokeStyle = col; ctx.lineWidth = 2; ctx.beginPath();
     let first = true;
-    LADDER.forEach((M, i) => { const r = ladderRows[i]; if (!r) return; const x = X(xs(i) + off), y = Y(r[key].delta); if (first) ctx.moveTo(x, y); else ctx.lineTo(x, y); first = false; });
+    for (let i = 0; i < nL; i++) { const r = ladderRows[i]; if (!r || weak(r)) continue; const x = X(xs(i) + off), y = Y(r[key].delta); if (first) ctx.moveTo(x, y); else ctx.lineTo(x, y); first = false; }
     ctx.globalAlpha = 0.5; ctx.stroke(); ctx.globalAlpha = 1;
-    LADDER.forEach((M, i) => {
+    Ms.forEach((M, i) => {
       const r = ladderRows[i]; if (!r) return;
       const x = X(xs(i) + off), v = r[key];
+      ctx.globalAlpha = weak(r) ? 0.45 : 1;
       ctx.strokeStyle = col; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(x, Y(v.delta - 2 * v.sigma)); ctx.lineTo(x, Y(v.delta + 2 * v.sigma)); ctx.stroke();
-      ctx.fillStyle = col; ctx.beginPath(); ctx.arc(x, Y(v.delta), 4, 0, 2 * Math.PI); ctx.fill();
-      ctx.strokeStyle = css('--bg-2'); ctx.lineWidth = 2; ctx.stroke();
+      ctx.beginPath(); ctx.arc(x, Y(v.delta), 4, 0, 2 * Math.PI);
+      if (weak(r)) { ctx.fillStyle = css('--bg-2'); ctx.fill(); ctx.strokeStyle = col; ctx.lineWidth = 1.5; ctx.stroke(); }   /* hollow: mostly frozen */
+      else { ctx.fillStyle = col; ctx.fill(); ctx.strokeStyle = css('--bg-2'); ctx.lineWidth = 2; ctx.stroke(); }
+      ctx.globalAlpha = 1;
     });
   }
-  LADDER.forEach((M, i) => {
+  Ms.forEach((M, i) => {
     const r = ladderRows[i];
-    targets.push({ x0: X(i - 0.5), x1: X(i + 0.5), y0: box.y0, y1: box.y1, M,
-      text: r ? [`<b>M = ${fmtInt(M)}</b>  <span class="m">${r.R} replicate${r.R > 1 ? 's' : ''}</span>`,
-                 `level  Δ ${pts(r.level.delta)} pts   z ${r.level.z.toFixed(1)}`, `       control ${pct(r.level.p)}`,
-                 `L = 1  Δ ${pts(r.one.delta)} pts   z ${r.one.z.toFixed(1)}`, `       control ${pct(r.one.p)}`,
-                 `frozen ${pct(r.frozen, 1)} of the records`, `<span class="m">click: use this control</span>`] : [`<b>M = ${fmtInt(M)}</b>  computing…`] });
+    const head = `<b>M = ${fmtInt(M)}</b>  <span class="m">${i >= nL ? 'your own modulus' : i ? 'adds ' + ADDS[M] : 'keeps no residue'}</span>`;
+    targets.push({ x0: X(xs(i) - 0.5), x1: X(xs(i) + 0.5), y0: box.y0, y1: box.y1, M,
+      text: r ? [head,
+                 `level  Δ ${pts(r.level.delta)} pts   z ${fz(r.level.z)}`, `       control ${pct(r.level.p)}`,
+                 `L = 1  Δ ${pts(r.one.delta)} pts   z ${fz(r.one.z)}`, `       control ${pct(r.one.p)}`,
+                 `frozen ${pct(r.frozen, 1)} of the records${weak(r) ? ': Δ is pushed toward 0,\n       this step says little' : ''}`,
+                 `<span class="m">${r.R} replicate${r.R > 1 ? 's' : ''} · click: use this control</span>`] : [head, 'computing…'] });
   });
   hits.set(cv, targets);
 }
@@ -727,7 +781,7 @@ function drawLock() {
     targets.push({ x0: X(s.r) - 9, x1: X(s.r) + 9, y0: box.y0, y1: box.y1,
       text: [`<b>r = ${s.r}</b>   <span class="m">${fmtInt(s.n)} records with d < r</span>`,
              `sequence  ${s.y.toFixed(3)} ± ${(2 * s.s).toFixed(3)}`,
-             `control   ${s.cy === null ? '—' : s.cy.toFixed(3) + ' ± ' + (2 * s.cs).toFixed(3)}${LADDER.includes(st.M) && st.M % s.r === 0 ? '  (kept: r | M)' : ''}`,
+             `control   ${s.cy === null ? '—' : s.cy.toFixed(3) + ' ± ' + (2 * s.cs).toFixed(3)}${st.M % s.r === 0 ? '  (kept: r | M)' : ''}`,
              `r/(r − 2) ${(s.r / (s.r - 2)).toFixed(3)}   chance 1`] });
   }
   ctx.restore();
@@ -786,7 +840,7 @@ function drawNumbers() {
   if (!all.n) { tb.replaceChildren(); return; }
   add('sequence, every record', all);
   add('sequence, the control’s records', obsCounts(st.sub));
-  for (const M of LADDER) {
+  for (const M of steps()) {
     const rs = reps(M);
     if (!rs.length) { add(`control M = ${fmtInt(M)}`, null, M === st.M); continue; }
     const cs = rs.map(ctrlCounts), m = {};
@@ -811,6 +865,7 @@ function drawAll() {
   $('#fG').textContent = st.g === null ? 'all' : `d = ${fmtInt(st.g)}`;
   $('#clearG').hidden = st.g === null;
   $('#fM').textContent = `M = ${fmtInt(st.M)}`;
+  if (document.activeElement !== $('#ownM')) $('#ownM').value = st.ownM || '';
   $('#hPlateB').textContent = `The same records, controlled at M = ${fmtInt(st.M)}`;
   writeHash();
 }
@@ -866,6 +921,14 @@ function initHover() {
   $('#clearG').addEventListener('click', () => { st.g = null; schedule(); });
   $('#colK').addEventListener('click', () => { st.colMode = 'k'; colButtons(); schedule(); });
   $('#colL').addEventListener('click', () => { st.colMode = 'L'; colButtons(); schedule(); });
+  $('#ownForm').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const v = $('#ownM').value.trim();
+    if (!v) { if (st.ownM) { st.ownM = null; if (!LADDER.includes(st.M)) st.M = 1; schedule(); } return; }
+    if (!/^\d+$/.test(v) || !setOwnM(+v)) { $('#ownM').setCustomValidity(`a whole number from 1 to ${fmtInt(OWN_MAX)}`); $('#ownM').reportValidity(); return; }
+    $('#ownM').setCustomValidity('');
+  });
+  $('#ownM').addEventListener('input', () => $('#ownM').setCustomValidity(''));
   $('#sampleSel').addEventListener('change', (e) => { st.sample = +e.target.value; if (st.dec) startControls(); });
   $('#themeBtn').addEventListener('click', () => {
     const light = document.documentElement.dataset.theme ? document.documentElement.dataset.theme === 'light' : matchMedia('(prefers-color-scheme: light)').matches;
@@ -949,7 +1012,8 @@ async function route() {
   if (o.id === 'custom') { history.replaceState(null, '', '#primes'); o.id = 'primes'; }
   if (st.rec && !st.rec.custom && (o.id === st.rec.id || o.id.toUpperCase() === st.rec.anumber)) {
     /* same sequence, new filters (a pasted link) */
-    if (o.M) st.M = o.M; st.g = o.g !== undefined ? o.g : null;
+    if (o.own) setOwnM(o.own);
+    if (o.M) setOwnM(o.M); st.g = o.g !== undefined ? o.g : null;
     if (o.n) { st.rLo = Math.max(0, o.n[0] - st.n0); st.rHi = Math.min(st.N - 1, o.n[1] - st.n0); } else { st.rLo = 0; st.rHi = st.N - 1; }
     schedule(); return;
   }
@@ -968,5 +1032,5 @@ start();
 
 /* for the tests (tests/lab.mjs) */
 window.__lab = st;
-window.__labFns = { lockStats, obsCounts, ctrlCounts, reps, ladder: () => ladderRows };
+window.__labFns = { lockStats, obsCounts, ctrlCounts, reps, steps, setOwnM, ladder: () => ladderRows };
 })();
