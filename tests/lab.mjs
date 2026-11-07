@@ -8,7 +8,8 @@
    rows of each; every control record keeps its jump and its residue mod M, stays in its window,
    and is decomposed to the least divisor above d (by trial division wherever ℓ' < 10^8); the
    controls are reproducible (the seeded ladder is the same after a reload); the filters (a jump,
-   a range of n, the modulus) reach every chart and the link; the congruence lock gives exactly
+   a range of n, the modulus) reach every chart and the link; the prime-power ladder closes the gap
+   of A047429 (n ≡ 4, 5, 6 mod 8) at M = 840 and not before, and a modulus of one's own (8) does too; the congruence lock gives exactly
    3 at r = 3 for the jump 2 of the primes (ℓ = p − 2 ≡ 0 mod 3 for every lesser twin p ≥ 5); a
    pasted list of primes decomposes to the published rows; the picker opens a sequence; a phone
    width has no horizontal scroll.  Fails on any page error or any 4xx/5xx response.
@@ -67,12 +68,12 @@ check(st.a === 113 && st.k === 33 && st.L === 3 && st.d === 14, 'primes: a(30) =
 check(st.sub === 25000, `primes: the control runs on 25,000 records (${st.sub})`);
 let A = await audit();
 check(A.rowBad === 0, `primes: kernel reproduces ${A.rows} published rows (${A.rowBad} differ) ${A.first}`);
-check(A.ctl === 14 * 25000 && A.ctlBad === 0, `primes: ${A.ctl} control records keep d, ℓ mod M and the window, k | ℓ′, k > d`);
+check(A.ctl === 20 * 25000 && A.ctlBad === 0, `primes: ${A.ctl} control records keep d, ℓ mod M and the window, k | ℓ′, k > d`);
 check(A.brute > 1000 && A.bruteBad === 0, `primes: ${A.brute} control weights equal the least divisor above d by brute force`);
 const lad1 = await ladderText();
-check(!lad1.includes('null') && lad1.split(' ').length === 7, 'primes: the ladder has all seven steps');
+check(!lad1.includes('null') && lad1.split(' ').length === 10, 'primes: the ladder has all ten steps, lcm(1..n) up to 360360');
 const lv = await p.evaluate(() => window.__labFns.ladder().map(r => r.level.delta));
-check(lv[1] < -0.03 && Math.abs(lv[6]) < Math.abs(lv[1]), `primes: the deficit is largest at M = 2 and shrinks by M = 30030 (${lv.map(x => (100 * x).toFixed(2)).join(', ')})`);
+check(lv[1] < -0.03 && Math.abs(lv[6]) < Math.abs(lv[1]), `primes: the deficit is largest at M = 2 and shrinks by M = 840 (${lv.map(x => (100 * x).toFixed(2)).join(', ')})`);
 check(await p.evaluate(() => [...document.querySelectorAll('canvas')].every(c => c.width > 0)), 'every chart is drawn');
 
 /* the jump filter, from a click on the bar of d = 2 */
@@ -103,9 +104,9 @@ if (g2) {
 }
 
 /* the modulus, from a click on the ladder */
-await p.click('#ladderTable tbody tr:nth-child(4)'); await p.waitForTimeout(300);
-check(await p.evaluate(() => window.__lab.M === 30 && location.hash.includes('.M30') && document.querySelector('#fM').textContent === 'M = 30'),
-      'a ladder step selects M = 30 everywhere');
+await p.click('#ladderTable tbody tr:nth-child(5)'); await p.waitForTimeout(300);
+check(await p.evaluate(() => window.__lab.M === 60 && location.hash.includes('.M60') && document.querySelector('#fM').textContent === 'M = 60'),
+      'a ladder step selects M = 60 everywhere');
 
 /* a range of n, by dragging along the level-share chart */
 await p.locator('#along').scrollIntoViewIfNeeded();
@@ -121,8 +122,28 @@ check(await p.evaluate(() => window.__lab.rLo === 0 && window.__lab.rHi === wind
 await p.goto(BASE + '/lab/#lucky'); await ready();
 await p.goto(BASE + '/lab/#primes'); await ready();
 check(await ladderText() === lad1, 'the seeded controls give the same ladder after a reload');
-await p.goto(BASE + '/lab/#primes.M210.g6.n1000-50000'); await p.reload(); await ready();
-check(await p.evaluate(() => { const s = window.__lab; return s.M === 210 && s.g === 6 && s.n0 + s.rLo === 1000 && s.n0 + s.rHi === 50000; }), 'a deep link restores M, the jump and the range');
+await p.goto(BASE + '/lab/#primes.M420.g6.n1000-50000'); await p.reload(); await ready();
+check(await p.evaluate(() => { const s = window.__lab; return s.M === 420 && s.g === 6 && s.n0 + s.rLo === 1000 && s.n0 + s.rHi === 50000; }), 'a deep link restores M, the jump and the range');
+
+/* the ladder climbs prime powers: A047429 (n ≡ 4, 5, 6 mod 8) departs from its control through ℓ mod 8 alone,
+   so the gap stays open up to M = 420 and closes at M = 840, the first step that keeps 8 */
+await p.goto(BASE + '/lab/#a047429'); await ready();
+const q = await p.evaluate(() => Object.fromEntries(window.__labFns.ladder().map(r => [r.M, [r.level.delta, r.level.z, r.frozen]])));
+check(q[420][0] < -0.02 && q[420][1] < -5 && q[420][2] < 0.5, `A047429: still ${(100 * q[420][0]).toFixed(2)} points at M = 420 (z ${q[420][1].toFixed(1)})`);
+check(Math.abs(q[840][1]) < 3 && q[840][2] < 0.5, `A047429: closed at M = 840, where 8 enters (Δ ${(100 * q[840][0]).toFixed(2)}, z ${q[840][1].toFixed(1)})`);
+/* your own M, from the form, then from a link */
+await p.fill('#ownM', '8'); await p.click('#ownForm button'); await ready();
+const o8 = await p.evaluate(() => { const r = window.__labFns.ladder().find(x => x && x.M === 8); return { M: window.__lab.M, steps: window.__labFns.steps().length, hash: location.hash, z: r && r.level.z, row: document.querySelector('#ladderTable tbody tr:last-child').textContent }; });
+check(o8.M === 8 && o8.steps === 11 && o8.hash.includes('.M8') && o8.row.includes('yours'), `your own M = 8 joins the ladder and the link (${o8.hash})`);
+check(o8.z !== null && Math.abs(o8.z) < 3, `A047429 at M = 8: no gap left (z ${o8.z && o8.z.toFixed(1)})`);
+await p.click('#ladderTable tbody tr:nth-child(2)'); await p.waitForTimeout(200);
+check(await p.evaluate(() => location.hash === '#a047429.M2.own8'), 'choosing a ladder step keeps your own M in the link');
+await p.goto(BASE + '/lab/#lucky'); await ready();
+await p.goto(BASE + '/lab/#a047429.M2.own8'); await ready();
+check(await p.evaluate(() => window.__lab.M === 2 && window.__lab.ownM === 8 && window.__labFns.reps(8).length === 2), 'a link with your own M restores it');
+await p.fill('#ownM', '0'); await p.click('#ownForm button');
+check(await p.evaluate(() => !document.querySelector('#ownM').checkValidity() && window.__lab.ownM === 8), 'a modulus out of range is refused');
+await p.goto(BASE + '/lab/#primes'); await ready();
 
 /* a pasted list: the first 3000 primes decompose to the published rows */
 const ref = await p.evaluate(() => ({ a: Array.from(window.__lab.a.slice(0, 3001)), k: Array.from(window.__lab.k.slice(0, 3000)), L: Array.from(window.__lab.L.slice(0, 3000)) }));

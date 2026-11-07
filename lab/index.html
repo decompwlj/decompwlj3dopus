@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>decompwlj Lab: each sequence against its controls</title>
-<meta name="description" content="decompwlj Lab: the decomposition into weight × level + jump of 5000 OEIS sequences, each set against randomised controls that keep its jumps and its residues mod 1, 2, 6, 30, 210, 2310, 30030. Linked, interactive charts.">
+<meta name="description" content="decompwlj Lab: the decomposition into weight × level + jump of 5000 OEIS sequences, each set against randomised controls that keep its jumps and its residues mod 1, 2, 6, 12, 60, 420, 840, 2520, 27720, 360360, one prime power at a time. Linked, interactive charts.">
 <link rel="icon" href="../favicon.svg" type="image/svg+xml">
 <link rel="icon" href="../favicon.ico" sizes="any">
 <script data-goatcounter="https://decompwlj.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>
@@ -80,6 +80,11 @@ main { max-width: 1480px; margin: 0 auto; padding: 16px 20px 40px; }
 .filters { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; margin: 14px 0 12px; font-size: 12.5px; color: var(--fg-2); }
 .filters b { color: var(--fg); font-weight: 600; font-variant-numeric: tabular-nums; }
 .filters .sep { width: 1px; height: 18px; background: var(--line); }
+.own { display: inline-flex; gap: 6px; align-items: center; }
+.own input { width: 76px; padding: 3px 6px; background: var(--bg-3); border: 1px solid var(--line); border-radius: 6px; font-variant-numeric: tabular-nums; }
+.own input:focus { border-color: var(--accent); outline: none; }
+table.num tr.weak td { color: var(--fg-3); }
+table.num tr.weak td.z { color: var(--fg-3); font-weight: 500; }
 .filters select { background: var(--bg-3); border: 1px solid var(--line); border-radius: 6px; padding: 3px 6px; }
 
 .grid { display: grid; gap: 14px; grid-template-columns: repeat(12, minmax(0, 1fr)); }
@@ -162,8 +167,8 @@ footer { max-width: 1480px; margin: 0 auto; padding: 0 20px 30px; font-size: 12p
     <div id="seqSub" class="sub"></div>
     <p class="lede">Every chart sets the sequence (in colour) against a <b>control</b> (in grey). The control keeps each term's jump
       <i>d</i> and the residue of ℓ = a − d modulo <i>M</i>, and redraws ℓ at random within ±25 % before decomposing it again. As
-      <i>M</i> runs through 1, 2, 6, 30, 210, 2310, 30030, the control learns the sequence's congruences prime by prime. The gap
-      that remains shows what the decomposition sees beyond the density and those residues.</p>
+      <i>M</i> runs through 1, 2, 6, 12, 60, 420, 840, 2520, 27720, 360360, the control learns the sequence's congruences one prime power at a
+      time: 2, 3, 4, 5, 7, 8, 9, 11, 13. The step where the gap closes names the prime power that carries the structure.</p>
     <p id="status" class="status" aria-live="polite"></p>
     <div id="progress"><i></i></div>
   </section>
@@ -176,6 +181,11 @@ footer { max-width: 1480px; margin: 0 auto; padding: 0 20px 30px; font-size: 12p
     <button id="clearG" class="chip" type="button" hidden>all jumps</button>
     <span class="sep"></span>
     <span>control <b id="fM">M = 1</b></span>
+    <form id="ownForm" class="own" title="Add a modulus of your own to the ladder, e.g. 8 or 16">
+      <label for="ownM">your own M</label>
+      <input id="ownM" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="8" placeholder="e.g. 8" autocomplete="off">
+      <button class="chip" type="submit">run</button>
+    </form>
     <span class="sep"></span>
     <label>records in the control
       <select id="sampleSel">
@@ -200,12 +210,13 @@ footer { max-width: 1480px; margin: 0 auto; padding: 0 20px 30px; font-size: 12p
     </section>
     <section class="card span4" aria-labelledby="hLadder">
       <h2 id="hLadder">The residue ladder</h2>
-      <p class="cap">Level share of the sequence minus that of the control, in percentage points, as the control keeps more residues.
-        Whiskers: ±2σ of the control. Click a step to use that control everywhere.</p>
+      <p class="cap">Level share of the sequence minus that of the control, in percentage points, as the control keeps more residues;
+        each step adds one prime power. Whiskers: ±2σ. Hollow: more than half the records frozen, so the step says little.
+        Click a step to use that control everywhere.</p>
       <div class="plot mid"><canvas id="ladder" aria-label="Level-share difference against the modulus M"></canvas></div>
-      <div class="legend"><span><i class="dot" style="--c:var(--c-level)"></i>level share</span><span><i class="dot" style="--c:var(--c-one)"></i>L = 1 share</span><span><i style="--c:var(--fg-3)"></i>zero: no difference</span></div>
+      <div class="legend"><span><i class="dot" style="--c:var(--c-level)"></i>level share</span><span><i class="dot" style="--c:var(--c-one)"></i>L = 1 share</span><span><i style="--c:var(--fg-3)"></i>zero: no difference</span><span><i class="dot" style="--c:transparent; box-shadow: inset 0 0 0 1.5px var(--fg-3)"></i>mostly frozen</span></div>
       <div class="tw"><table class="num" id="ladderTable" aria-label="The residue ladder as a table">
-        <thead><tr><th>M</th><th>level Δ</th><th>z</th><th>L=1 Δ</th><th>z</th><th>frozen</th></tr></thead><tbody></tbody>
+        <thead><tr><th>M</th><th>adds</th><th>level Δ</th><th>z</th><th>L=1 Δ</th><th>z</th><th>frozen</th></tr></thead><tbody></tbody>
       </table></div>
     </section>
 
@@ -260,17 +271,22 @@ footer { max-width: 1480px; margin: 0 auto; padding: 0 20px 30px; font-size: 12p
         [max(d + 1, ⌈0.75 ℓ⌉), ⌊1.25 ℓ⌋]; decompose ℓ′ with the same jump. The density, the jumps and the residues mod M are the
         sequence's own; everything else is random. Seeds are fixed (FNV-1a of the sequence id, M and the replicate), so every
         figure is reproducible.</li>
+      <li><b>The ladder.</b> M = lcm(1, …, n) for n = 1, 2, 3, 4, 5, 7, 8, 9, 11, 13: 1, 2, 6, 12, 60, 420, 840, 2520, 27720,
+        360360. Each M divides the next and adds exactly one prime power (2, 3, 4, 5, 7, 8, 9, 11, 13), so a change of Δ at a step
+        belongs to that prime power. A modulus of your own (“your own M”, up to 10<sup>7</sup>) is computed on demand and shown
+        after the ladder; it is kept in the link.</li>
       <li><b>Frozen records.</b> When ℓ is small next to M, its class has few members in the window and the control barely moves
         it. The ladder table gives the share of records with fewer than 16 members; where it is large, the Δ at that M is
-        understated, not explained.</li>
+        pushed toward 0 (a control that cannot move ℓ is the sequence itself), so it is understated, not explained. Steps with
+        more than half the records frozen are drawn hollow and left off the line.</li>
       <li><b>Records.</b> The control runs on a random subsample of the decomposable records (never a fixed stride: strides alias
         with the arithmetic). The plates show that subsample for both panels, so their densities match.</li>
       <li><b>σ.</b> The whiskers use the larger of the binomial bound √(p(1 − p)/N) on the control's share and the spread
         of its replicates. A difference of 2σ in one of 7 steps is not by itself a discovery.</li>
       <li><b>The kernel.</b> Exact below 2^53: trial division, deterministic Miller–Rabin, Pollard–Brent rho, in doubles with
         exact products. Checked against PARI/GP 2.15.4 and against the published rows.</li>
-      <li><b>What it is not.</b> A Δ that survives M = 30030 says that something beyond the residues mod 30030 shapes the
-        decomposition; it does not say what. For the primes the remaining step is the Hardy–Littlewood local factor of every
+      <li><b>What it is not.</b> A Δ that survives the last informative step says that something beyond those residues shapes the
+        decomposition; it does not say what. For the primes the remainder is the Hardy–Littlewood local factor of every
         larger prime r, which no finite M keeps.</li>
     </ul>
   </details>

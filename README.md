@@ -77,14 +77,20 @@ live example. Background: [decompwlj.com](https://decompwlj.com) and
 The Lab asks one question of each sequence: how much of what the decomposition shows comes from the
 sequence itself, and how much would any sequence with the same jumps and the same congruences show?
 Each record keeps its jump d and the residue of ℓ = a − d modulo M. ℓ is then redrawn at random
-within ±25 % and decomposed again with the same kernel. M runs through 1, 2, 6, 30, 210, 2310 and
-30030, so the control learns the sequence's congruences one prime at a time.
+within ±25 % and decomposed again with the same kernel. M runs through lcm(1, …, n): 1, 2, 6, 12, 60,
+420, 840, 2520, 27720 and 360360. Each step adds exactly one prime power (2, 3, 4, 5, 7, 8, 9, 11, 13),
+so the control learns the sequence's congruences one prime power at a time, and a change of the gap at
+a step belongs to that prime power. A modulus of your own (up to 10⁷) can be added to the ladder.
+
+For example, A047429 (n ≡ 4, 5, 6 mod 8) has a level share of 5.86 %, against 13.5 % for its control at
+M = 1. The gap is still about −3.2 points at M = 420 and closes at M = 840, the first step that keeps
+ℓ mod 8. Its whole departure from the control is ℓ mod 8.
 
 - **Plates.** The sequence and its control, on the same records, as square weight–level plates (log k
   against log L, equal scales: the diagonal k = L is the class boundary).
 - **The residue ladder.** The level share and the L = 1 share, sequence minus control, at each M,
-  with ±2σ. A step where the gap closes names a modulus that carries the structure. Click a step to use
-  that control in every chart.
+  with ±2σ. A step where the gap closes names the prime power that carries the structure. Steps where most
+  records are frozen (see below) are drawn hollow. Click a step to use that control in every chart.
 - **Level share along n.** The sequence against the control band, by window. Drag to keep a range of n.
 - **Jumps.** The commonest jumps. Click one to keep only that jump.
 - **The congruence lock.** r · Pr[r | ℓ] for the primes r ≤ 113, against chance (1) and the
@@ -93,8 +99,8 @@ within ±25 % and decomposed again with the same kernel. M runs through 1, 2, 6,
 - **Your sequence.** Paste a list or an OEIS b-file. It is decomposed in the browser and set against
   the same controls. Nothing is uploaded.
 
-The filters (a range of n, one jump, the modulus M) apply to every chart and are kept in the link:
-`/lab/#primes.M210.g6.n1000-50000`. The controls run in worker threads on a seeded random subsample
+The filters (a range of n, one jump, the modulus M, your own M) apply to every chart and are kept in the
+link: `/lab/#primes.M420.g6.n1000-50000`, `/lab/#a047429.M2.own8`. The controls run in worker threads on a seeded random subsample
 of 10,000 or 25,000 records, or on all of them, so every figure is reproducible. The kernel
 (`lab/kernel.js`) is exact below 2⁵³. It uses trial division, a deterministic Miller–Rabin test and
 Pollard–Brent rho, all in doubles with exact products. It was checked against PARI/GP 2.15.4 on 55,003
@@ -102,8 +108,9 @@ cases, adversarial ones included, and against 180,000 published rows of 60 seque
 
 The Lab shows where a sequence departs from its controls. It does not explain why. When ℓ is small next
 to M, the control can barely move it: the ladder's *frozen* column gives the share of such records,
-and where it is large the gap at that M is understated. For the primes, what remains after M = 30030
-is the Hardy–Littlewood local factor of every larger prime, which no finite M keeps.
+and where it is large the gap at that M is pushed toward 0, so it is understated. Steps with more than
+half the records frozen are drawn hollow and left off the line. For the primes, what remains after the
+last informative step is the Hardy–Littlewood local factor of every larger prime, which no finite M keeps.
 
 ## Run it locally
 
@@ -222,7 +229,7 @@ a hard reload (Ctrl+F5, Cmd+Shift+R) clears the cached `index.html` and `data/ca
 | `/#primes.kLd.iso.solid.vs-A001359` | a comparison (add `.split` for side by side) |
 | `/seq/A000040/` (or `/A000040`) | the sequence's static page, with **Download CSV** |
 | `/seq/`, `/family/primes/`, `/learn/` | all sequences, one family, how it works |
-| `/lab/#primes` (or `/lab/#A000040`) | the Lab, on a sequence; add `.M30`, `.g6`, `.n1000-50000` for a modulus, a jump, a range of n |
+| `/lab/#primes` (or `/lab/#A000040`) | the Lab, on a sequence; add `.M60`, `.g6`, `.n1000-50000`, `.own8` for a modulus, a jump, a range of n, your own modulus |
 
 **Keys** — gallery: `/` search, `R` random, `T` theme, `Home` top. Viewer: `G`/`Esc` gallery,
 `↑`/`↓` neighbouring sequence, `R` random, `1`–`5` views, `V` overlay/side by side, `C`/`P` side
@@ -358,7 +365,8 @@ parallel jobs so that checking everything takes no longer than sampling did:
   (every point drawn checked against its term), a CSV download and the How it works page;
   `tests/lab.mjs` runs the Lab on the primes and on the sequence with the largest terms. It checks the
   kernel against the published rows, every control record against its rules (by brute force where
-  ℓ′ < 10⁷), the seeded ladder after a reload, the filters and the link, a pasted sequence, and a phone width.
+  ℓ′ < 10⁷), the seeded ladder after a reload, the filters and the link, the prime-power ladder on
+  A047429 (still open at M = 420, closed at M = 840 and at its own M = 8), a pasted sequence, and a phone width.
 
 Locally:
 
